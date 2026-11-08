@@ -1,0 +1,169 @@
+@import 'tailwindcss';
+
+@source '../views';
+@source '../js';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens — "Chambers" design system. See docs/Architecture/Frontend-Architecture.md.
+ * navy: authority, primary surfaces · green: confirmation/legal ink · gold: sparing accent
+ * ivory: warm paper background for public pages.
+ */
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --font-urdu: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
+
+    --color-navy-50: #f2f5fa;
+    --color-navy-100: #e1e8f2;
+    --color-navy-200: #c3d0e3;
+    --color-navy-300: #97abc9;
+    --color-navy-400: #6580a9;
+    --color-navy-500: #45628d;
+    --color-navy-600: #344c72;
+    --color-navy-700: #283c5c;
+    --color-navy-800: #1b2b45;
+    --color-navy-900: #0f1e36;
+    --color-navy-950: #091325;
+
+    --color-verdant-50: #effaf3;
+    --color-verdant-100: #d8f2e1;
+    --color-verdant-200: #b2e3c5;
+    --color-verdant-300: #7fcda2;
+    --color-verdant-400: #4aaf7b;
+    --color-verdant-500: #28925f;
+    --color-verdant-600: #1b754b;
+    --color-verdant-700: #165d3e;
+    --color-verdant-800: #134a33;
+    --color-verdant-900: #103d2b;
+
+    --color-gold-50: #fbf7ec;
+    --color-gold-100: #f4eacb;
+    --color-gold-200: #e9d596;
+    --color-gold-300: #dcbb5f;
+    --color-gold-400: #cfa33b;
+    --color-gold-500: #b8892b;
+    --color-gold-600: #966a22;
+    --color-gold-700: #774f1f;
+
+    --color-ivory: #faf8f3;
+    --color-paper: #f4f1e9;
+
+    --radius-card: 0.625rem;
+    --shadow-card: 0 1px 2px rgb(15 30 54 / 0.06), 0 1px 1px rgb(15 30 54 / 0.04);
+    --shadow-pop: 0 10px 30px -10px rgb(15 30 54 / 0.25);
+}
+
+@layer base {
+    html {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+        overflow-x: clip;
+    }
+
+    body {
+        @apply bg-navy-50/40 text-navy-900 dark:bg-navy-950 dark:text-navy-100;
+    }
+
+    /* Urdu: Nastaliq needs generous line height and slightly larger size to stay legible. */
+    html[lang='ur'] body {
+        font-family: var(--font-urdu), var(--font-sans);
+        line-height: 2.1;
+    }
+
+    html[lang='ur'] .font-serif,
+    html[lang='ur'] h1,
+    html[lang='ur'] h2,
+    html[lang='ur'] h3 {
+        font-family: var(--font-urdu), var(--font-serif);
+        line-height: 1.9;
+    }
+
+    /* Numbers, case numbers, CNICs and emails always render LTR inside RTL layouts. */
+    .ltr-nums,
+    [dir='rtl'] input[type='email'],
+    [dir='rtl'] input[type='tel'],
+    [dir='rtl'] input[type='number'] {
+        direction: ltr;
+        unicode-bidi: plaintext;
+    }
+
+    h1,
+    h2,
+    h3 {
+        @apply font-serif tracking-tight;
+    }
+
+    /* Instant, never animated (Hallmark 15/26a). */
+    :focus-visible {
+        outline: 2px solid var(--color-gold-600);
+        outline-offset: 2px;
+        transition: none;
+    }
+
+    [type='date']::-webkit-calendar-picker-indicator {
+        @apply cursor-pointer opacity-60 dark:invert;
+    }
+}
+
+@layer components {
+    /* Rich text produced by the drafting editor and articles. */
+    .prose-legal {
+        @apply text-[15px] leading-7 text-navy-900 dark:text-navy-100;
+    }
+    .prose-legal h1 {
+        @apply mb-4 text-center text-2xl font-semibold uppercase;
+    }
+    .prose-legal h2 {
+        @apply mt-6 mb-3 text-xl font-semibold;
+    }
+    .prose-legal h3 {
+        @apply mt-4 mb-2 text-lg font-semibold;
+    }
+    .prose-legal p {
+        @apply my-3;
+    }
+    .prose-legal ol {
+        @apply my-3 list-decimal ps-6;
+    }
+    .prose-legal ul {
+        @apply my-3 list-disc ps-6;
+    }
+    .prose-legal table {
+        @apply my-4 w-full border-collapse;
+    }
+    .prose-legal td,
+    .prose-legal th {
+        @apply border border-navy-300 px-3 py-1.5 align-top;
+    }
+    .prose-legal .page-break {
+        @apply my-6 border-t-2 border-dashed border-navy-300;
+    }
+    .prose-legal .placeholder {
+        @apply rounded bg-gold-100 px-1 text-gold-700 dark:bg-gold-700/30 dark:text-gold-200;
+    }
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background: #fff !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *:not(.keep-motion),
+    *:not(.keep-motion)::before,
+    *:not(.keep-motion)::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

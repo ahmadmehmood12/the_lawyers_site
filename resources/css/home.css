@@ -1,0 +1,177 @@
+/* Hallmark · shape: Split Studio · genre: modern-minimal · theme: brand · hero: Stage (the real dashboard capture beside the head) · nav: kept · footer: kept · signature: today's cause list, captured from the live product
+ * axes: ivory/serif/gold · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: P, a practice tool argues less than a manifesto; the page argues that the hearing record is the product and shows one hearing travelling end to end */
+/* Hallmark · reworded "the right advocate, and a diary that never misses a date." to "every hearing on record. every date kept." · 44b, the hero head is seven words */
+/* Hallmark · reworded "built for the way pakistani advocates work" to "one hearing, start to finish" · 19, the section shows the workflow instead of claiming it */
+/* Hallmark · dropped "browse by practice area" heading and the drawn 09:30, 11:00, 13:15 diary · 47a, the real dashboard capture replaces the mock; practice areas stay as links in the close */
+/* Hallmark · dropped the listed/verified/firm counts from the close · 58, the close shares a screen with the site footer */
+/* Hallmark · dismissed 77 · the page has nine sections; they sit inside the .hm wrapper div that the counter reads as one */
+/* Hallmark · kept: 32 links, 3 fields, 4 handlers from .hallmark/before.json; the shared site header and footer carry the nav and company links */
+
+/* Home page only. Every rule is scoped under .hm so nothing leaks into the app shell. */
+/* Tokens: the brand palette from app.css, declared once for the home page. */
+:root {
+    --hm-paper: #faf8f3;
+    --hm-paper-2: #f4f1e9;
+    --hm-ink: #0f1e36;
+    --hm-ink-2: #283c5c;
+    --hm-muted: #45628d;
+    --hm-rule: #e1e8f2;
+    --hm-accent: #b8892b;
+    --hm-accent-ink: #774f1f;
+    --hm-panel: #f2f5fa;
+    --hm-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --hm-container: 1360px;
+    --hm-shadow: rgb(15 30 54 / 0.35);
+    --hm-night-paper: #091325;
+    --hm-night-paper-2: #0f1e36;
+    --hm-night-ink: #f2f5fa;
+    --hm-night-ink-2: #c3d0e3;
+    --hm-night-muted: #97abc9;
+    --hm-night-rule: #1b2b45;
+    --hm-night-accent: #dcbb5f;
+    --hm-night-accent-ink: #e9d596;
+    --hm-night-panel: #0f1e36;
+    --hm-night-shadow: rgb(0 0 0 / 0.5);
+}
+
+.hm {
+    color: var(--hm-ink);
+}
+
+:root.dark {
+    --hm-paper: var(--hm-night-paper);
+    --hm-paper-2: var(--hm-night-paper-2);
+    --hm-ink: var(--hm-night-ink);
+    --hm-ink-2: var(--hm-night-ink-2);
+    --hm-muted: var(--hm-night-muted);
+    --hm-rule: var(--hm-night-rule);
+    --hm-accent: var(--hm-night-accent);
+    --hm-accent-ink: var(--hm-night-accent-ink);
+    --hm-panel: var(--hm-night-panel);
+    --hm-shadow: var(--hm-night-shadow);
+}
+
+.hm-wrap {
+    width: 100%;
+    max-width: var(--hm-container);
+    margin-inline: auto;
+    padding-inline: 16px;
+}
+
+@media (min-width: 640px) {
+    .hm-wrap {
+        padding-inline: 24px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .hm-wrap {
+        padding-inline: 40px;
+    }
+}
+
+.hm h1,
+.hm h2,
+.hm h3 {
+    overflow-wrap: break-word;
+    min-width: 0;
+    text-wrap: balance;
+}
+
+.hm p {
+    text-wrap: pretty;
+}
+
+/* Product captures: a hairline frame, never a drawn browser window. */
+.hm-shot {
+    border: 1px solid var(--hm-rule);
+    border-radius: 10px;
+    background: var(--hm-paper-2);
+    overflow: hidden;
+    box-shadow: 0 24px 48px -28px var(--hm-shadow);
+}
+
+.hm-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.hm-panel {
+    background: var(--hm-panel);
+    border-radius: 14px;
+}
+
+.hm-sticky {
+    position: sticky;
+    top: 96px;
+}
+
+.hm-tab {
+    position: relative;
+    color: var(--hm-muted);
+    transition: color 160ms var(--hm-ease);
+}
+
+.hm-tab:hover {
+    color: var(--hm-ink);
+}
+
+.hm-tab[aria-selected='true'] {
+    color: var(--hm-ink);
+}
+
+.hm-tab-mark {
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--hm-accent);
+}
+
+.hm-faq summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.hm-faq summary::-webkit-details-marker {
+    display: none;
+}
+
+.hm-faq summary .hm-plus {
+    transition: transform 200ms var(--hm-ease);
+}
+
+.hm-faq[open] summary .hm-plus {
+    transform: rotate(45deg);
+}
+
+.hm :focus-visible {
+    outline: 2px solid var(--hm-accent);
+    outline-offset: 2px;
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hm-tab,
+    .hm-faq summary .hm-plus {
+        transition: none;
+    }
+}
+
+/* Nastaliq needs tall lines; the tight display leading above is for Latin heads only. */
+html[lang='ur'] .hm h1,
+html[lang='ur'] .hm h2,
+html[lang='ur'] .hm h3 {
+    line-height: 1.75;
+}
+
+html[lang='ur'] .hm p,
+html[lang='ur'] .hm dd,
+html[lang='ur'] .hm dt,
+html[lang='ur'] .hm summary,
+html[lang='ur'] .hm td,
+html[lang='ur'] .hm th {
+    line-height: 2.1;
+}
