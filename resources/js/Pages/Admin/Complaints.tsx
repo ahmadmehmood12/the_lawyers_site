@@ -1,11 +1,11 @@
 import { router, useForm } from '@inertiajs/react';
-import { Button, Card, CardHeader, PageHeader, Pagination, Select, StatusBadge, Textarea } from '@/Components/ui';
+import { Button, Card, CardBody, CardHeader, LinkButton, PageHeader, Pagination, Select, StatusBadge, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDateTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Option, Paginated } from '@/types';
 
-export default function Complaints({ complaints, messages, statuses }: { complaints: Paginated<any>; messages: any[]; statuses: Option[] }) {
+export default function Complaints({ complaints, openMessages, statuses }: { complaints: Paginated<any>; openMessages: number; statuses: Option[] }) {
     const t = useT();
     const { locale } = useLocale();
     return (
@@ -21,17 +21,8 @@ export default function Complaints({ complaints, messages, statuses }: { complai
                     <Pagination meta={complaints} />
                 </Card>
                 <Card>
-                    <CardHeader title={t('Contact messages')} />
-                    <ul className="divide-y divide-navy-100 dark:divide-navy-800">
-                        {messages.length === 0 && <li className="px-5 py-4 text-sm text-navy-500">—</li>}
-                        {messages.map((m) => (
-                            <li key={m.id} className={`space-y-1 px-5 py-3 text-sm ${m.handled ? 'opacity-60' : ''}`}>
-                                <p className="font-medium">{m.subject}</p><p>{m.body}</p>
-                                <p className="text-xs text-navy-500">{m.name}, {m.email} {m.phone}, {formatDateTime(m.created_at, locale)}</p>
-                                <Button size="sm" variant="ghost" onClick={() => router.post(route('admin.contact.toggle', m.id), {}, { preserveScroll: true })}>{m.handled ? t('Mark unhandled') : t('Mark handled')}</Button>
-                            </li>
-                        ))}
-                    </ul>
+                    <CardHeader title={t('Contact messages and feedback')} description={t(':count open in the feedback inbox.', { count: openMessages })} />
+                    <CardBody><LinkButton href={route('admin.feedback.index')} variant="secondary">{t('Open the feedback inbox')}</LinkButton></CardBody>
                 </Card>
             </div>
         </AppLayout>

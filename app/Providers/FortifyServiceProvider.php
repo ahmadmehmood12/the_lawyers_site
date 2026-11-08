@@ -7,6 +7,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Enums\UserStatus;
+use App\Models\BarCouncil;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -46,6 +47,9 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn () => Inertia::render('Auth/Login', ['canResetPassword' => true]));
         Fortify::registerView(fn (Request $request) => Inertia::render('Auth/Register', [
             'type' => in_array($request->query('type'), ['lawyer', 'firm', 'client'], true) ? $request->query('type') : 'client',
+            'barCouncils' => BarCouncil::query()->orderBy('name')->get(['id', 'name', 'name_ur'])
+                ->map(fn (BarCouncil $council) => ['value' => $council->id, 'label' => app()->getLocale() === 'ur' ? $council->name_ur : $council->name])
+                ->all(),
         ]));
         Fortify::requestPasswordResetLinkView(fn () => Inertia::render('Auth/ForgotPassword'));
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('Auth/ResetPassword', [

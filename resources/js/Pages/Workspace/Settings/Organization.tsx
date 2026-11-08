@@ -23,6 +23,7 @@ export default function OrganizationSettings({ organization: o, canManage, remin
     const s = (v: unknown) => (v === null || v === undefined ? '' : String(v));
     const form = useForm({ name: s(o.name), description: s(o.description), description_ur: s(o.description_ur), email: s(o.email), phone: s(o.phone), website: s(o.website), address: s(o.address), city_id: s(o.city_id), registration_number: s(o.registration_number), ntn: s(o.ntn), founded_year: s(o.founded_year), is_public: !!o.is_public });
     const rem = useForm({ reminders });
+    const logo = useForm<{ logo: File | null }>({ logo: null });
     const setRem = (i: number, patch: Partial<Reminder>) => rem.setData('reminders', rem.data.reminders.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
     return (
@@ -30,6 +31,23 @@ export default function OrganizationSettings({ organization: o, canManage, remin
             <PageHeader title={t('Organization settings')} actions={<LinkButton href={route('account.edit')} variant="secondary">{t('My account')}</LinkButton>} />
             <div className="grid gap-6 lg:grid-cols-3">
                 <form className="space-y-6 lg:col-span-2" onSubmit={(e) => { e.preventDefault(); form.transform((d) => ({ ...d, city_id: d.city_id || null, founded_year: d.founded_year || null })); form.put(route('settings.organization.update'), { preserveScroll: true }); }}>
+                    <Card>
+                        <CardHeader title={t('Logo')} description={t('Appears on your public firm page, directory cards, invoices and the workspace header.')} />
+                        <CardBody className="flex flex-wrap items-center gap-4">
+                            {o.logo_url ? <img src={o.logo_url} alt="" className="size-20 rounded-lg border border-navy-100 bg-white object-contain p-1 dark:border-navy-700" /> : <span className="flex size-20 items-center justify-center rounded-lg border border-dashed border-navy-300 text-xs text-navy-500 dark:border-navy-600">{t('No logo')}</span>}
+                            {canManage && (
+                                <div className="min-w-48 flex-1 space-y-2">
+                                    <input type="file" accept="image/png,image/jpeg,image/webp" aria-label={t('Logo')} onChange={(e) => logo.setData('logo', e.target.files?.[0] ?? null)} className="block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-800 hover:file:bg-navy-200 dark:text-navy-200 dark:file:bg-navy-800 dark:file:text-navy-100" />
+                                    {logo.errors.logo && <p className="text-xs font-medium text-red-600">{logo.errors.logo}</p>}
+                                    <p className="text-xs text-navy-500 dark:text-navy-400">{t('PNG with a transparent background works best. Up to 2 MB.')}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button type="button" size="sm" disabled={!logo.data.logo} loading={logo.processing} onClick={() => logo.post(route('settings.organization.logo.update'), { forceFormData: true, preserveScroll: true, onSuccess: () => logo.reset() })}>{t('Upload logo')}</Button>
+                                        {o.logo_url && <Button type="button" size="sm" variant="secondary" onClick={() => router.delete(route('settings.organization.logo.destroy'), { preserveScroll: true })}>{t('Remove logo')}</Button>}
+                                    </div>
+                                </div>
+                            )}
+                        </CardBody>
+                    </Card>
                     <Card>
                         <CardHeader title={o.type === 'firm' ? t('Firm profile') : t('Practice details')} description={t('Shown on invoices and receipts. Firm profiles can be listed publicly.')} />
                         <CardBody className="grid gap-4 sm:grid-cols-2">

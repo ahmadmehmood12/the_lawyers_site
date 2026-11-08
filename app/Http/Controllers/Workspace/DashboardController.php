@@ -8,6 +8,7 @@ use App\Enums\HearingStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
 use App\Models\Appointment;
 use App\Models\Hearing;
 use App\Models\Invoice;
@@ -16,11 +17,11 @@ use App\Models\Message;
 use App\Models\Payment;
 use App\Models\Task;
 use App\Services\Access\OrganizationAccess;
+use App\Support\ActivityPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
 /**
  * Lawyer/firm dashboard. Every number is computed from the database and
@@ -90,12 +91,12 @@ class DashboardController extends Controller
                     ->selectRaw('COALESCE(c.name, ?) as label, COUNT(*) as value', [__('No court set')])->groupBy('label')->orderByDesc('value')->limit(6)->get()
                     ->map(fn ($r) => ['label' => $r->label, 'value' => (int) $r->value]),
             ]),
-            'activity' => Inertia::defer(fn () => Activity::query()
+            'activity' => Inertia::defer(fn () => ActivityPresenter::eagerLoad(Activity::query())
                 ->whereIn('log_name', ['cases', 'hearings'])
                 ->where(fn ($q) => $q->where(fn ($w) => $w->where('subject_type', (new LegalCase)->getMorphClass())->whereIn('subject_id', $cases()->select('legal_cases.id')))
                     ->orWhere(fn ($w) => $w->where('subject_type', (new Hearing)->getMorphClass())->whereIn('subject_id', $hearings()->select('hearings.id'))))
-                ->with('causer:id,name')->latest('id')->limit(8)->get()
-                ->map(fn ($a) => ['id' => $a->id, 'description' => $a->description, 'log' => $a->log_name, 'subject_id' => $a->subject_id, 'subject_type' => class_basename($a->subject_type), 'causer' => $a->causer?->name, 'created_at' => $a->created_at->toIso8601String()])),
+                ->latest('id')->limit(8)->get()
+                ->map(fn ($a) => ActivityPresenter::present($a))),
             'profile' => $lawyerProfile ? [
                 'verification_status' => $lawyerProfile->verification_status->value,
                 'verification_label' => $lawyerProfile->verification_status->label(),

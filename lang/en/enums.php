@@ -228,4 +228,21 @@ return [
         'support' => 'Support',
         'finance-admin' => 'Finance admin',
     ],
+    'support_kind' => [
+        'contact' => 'Contact us',
+        'feedback' => 'Feedback',
+    ],
+    'support_status' => [
+        'new' => 'New',
+        'in_progress' => 'In progress',
+        'resolved' => 'Resolved',
+    ],
+    'feedback_category' => [
+        'general' => 'General',
+        'problem' => 'Something is not working',
+        'suggestion' => 'Suggestion',
+        'billing' => 'Billing and plans',
+        'account' => 'Account and verification',
+        'complaint' => 'Complaint',
+    ],
 ];

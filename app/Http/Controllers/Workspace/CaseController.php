@@ -13,6 +13,7 @@ use App\Enums\Priority;
 use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Workspace\CaseRequest;
+use App\Models\Activity;
 use App\Models\Conversation;
 use App\Models\Hearing;
 use App\Models\LegalCase;
@@ -24,7 +25,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
 /**
  * Case file. The show page is split into sections (?tab=) and only the active

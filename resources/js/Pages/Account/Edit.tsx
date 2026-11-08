@@ -1,7 +1,7 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import { KeyRound, LogOut, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react';
+import { Camera, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Alert, Badge, Button, Card, CardBody, CardHeader, Input, PageHeader, Select } from '@/Components/ui';
+import { Alert, Avatar, Badge, Button, Card, CardBody, CardHeader, Input, PageHeader, Select } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDateTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
@@ -15,6 +15,7 @@ export default function AccountEdit({ sessions, deletionRequestedAt, area }: { s
     const { auth } = usePage<SharedProps>().props;
     const user = auth.user!;
     const profile = useForm({ name: user.name, email: user.email, phone: user.phone ?? '', locale: user.locale });
+    const avatar = useForm<{ avatar: File | null }>({ avatar: null });
     const password = useForm({ current_password: '', password: '', password_confirmation: '' });
     const sessionsForm = useForm({ password: '' });
     const deletion = useForm({ password: '' });
@@ -23,6 +24,29 @@ export default function AccountEdit({ sessions, deletionRequestedAt, area }: { s
         <AppLayout title={t('Account settings')} area={area}>
             <PageHeader title={t('Account settings')} />
             <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
+                <Card className="lg:col-span-2">
+                    <CardHeader title={t('Profile photo')} description={t('Your photo appears in the header, messages and activity feeds.')} />
+                    <CardBody>
+                        <form onSubmit={(e) => { e.preventDefault(); avatar.post(route('account.avatar.update'), { forceFormData: true, preserveScroll: true, onSuccess: () => avatar.reset() }); }} className="flex flex-wrap items-center gap-4">
+                            <Avatar name={user.name} src={user.avatar_url} size="xl" />
+                            <div className="min-w-48 flex-1 space-y-2">
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    onChange={(e) => avatar.setData('avatar', e.target.files?.[0] ?? null)}
+                                    className="block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-navy-800 dark:text-navy-200 dark:file:bg-gold-500 dark:file:text-navy-950"
+                                    aria-label={t('Profile photo')}
+                                />
+                                {avatar.errors.avatar && <p className="text-xs font-medium text-red-600">{avatar.errors.avatar}</p>}
+                                <p className="text-xs text-navy-500 dark:text-navy-400">{t('Square JPG, PNG or WebP, up to 3 MB.')}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <Button type="submit" icon={<Camera className="size-4" />} loading={avatar.processing} disabled={!avatar.data.avatar}>{t('Upload photo')}</Button>
+                                {user.avatar_url && <Button type="button" variant="secondary" onClick={() => router.delete(route('account.avatar.destroy'), { preserveScroll: true })}>{t('Remove photo')}</Button>}
+                            </div>
+                        </form>
+                    </CardBody>
+                </Card>
                 <Card>
                     <CardHeader title={t('Profile')} />
                     <CardBody>

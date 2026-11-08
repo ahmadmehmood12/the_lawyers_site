@@ -8,11 +8,19 @@ use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 #[Fillable(['organization_id', 'legal_case_id', 'hearing_id', 'title', 'description', 'assigned_to', 'due_date', 'priority', 'status', 'completed_at', 'created_by'])]
 class Task extends Model
 {
-    use BelongsToOrganization;
+    use BelongsToOrganization, LogsActivity;
+
+    /** Activity feed entry; only non-sensitive fields are recorded (docs/Modules/Activity-Feed.md). */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->useLogName('tasks')->logOnly(['status', 'assigned_to', 'due_date'])->logOnlyDirty()->dontSubmitEmptyLogs();
+    }
 
     /** @var array<string, mixed> Mirrors DB defaults so new instances are complete. */
     protected $attributes = ['status' => 'open', 'priority' => 'normal'];

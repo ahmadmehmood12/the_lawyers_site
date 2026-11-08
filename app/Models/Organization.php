@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['type', 'name', 'slug', 'owner_id', 'description', 'description_ur', 'logo_path', 'email', 'phone', 'website', 'address', 'city_id', 'registration_number', 'ntn', 'founded_year', 'is_public', 'status'])]
+#[Fillable(['type', 'name', 'slug', 'owner_id', 'description', 'description_ur', 'logo_path', 'email', 'phone', 'website', 'address', 'city_id', 'registration_number', 'invite_code', 'ntn', 'founded_year', 'is_public', 'status'])]
 class Organization extends Model
 {
     use HasFactory, SoftDeletes;

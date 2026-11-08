@@ -12,6 +12,7 @@ use App\Services\Lawyers\LawyerProfileService;
 use App\Services\Organizations\OrganizationProvisioner;
 use Database\Seeders\TestBaseSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Cache;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -59,6 +60,7 @@ abstract class TestCase extends BaseTestCase
     protected function tearDown(): void
     {
         app(OrganizationAccess::class)->forget();
+        Cache::forget('platform-settings');
         parent::tearDown();
     }
 }

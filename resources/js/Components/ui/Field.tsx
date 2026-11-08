@@ -59,7 +59,7 @@ export function Select({ label, error, hint, wrapperClassName, className, option
     return (
         <Field label={label} error={error} hint={hint} required={required} className={wrapperClassName}>
             {(id) => (
-                <select id={id} required={required} aria-invalid={!!error} className={controlClasses(!!error, cn('pe-8', className))} {...props}>
+                <select id={id} required={required} aria-invalid={!!error} className={controlClasses(!!error, className)} {...props}>
                     {placeholder !== undefined && <option value="">{placeholder}</option>}
                     {options.map((option) => (
                         <option key={option.value} value={option.value}>

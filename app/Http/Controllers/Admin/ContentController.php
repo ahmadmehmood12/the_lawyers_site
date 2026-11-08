@@ -110,7 +110,7 @@ class ContentController extends Controller
                 ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
                 ->latest()->paginate(25)->withQueryString()
                 ->through(fn ($c) => [...$c->only(['id', 'name', 'email', 'subject', 'body', 'resolution']), 'status' => $c->status->value, 'status_label' => $c->status->label(), 'lawyer' => $c->lawyerProfile?->user->name, 'handler' => $c->handler?->name, 'created_at' => $c->created_at->toIso8601String()]),
-            'messages' => ContactMessage::query()->latest()->limit(50)->get()->map(fn ($m) => [...$m->only(['id', 'name', 'email', 'phone', 'subject', 'body']), 'handled' => $m->handled_at !== null, 'created_at' => $m->created_at->toIso8601String()]),
+            'openMessages' => ContactMessage::query()->where('status', '!=', 'resolved')->count(),
             'statuses' => ComplaintStatus::options(),
             'filters' => $request->only('status'),
         ]);
@@ -122,13 +122,6 @@ class ContentController extends Controller
         $complaint->update([...$validated, 'handled_by' => $request->user()->id]);
 
         return back()->with('success', __('Complaint updated.'));
-    }
-
-    public function handleContact(ContactMessage $message): RedirectResponse
-    {
-        $message->update(['handled_at' => $message->handled_at ? null : now()]);
-
-        return back();
     }
 
     public function pages(): Response

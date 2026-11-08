@@ -15,15 +15,16 @@ use App\Events\HearingChanged;
 use App\Models\BarCouncil;
 use App\Models\City;
 use App\Models\Client;
+use App\Models\ContactMessage;
 use App\Models\Court;
 use App\Models\DocumentTemplate;
 use App\Models\Judge;
 use App\Models\LegalCase;
 use App\Models\Organization;
+use App\Models\Setting;
 use App\Models\Specialization;
 use App\Models\User;
 use App\Notifications\HearingReminder;
-use App\Services\Appointments\AppointmentService;
 use App\Services\Cases\CaseService;
 use App\Services\Drafting\PlaceholderResolver;
 use App\Services\Finance\InvoiceService;
@@ -37,6 +38,7 @@ use App\Support\HtmlSanitizer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 /**
  * Local development and product-capture data only (never runs outside APP_ENV=local).
@@ -206,6 +208,61 @@ class DemoSeeder extends Seeder
             $clientUser->notifyNow(new HearingReminder($next, 3, true, $sana->id), ['database']);
         }
 
+        $this->seedFirmActivity($firm, $owner, $associate, $banking, $bj, $spec('banking-finance'));
+        $this->seedSupportAndPlatform($clientUser);
+
         auth()->logout();
+    }
+
+    /** A colleague's work so the firm activity feed and header bell read like a real team. */
+    private function seedFirmActivity(Organization $firm, User $owner, User $associate, Court $banking, Judge $judge, ?int $specialization): void
+    {
+        auth()->setUser($associate);
+        $firmClient = Client::query()->create(['organization_id' => $firm->id, 'type' => 'company', 'name' => 'Example Textiles (Pvt.) Ltd.', 'company_name' => 'Example Textiles (Pvt.) Ltd.', 'email' => 'legal@example.com', 'phone' => '+924235550101', 'created_by' => $associate->id]);
+
+        auth()->setUser($associate);
+        $case = app(CaseService::class)->create($firm, $associate, [
+            'title' => 'Example Textiles vs. Example Finance (recovery suit)', 'case_type' => CaseType::Banking->value, 'status' => CaseStatus::Filed->value, 'priority' => 'normal',
+            'court_id' => $banking->id, 'judge_id' => $judge->id, 'courtroom' => '2', 'specialization_id' => $specialization, 'case_number' => 'C.O.S. 118/2026',
+            'client_ids' => [$firmClient->id], 'professional_fee' => 300000, 'fee_type' => 'retainer', 'stage' => 'Summons issued',
+            'parties' => [['role' => 'plaintiff', 'name' => 'Example Textiles (Pvt.) Ltd.', 'is_our_side' => true], ['role' => 'defendant', 'name' => 'Example Finance Ltd.', 'is_our_side' => false]],
+        ]);
+        app(HearingService::class)->schedule($case, ['hearing_date' => today()->addDays(9)->toDateString(), 'hearing_time' => '11:30', 'hearing_type' => HearingType::Preliminary->value, 'purpose' => 'Service of summons', 'assigned_lawyer_id' => $associate->id, 'visible_to_client' => true], $associate);
+
+        auth()->setUser($owner);
+        $firm->tasks()->create(['legal_case_id' => $case->id, 'title' => 'Review plaint annexures', 'assigned_to' => $associate->id, 'due_date' => today()->addDays(2), 'priority' => 'high', 'status' => 'open', 'created_by' => $owner->id]);
+    }
+
+    /** Feedback inbox, a custom platform role, footer social links and mail settings to look at. */
+    private function seedSupportAndPlatform(User $clientUser): void
+    {
+        auth()->logout();
+        $inbox = [
+            ['feedback', $clientUser, 'problem', 'Next hearing time not showing on my phone', 'On my phone the hearing card cuts off the time. It shows fine on the laptop.', 'new'],
+            ['feedback', $this->ayesha, 'suggestion', 'Print the cause list in Urdu', 'Our munshi prefers the printed cause list in Urdu. Could the PDF follow the language setting?', 'in_progress'],
+            ['contact', null, null, 'Onboarding our chambers', 'We are five advocates in Multan and would like a demo of the firm plan.', 'new'],
+            ['contact', null, null, 'Verification timeline', 'How long does Bar enrollment verification usually take?', 'resolved'],
+        ];
+        foreach ($inbox as $i => [$kind, $user, $category, $subject, $body, $status]) {
+            $message = ContactMessage::query()->create([
+                'kind' => $kind, 'user_id' => $user?->id, 'account_type' => $user?->account_type->value,
+                'name' => $user?->name ?? ['Usman Tariq', 'Mehwish Khan'][$i - 2], 'email' => $user?->email ?? ['usman@example.com', 'mehwish@example.com'][$i - 2],
+                'phone' => $user?->phone, 'subject' => $subject, 'category' => $category, 'body' => $body, 'status' => $status,
+                'handled_at' => $status === 'resolved' ? now()->subDay() : null,
+            ]);
+            $message->forceFill(['reference' => sprintf('%s-%s-%05d', $kind === 'feedback' ? 'FB' : 'CT', now()->year, $message->id), 'created_at' => now()->subHours(30 - $i * 6)])->save();
+        }
+
+        Role::findOrCreate('content-editor', 'web')->syncPermissions(['content.moderate', 'templates.manage']);
+
+        foreach ([
+            'social_facebook' => 'https://www.facebook.com/',
+            'social_instagram' => 'https://www.instagram.com/',
+            'social_youtube' => 'https://www.youtube.com/',
+            'social_linkedin' => 'https://www.linkedin.com/',
+            'mail_from_name' => 'WakeelDiary',
+        ] as $key => $value) {
+            Setting::put($key, $value);
+        }
     }
 }

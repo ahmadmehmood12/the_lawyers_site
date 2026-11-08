@@ -8,9 +8,20 @@ use Illuminate\Support\Str;
 
 class LawyerProfileService
 {
-    public function createFor(User $user): LawyerProfile
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function createFor(User $user, array $attributes = []): LawyerProfile
     {
-        return $user->lawyerProfile()->firstOrCreate([], ['slug' => $this->uniqueSlug($user->name)]);
+        $profile = $user->lawyerProfile()->firstOrNew([]);
+
+        if (! $profile->exists) {
+            $profile->slug = $this->uniqueSlug($user->name);
+        }
+
+        $profile->fill($attributes)->save();
+
+        return $profile;
     }
 
     public function uniqueSlug(string $name, ?int $ignoreId = null): string

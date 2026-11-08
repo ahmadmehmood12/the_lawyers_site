@@ -24,6 +24,10 @@ class OrganizationProvisioner
     public function create(User $owner, OrganizationType $type, string $name, array $attributes = []): Organization
     {
         return DB::transaction(function () use ($owner, $type, $name, $attributes): Organization {
+            if ($type === OrganizationType::Firm && blank($attributes['invite_code'] ?? null)) {
+                $attributes['invite_code'] = $this->uniqueInviteCode();
+            }
+
             $organization = Organization::create([
                 ...$attributes,
                 'type' => $type,
@@ -58,6 +62,16 @@ class OrganizationProvisioner
         $this->access->forget();
 
         return $member;
+    }
+
+    /** A shareable code that lets an advocate join this firm at registration. */
+    public function uniqueInviteCode(): string
+    {
+        do {
+            $code = 'WD-'.Str::upper(Str::random(6));
+        } while (Organization::withTrashed()->where('invite_code', $code)->exists());
+
+        return $code;
     }
 
     private function uniqueSlug(string $name): string

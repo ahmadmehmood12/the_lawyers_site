@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\PlatformController;
 use App\Http\Controllers\Admin\ReferenceDataController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\SupportInboxController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VerificationController;
 use Illuminate\Support\Facades\Route;
@@ -66,7 +68,15 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
     Route::middleware('permission:support.manage')->group(function () {
         Route::get('complaints', [ContentController::class, 'complaints'])->name('complaints.index');
         Route::put('complaints/{complaint}', [ContentController::class, 'updateComplaint'])->name('complaints.update');
-        Route::post('contact-messages/{message}/toggle', [ContentController::class, 'handleContact'])->name('contact.toggle');
+        Route::get('feedback', [SupportInboxController::class, 'index'])->name('feedback.index');
+        Route::put('feedback/{message}', [SupportInboxController::class, 'update'])->name('feedback.update');
+    });
+
+    Route::middleware('permission:roles.manage')->group(function () {
+        Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     });
 
     Route::middleware('permission:billing.manage')->group(function () {
@@ -81,6 +91,10 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::put('whatsapp-templates/{template}', [PlatformController::class, 'saveWhatsAppTemplate'])->name('whatsapp-templates.update');
         Route::get('settings', [PlatformController::class, 'settings'])->name('settings.edit');
         Route::put('settings', [PlatformController::class, 'saveSettings'])->name('settings.update');
+        Route::put('settings/whatsapp', [PlatformController::class, 'saveWhatsAppSettings'])->name('whatsapp-settings.update');
+        Route::put('settings/mail', [PlatformController::class, 'saveMailSettings'])->name('mail-settings.update');
+        Route::post('settings/mail/test', [PlatformController::class, 'sendTestMail'])->middleware('throttle:6,1')->name('mail-settings.test');
+        Route::post('settings/branding', [PlatformController::class, 'saveBrandingSettings'])->name('branding-settings.update');
     });
 
     Route::get('audit', [PlatformController::class, 'audit'])->middleware('permission:audit.view')->name('audit.index');

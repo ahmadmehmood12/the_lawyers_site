@@ -7,6 +7,7 @@ use App\Models\Hearing;
 use App\Models\LegalCase;
 use App\Models\NotificationDelivery;
 use App\Models\WhatsAppTemplate;
+use App\Notifications\Channels\WhatsAppChannel;
 use App\Notifications\HearingReminder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
@@ -43,13 +44,29 @@ class ReminderTest extends TestCase
         Notification::assertNothingSent();
     }
 
-    public function test_client_without_consent_gets_no_whatsapp(): void
+    public function test_client_without_consent_gets_email_but_no_whatsapp(): void
     {
         Notification::fake();
         $lawyer = $this->lawyer();
         $organization = $this->org($lawyer);
         $case = LegalCase::factory()->create(['organization_id' => $organization->id]);
-        $case->clients()->attach(Client::factory()->create(['organization_id' => $organization->id])->id);
+        $case->clients()->attach(Client::factory()->create(['organization_id' => $organization->id, 'email' => 'client@example.com', 'whatsapp' => '+923001112233'])->id);
+        Hearing::factory()->create(['legal_case_id' => $case->id, 'hearing_date' => today()->addDay(), 'assigned_lawyer_id' => $lawyer->id]);
+
+        $this->artisan('reminders:dispatch');
+
+        Notification::assertSentOnDemand(HearingReminder::class, fn ($n, array $channels, AnonymousNotifiable $notifiable) => $channels === ['mail']
+            && $notifiable->routeNotificationFor('whatsapp') === null
+            && array_key_exists('client@example.com', (array) $notifiable->routeNotificationFor('mail')));
+    }
+
+    public function test_client_without_email_or_consent_gets_nothing(): void
+    {
+        Notification::fake();
+        $lawyer = $this->lawyer();
+        $organization = $this->org($lawyer);
+        $case = LegalCase::factory()->create(['organization_id' => $organization->id]);
+        $case->clients()->attach(Client::factory()->create(['organization_id' => $organization->id, 'email' => null])->id);
         Hearing::factory()->create(['legal_case_id' => $case->id, 'hearing_date' => today()->addDay(), 'assigned_lawyer_id' => $lawyer->id]);
 
         $this->artisan('reminders:dispatch');
@@ -70,7 +87,8 @@ class ReminderTest extends TestCase
 
         $this->artisan('reminders:dispatch');
 
-        Notification::assertSentOnDemand(HearingReminder::class, fn ($n, $channels, AnonymousNotifiable $notifiable) => $notifiable->routeNotificationFor('whatsapp') === '+923001112233');
+        Notification::assertSentOnDemand(HearingReminder::class, fn ($n, array $channels, AnonymousNotifiable $notifiable) => $notifiable->routeNotificationFor('whatsapp') === '+923001112233'
+            && in_array(WhatsAppChannel::class, $channels, true));
     }
 
     public function test_unconfigured_whatsapp_is_logged_as_skipped_not_sent(): void

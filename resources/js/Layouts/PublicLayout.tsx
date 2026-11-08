@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Flash, LinkButton } from '@/Components/ui';
 import { Logo } from '@/Components/shell/Logo';
 import { LanguageSwitcher, ThemeToggle } from '@/Components/shell/Preferences';
+import { SocialLinks } from '@/Components/shell/SocialLinks';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
@@ -19,6 +20,7 @@ export default function PublicLayout({ seo, children }: { seo: Seo; children: Re
         { label: 'Find a Lawyer', href: route('lawyers.index') },
         { label: 'Law Firms', href: route('firms.index') },
         { label: 'Practice Areas', href: route('specializations.index') },
+        { label: 'Documentation', href: route('documentation') },
         { label: 'Legal Articles', href: route('articles.index') },
         { label: 'Pricing', href: route('pricing') },
     ];
@@ -110,34 +112,47 @@ function Footer() {
     const t = useT();
     const columns = [
         { title: 'For Clients', links: [['Find a Lawyer', route('lawyers.index')], ['Law Firms', route('firms.index')], ['Practice Areas', route('specializations.index')], ['Legal Resources', route('resources')]] },
-        { title: 'For Lawyers', links: [['Join as a Lawyer', route('register', { type: 'lawyer' })], ['Register a Law Firm', route('register', { type: 'firm' })], ['Pricing', route('pricing')], ['Legal Articles', route('articles.index')]] },
+        { title: 'For Lawyers', links: [['Join as a Lawyer', route('register', { type: 'lawyer' })], ['Register a Law Firm', route('register', { type: 'firm' })], ['Documentation', route('documentation')], ['Pricing', route('pricing')], ['Legal Articles', route('articles.index')]] },
         { title: 'Company', links: [['About', route('about')], ['Contact', route('contact')], ['FAQs', route('faqs')], ['Terms of Service', route('terms')], ['Privacy Policy', route('privacy')]] },
     ];
+    const { app } = usePage<SharedProps>().props;
+    const name = app.name || 'WakeelDiary';
     return (
-        <footer className="bg-navy-950 text-navy-300">
-            <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-4">
-                <div>
-                    <Logo inverted />
-                    <p className="mt-4 text-sm leading-relaxed text-navy-400">{t('Practice management, court diary and lawyer directory built for Pakistan’s legal profession.')}</p>
-                </div>
-                {columns.map((column) => (
-                    <div key={column.title}>
-                        <p className="text-sm font-semibold text-white">{t(column.title)}</p>
-                        <ul className="mt-3 space-y-2 text-sm">
-                            {column.links.map(([label, href]) => (
-                                <li key={href}>
-                                    <Link href={href} className="hover:text-gold-300">
-                                        {t(label)}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+        <footer className="overflow-hidden bg-navy-950 text-navy-300">
+            <div className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:pt-20">
+                <div className="grid gap-12 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+                    <div className="max-w-sm">
+                        <Logo inverted />
+                        <p className="mt-4 text-sm leading-relaxed text-navy-300">{app.tagline || t('Practice management, court diary and lawyer directory built for Pakistan’s legal profession.')}</p>
+                        <SocialLinks links={app.social ?? {}} className="mt-6" />
                     </div>
-                ))}
+                    {columns.map((column) => (
+                        <nav key={column.title} aria-label={t(column.title)}>
+                            <p className="text-sm font-semibold text-white">{t(column.title)}</p>
+                            <ul className="mt-4 space-y-2.5 text-sm">
+                                {column.links.map(([label, href]) => (
+                                    <li key={href}>
+                                        <Link href={href} className="transition-colors hover:text-gold-300">
+                                            {t(label)}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </nav>
+                    ))}
+                </div>
+                <div className="mt-14 flex flex-col gap-3 border-t border-white/10 py-6 text-xs text-navy-400 sm:flex-row sm:items-center sm:justify-between">
+                    <p>© {new Date().getFullYear()} {name}. {t('Information on this site is not legal advice.')}</p>
+                    <p className="flex flex-wrap gap-4">
+                        <Link href={route('terms')} className="hover:text-gold-300">{t('Terms of Service')}</Link>
+                        <Link href={route('privacy')} className="hover:text-gold-300">{t('Privacy Policy')}</Link>
+                        <Link href={route('contact')} className="hover:text-gold-300">{t('Contact')}</Link>
+                    </p>
+                </div>
             </div>
-            <div className={cn('border-t border-navy-800 py-5 text-center text-xs text-navy-400')}>
-                © {new Date().getFullYear()} Wakeel Diary. {t('Information on this site is not legal advice.')}
-            </div>
+            <p aria-hidden className="pointer-events-none -mb-[0.18em] select-none text-center font-serif text-[clamp(3.5rem,15.5vw,15rem)] leading-none font-semibold tracking-tight whitespace-nowrap text-white/[0.06]">
+                {name}
+            </p>
         </footer>
     );
 }

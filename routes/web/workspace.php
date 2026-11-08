@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Shared\ConversationController;
+use App\Http\Controllers\Workspace\ActivityController;
 use App\Http\Controllers\Workspace\AiController;
 use App\Http\Controllers\Workspace\AnalyticsController;
 use App\Http\Controllers\Workspace\AppointmentController;
@@ -27,6 +28,8 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('activity', [ActivityController::class, 'index'])->name('activity.index');
+    Route::get('activity/recent', [ActivityController::class, 'recent'])->name('activity.recent');
 
     Route::resource('clients', ClientController::class);
 
@@ -130,6 +133,8 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
     Route::get('analytics', AnalyticsController::class)->name('analytics.index');
     Route::get('settings/organization', [OrganizationSettingsController::class, 'show'])->name('settings.organization');
     Route::put('settings/organization', [OrganizationSettingsController::class, 'update'])->name('settings.organization.update');
+    Route::post('settings/organization/logo', [OrganizationSettingsController::class, 'updateLogo'])->name('settings.organization.logo.update');
+    Route::delete('settings/organization/logo', [OrganizationSettingsController::class, 'removeLogo'])->name('settings.organization.logo.destroy');
     Route::put('settings/reminders', [OrganizationSettingsController::class, 'updateReminders'])->name('settings.reminders.update');
     Route::post('settings/plan', [OrganizationSettingsController::class, 'changePlan'])->name('settings.plan');
 });

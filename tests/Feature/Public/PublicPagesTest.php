@@ -17,8 +17,8 @@ class PublicPagesTest extends TestCase
     public static function pages(): array
     {
         return array_map(fn ($r) => [$r], array_combine(
-            ['home', 'lawyers', 'firms', 'practice areas', 'articles', 'pricing', 'contact', 'about', 'faqs', 'terms', 'privacy', 'resources', 'login', 'register', 'forgot password'],
-            ['home', 'lawyers.index', 'firms.index', 'specializations.index', 'articles.index', 'pricing', 'contact', 'about', 'faqs', 'terms', 'privacy', 'resources', 'login', 'register', 'password.request'],
+            ['home', 'lawyers', 'firms', 'practice areas', 'articles', 'documentation', 'pricing', 'contact', 'about', 'faqs', 'terms', 'privacy', 'resources', 'login', 'register', 'forgot password'],
+            ['home', 'lawyers.index', 'firms.index', 'specializations.index', 'articles.index', 'documentation', 'pricing', 'contact', 'about', 'faqs', 'terms', 'privacy', 'resources', 'login', 'register', 'password.request'],
         ));
     }
 

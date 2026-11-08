@@ -1,9 +1,15 @@
+import { Link } from '@inertiajs/react';
 import { CheckCircle2, CircleDashed } from 'lucide-react';
-import { Card, CardBody, CardHeader, ColumnChart, PageHeader, Stat } from '@/Components/ui';
+import { FirmCard, type FirmCardData } from '@/Components/domain/FirmCard';
+import { LawyerCard, type LawyerCardData } from '@/Components/domain/LawyerCard';
+import { PracticeAreaCard, type PracticeAreaCardData } from '@/Components/domain/PracticeAreaCard';
+import { Card, CardBody, CardHeader, ColumnChart, EmptyState, PageHeader, Stat } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { useT } from '@/lib/i18n';
 
-export default function AdminDashboard({ kpis, signups, deliveries, integrations }: { kpis: Record<string, number>; signups: { label: string; value: number }[]; deliveries: Record<string, number>; integrations: Record<string, boolean> }) {
+type Directory = { lawyers: LawyerCardData[]; firms: FirmCardData[]; practiceAreas: PracticeAreaCardData[] };
+
+export default function AdminDashboard({ kpis, signups, deliveries, integrations, directory }: { kpis: Record<string, number>; signups: { label: string; value: number }[]; deliveries: Record<string, number>; integrations: Record<string, boolean>; directory: Directory }) {
     const t = useT();
     return (
         <AppLayout title={t('Admin')} area="admin">
@@ -30,6 +36,33 @@ export default function AdminDashboard({ kpis, signups, deliveries, integrations
                     </CardBody>
                 </Card>
             </div>
+
+            <section className="mt-8">
+                <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+                    <div>
+                        <h2 className="text-lg font-semibold">{t('Directory snapshot')}</h2>
+                        <p className="text-sm text-navy-500">{t('How the platform looks to clients right now.')}</p>
+                    </div>
+                    <div className="flex gap-3 text-sm font-medium">
+                        <Link href={route('lawyers.index')} className="hover:underline">{t('Lawyers')}</Link>
+                        <Link href={route('firms.index')} className="hover:underline">{t('Law firms')}</Link>
+                        <Link href={route('specializations.index')} className="hover:underline">{t('Practice areas')}</Link>
+                    </div>
+                </div>
+                {directory.lawyers.length === 0 && directory.firms.length === 0 ? (
+                    <EmptyState title={t('Nothing published yet')} description={t('Verified lawyers and public firms appear here.')} />
+                ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {directory.lawyers.map((l) => <LawyerCard key={l.slug} lawyer={l} />)}
+                        {directory.firms.map((f) => <FirmCard key={f.slug} firm={f} />)}
+                    </div>
+                )}
+                {directory.practiceAreas.length > 0 && (
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        {directory.practiceAreas.map((a) => <PracticeAreaCard key={a.slug} area={a} />)}
+                    </div>
+                )}
+            </section>
         </AppLayout>
     );
 }

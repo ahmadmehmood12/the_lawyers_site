@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-    BadgeCheck, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
-    LayoutDashboard, Landmark, MapPinned, MessageSquare, Newspaper, Receipt, ScrollText, Search, Settings, ShieldCheck, Sparkles, Star, Tags, UserCog, Users, Wallet, AlertOctagon, Globe,
+    Activity, BadgeCheck, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
+    LayoutDashboard, Landmark, MapPinned, MessageSquare, Newspaper, Receipt, ScrollText, Search, Settings, ShieldCheck, Sparkles, Star, Tags, UserCog, Users, Wallet, AlertOctagon, Globe, Inbox, KeyRound,
 } from 'lucide-react';
 
 export type NavItem = { label: string; route: string; icon: LucideIcon; match?: string; permission?: string; platform?: string; mobile?: boolean; firmOnly?: boolean; lawyerOnly?: boolean };
@@ -32,6 +32,7 @@ export const workspaceNav: NavGroup[] = [
         items: [
             { label: 'Invoices & Payments', route: 'invoices.index', icon: Wallet, match: 'invoices.*', permission: 'finance.view' },
             { label: 'Analytics', route: 'analytics.index', icon: BarChart3, match: 'analytics.*', permission: 'analytics.view' },
+            { label: 'Activity', route: 'activity.index', icon: Activity, match: 'activity.*' },
             { label: 'Team', route: 'team.index', icon: UserCog, match: 'team.*', permission: 'team.manage' },
             { label: 'Public Profile', route: 'lawyer.profile.edit', icon: BadgeCheck, match: 'lawyer.*', lawyerOnly: true },
             { label: 'Settings', route: 'settings.organization', icon: Settings, match: 'settings.*' },
@@ -78,6 +79,7 @@ export const adminNav: NavGroup[] = [
             { label: 'Templates', route: 'admin.templates.index', icon: ScrollText, match: 'admin.templates.*', platform: 'templates.manage' },
             { label: 'Articles', route: 'admin.articles.index', icon: Newspaper, match: 'admin.articles.*', platform: 'content.moderate' },
             { label: 'Reviews', route: 'admin.reviews.index', icon: Star, match: 'admin.reviews.*', platform: 'content.moderate' },
+            { label: 'Feedback & Messages', route: 'admin.feedback.index', icon: Inbox, match: 'admin.feedback.*', platform: 'support.manage' },
             { label: 'Complaints', route: 'admin.complaints.index', icon: AlertOctagon, match: 'admin.complaints.*', platform: 'support.manage' },
             { label: 'Website Pages', route: 'admin.pages.index', icon: Globe, match: 'admin.pages.*', platform: 'content.moderate' },
         ],
@@ -87,6 +89,7 @@ export const adminNav: NavGroup[] = [
         items: [
             { label: 'Plans & Subscriptions', route: 'admin.plans.index', icon: CreditCard, match: 'admin.plans.*', platform: 'billing.manage' },
             { label: 'Notifications', route: 'admin.notifications.index', icon: Bell, match: 'admin.notifications.*', platform: 'settings.manage' },
+            { label: 'Roles & Permissions', route: 'admin.roles.index', icon: KeyRound, match: 'admin.roles.*', platform: 'roles.manage' },
             { label: 'Audit Log', route: 'admin.audit.index', icon: BookOpen, match: 'admin.audit.*', platform: 'audit.view' },
             { label: 'Settings', route: 'admin.settings.edit', icon: Settings, match: 'admin.settings.*', platform: 'settings.manage' },
         ],

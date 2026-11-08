@@ -50,6 +50,10 @@ class PlatformContentSeeder extends Seeder
             ['hearing_scheduled', 'hearing_scheduled_v1', 'en', 'Dear {{1}}, a hearing in "{{2}}" has been fixed for {{3}}.', 3],
             ['appointment_reminder', 'appointment_reminder_v1', 'en', 'Dear {{1}}, reminder of your consultation with {{2}} on {{3}}.', 3],
             ['payment_received', 'payment_received_v1', 'en', 'Dear {{1}}, we have received your payment of {{2}}. Receipt no. {{3}}.', 3],
+            ['feedback_received', 'feedback_received_v1', 'en', 'Dear {{1}}, {{2}} has received your feedback (ref {{3}}). We will try to resolve it on an urgent basis.', 3],
+            ['feedback_received', 'feedback_received_ur_v1', 'ur', 'محترم {{1}}، {{2}} کو آپ کی رائے موصول ہو گئی ہے (حوالہ {{3}})۔ ہم اسے جلد از جلد حل کرنے کی کوشش کریں گے۔', 3],
+            ['contact_received', 'contact_received_v1', 'en', 'Dear {{1}}, thank you for contacting {{2}}. Your reference is {{3}}. We will reply soon.', 3],
+            ['contact_received', 'contact_received_ur_v1', 'ur', 'محترم {{1}}، {{2}} سے رابطہ کرنے کا شکریہ۔ آپ کا حوالہ نمبر {{3}} ہے۔ ہم جلد جواب دیں گے۔', 3],
         ];
         foreach ($templates as [$key, $name, $language, $body, $vars]) {
             WhatsAppTemplate::query()->firstOrCreate(['key' => $key, 'language' => $language], ['name' => $name, 'category' => 'utility', 'body_preview' => $body, 'variable_count' => $vars, 'status' => 'pending']);
@@ -67,7 +71,21 @@ class PlatformContentSeeder extends Seeder
             Page::query()->firstOrCreate(['slug' => $slug], ['title' => $title, 'title_ur' => $ur, 'body' => $body, 'is_published' => true]);
         }
 
-        foreach (['default_plan' => 'free', 'support_email' => 'support@example.com', 'ai_enabled' => '0', 'ai_redact_personal_data' => '1', 'reviews_require_moderation' => '1'] as $key => $value) {
+        $settings = [
+            'default_plan' => 'free',
+            'support_email' => 'support@example.com',
+            'ai_enabled' => '0',
+            'ai_redact_personal_data' => '1',
+            'reviews_require_moderation' => '1',
+            'site_theme' => 'navy-gold',
+            'whatsapp_enabled' => '1',
+            'site_name' => 'WakeelDiary',
+            'site_tagline' => 'Court diary, case files and verified lawyers for Pakistan.',
+            'whatsapp_display_name' => 'WakeelDiary',
+            'whatsapp_api_version' => 'v21.0',
+        ];
+
+        foreach ($settings as $key => $value) {
             if (Setting::query()->where('key', $key)->doesntExist()) {
                 Setting::put($key, $value);
             }

@@ -55,6 +55,33 @@
     --shadow-pop: 0 10px 30px -10px rgb(15 30 54 / 0.25);
 }
 
+/*
+ * Site theme — switched from Admin → Settings. The default "navy-gold" palette
+ * is defined in @theme above. "white-green" remaps the authority scale to a
+ * deep legal green and the accent to a fresh green, on white/ivory paper.
+ */
+/*
+ * "White, dark green and gold": the navy scale becomes a deep legal green with muted,
+ * near-neutral light steps (no bright light green); gold stays gold; paper is white.
+ * Muted text (500) and field edges (400) keep the same contrast as the navy theme.
+ */
+html[data-site-theme='white-green'] {
+    --color-navy-50: #f4f7f5;
+    --color-navy-100: #e3ebe6;
+    --color-navy-200: #c8d6cd;
+    --color-navy-300: #9db3a5;
+    --color-navy-400: #6c8977;
+    --color-navy-500: #4a6a56;
+    --color-navy-600: #345442;
+    --color-navy-700: #264333;
+    --color-navy-800: #193426;
+    --color-navy-900: #0f2c1e;
+    --color-navy-950: #081a11;
+
+    --color-ivory: #ffffff;
+    --color-paper: #f6f7f4;
+}
+
 @layer base {
     html {
         -webkit-tap-highlight-color: transparent;
@@ -103,6 +130,29 @@
         outline: 2px solid var(--color-gold-600);
         outline-offset: 2px;
         transition: none;
+    }
+
+    /*
+     * One chevron for every single-line select, drawn inside the field so it never
+     * overflows the rounded edge; it flips to the left in RTL (Urdu).
+     */
+    select:not([multiple]):not([size]) {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2345628d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.65rem center;
+        background-size: 1.05rem;
+        padding-inline-end: 2.25rem !important;
+        text-overflow: ellipsis;
+    }
+
+    [dir='rtl'] select:not([multiple]):not([size]) {
+        background-position: left 0.65rem center;
+    }
+
+    .dark select:not([multiple]):not([size]) {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2397abc9' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
     }
 
     [type='date']::-webkit-calendar-picker-indicator {

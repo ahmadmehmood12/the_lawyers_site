@@ -9,11 +9,11 @@ use App\Http\Controllers\Controller;
 use App\Models\LawyerProfile;
 use App\Models\LegalCase;
 use App\Models\OrganizationMember;
+use App\Support\DirectoryPresenter;
 use App\Support\ReferenceOptions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,7 +32,14 @@ class LawyerDirectoryController extends Controller
         $filters = $request->only(['search', 'city', 'province', 'district', 'court', 'specialization', 'experience', 'bar_council', 'category', 'language', 'online', 'fee_max', 'verified', 'sort']);
 
         $lawyers = LawyerProfile::query()->listed()
-            ->with(['user:id,name', 'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code'])
+            ->with([
+                'user:id,name',
+                'user.memberships' => fn ($q) => $q->where('status', 'active')
+                    ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
+                'user.memberships.organization:id,name,slug',
+                'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code',
+                'educations', 'courts:id,name,name_ur', 'languages',
+            ])
             ->when($filters['search'] ?? null, fn (Builder $q, $s) => $q->where(fn ($w) => $w->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"))->orWhere('headline', 'like', "%{$s}%")))
             ->when($filters['city'] ?? null, fn (Builder $q, $slug) => $q->whereHas('city', fn ($c) => $c->where('slug', $slug)))
             ->when($filters['province'] ?? null, fn (Builder $q, $id) => $q->where('province_id', (int) $id))
@@ -50,7 +57,7 @@ class LawyerDirectoryController extends Controller
             ->when(($filters['sort'] ?? null) === 'rating', fn (Builder $q) => $q->orderByDesc('rating_average'))
             ->orderByRaw("verification_status = 'approved' DESC")->orderByDesc('rating_count')->orderBy('id')
             ->paginate(12)->withQueryString()
-            ->through(fn (LawyerProfile $p) => $this->card($p));
+            ->through(fn (LawyerProfile $p) => DirectoryPresenter::lawyer($p));
 
         return Inertia::render('Public/Lawyers/Index', [
             'lawyers' => $lawyers,
@@ -74,7 +81,11 @@ class LawyerDirectoryController extends Controller
         abort_unless(LawyerProfile::query()->listed()->whereKey($lawyer->id)->exists(), 404);
 
         $lawyer->load([
-            'user:id,name', 'city:id,name,name_ur', 'province:id,name', 'district:id,name', 'barCouncil:id,name,code',
+            'user:id,name',
+            'user.memberships' => fn ($q) => $q->where('status', 'active')
+                ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
+            'user.memberships.organization:id,name,slug',
+            'city:id,name,name_ur', 'province:id,name', 'district:id,name', 'barCouncil:id,name,code',
             'specializations:id,name,name_ur,slug', 'courts:id,name,name_ur', 'languages', 'educations', 'experiences', 'credentials',
             'approvedReviews' => fn ($q) => $q->with('author:id,name')->latest()->limit(20),
         ]);
@@ -94,7 +105,7 @@ class LawyerDirectoryController extends Controller
 
         return Inertia::render('Public/Lawyers/Show', [
             'lawyer' => [
-                ...$this->card($lawyer),
+                ...DirectoryPresenter::lawyer($lawyer),
                 'bio' => app()->getLocale() === 'ur' && $lawyer->bio_ur ? $lawyer->bio_ur : $lawyer->bio,
                 'enrollment_number' => $lawyer->isVerified() ? $lawyer->enrollment_number : null,
                 'enrollment_date' => $lawyer->enrollment_date?->toDateString(),
@@ -124,36 +135,6 @@ class LawyerDirectoryController extends Controller
         $request->user()->favouriteLawyers()->toggle([$lawyer->id]);
 
         return back();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function card(LawyerProfile $p): array
-    {
-        $ur = app()->getLocale() === 'ur';
-
-        return [
-            'slug' => $p->slug,
-            'name' => trim(($p->title ? $p->title.' ' : '').$p->user->name),
-            'headline' => $p->headline,
-            'photo_url' => $p->photo_path ? Storage::disk('public')->url($p->photo_path) : null,
-            'city' => $p->city ? ($ur && $p->city->name_ur ? $p->city->name_ur : $p->city->name) : null,
-            'specializations' => $p->specializations->map(fn ($s) => ['slug' => $s->slug, 'name' => $ur && $s->name_ur ? $s->name_ur : $s->name])->values(),
-            'bar_council' => $p->barCouncil?->name,
-            'category' => $p->advocate_category?->value,
-            'category_label' => $p->advocate_category?->label(),
-            'years_experience' => $p->yearsOfExperience(),
-            'languages' => $p->relationLoaded('languages') ? $p->languages->pluck('language') : [],
-            'fee_min' => $p->consultation_fee_min,
-            'fee_max' => $p->consultation_fee_max,
-            'offers_online' => $p->offers_online,
-            'offers_in_person' => $p->offers_in_person,
-            'accepting_clients' => $p->accepting_clients,
-            'verified' => $p->isVerified(),
-            'rating' => $p->rating_count > 0 ? (float) $p->rating_average : null,
-            'rating_count' => $p->rating_count,
-        ];
     }
 
     private function initials(string $name): string

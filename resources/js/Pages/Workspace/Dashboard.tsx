@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
     AlertTriangle, BadgeCheck, BarChart3, Briefcase, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, FilePlus2, FileSignature, FileText, Gavel, MessageSquare, Plus, Printer, Receipt, Sparkles, UserPlus, Users, Wallet,
 } from 'lucide-react';
+import { ActivityItem, type ActivityEntry } from '@/Components/domain/ActivityItem';
 import { HearingCard } from '@/Components/domain/HearingCard';
 import { Alert, BarList, Card, CardBody, CardHeader, EmptyState, LinkButton, PageHeader, Skeleton, Stat, StatusBadge } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
@@ -18,7 +19,7 @@ type Props = {
     upcoming?: HearingSummary[];
     tasks?: TaskItem[];
     breakdown?: { bySpecialization: { label: string; value: number }[]; byCourt: { label: string; value: number }[] };
-    activity?: { id: number; description: string; log: string; subject_type: string; causer: string | null; created_at: string }[];
+    activity?: ActivityEntry[];
     index?: { documents: number | null; draftsInReview: number | null; appointmentsUpcoming: number; invoicesOverdue: number | null; ordersThisMonth: number };
     profile: { verification_status: string; verification_label: string; is_public: boolean; onboarding_complete: boolean } | null;
     can: Record<string, boolean>;
@@ -181,15 +182,12 @@ export default function Dashboard({ stats, todayHearings, upcoming, tasks, break
                         </CardBody>
                     </Card>
                     <Card>
-                        <CardHeader title={t('Recent activity')} />
+                        <CardHeader title={t('Recent activity')} actions={<Link href={route('activity.index')} className="text-sm font-medium text-navy-700 hover:underline dark:text-navy-200">{t('All activity')}</Link>} />
                         <CardBody>
                             {!activity ? loading : activity.length === 0 ? <p className="py-3 text-center text-sm text-navy-500">{t('Nothing yet.')}</p> : (
                                 <ul className="space-y-3">
                                     {activity.map((item) => (
-                                        <li key={item.id} className="text-sm">
-                                            <p><span className="font-medium">{item.causer ?? t('System')}</span> <span className="text-navy-600 dark:text-navy-300">{t(item.description)} {t(item.subject_type === 'Hearing' ? 'hearing' : 'case')}</span></p>
-                                            <p className="text-xs text-navy-500">{formatDateTime(item.created_at, locale)}</p>
-                                        </li>
+                                        <li key={item.id}><ActivityItem item={item} compact /></li>
                                     ))}
                                 </ul>
                             )}

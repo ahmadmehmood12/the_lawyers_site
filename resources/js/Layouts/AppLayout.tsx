@@ -1,8 +1,9 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Bell, Building2, ChevronDown, LogOut, Menu, MoreHorizontal, User as UserIcon, X } from 'lucide-react';
+import { Bell, Building2, ChevronDown, LogOut, Menu, MessageSquareHeart, MoreHorizontal, User as UserIcon, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Avatar, Dropdown, Flash } from '@/Components/ui';
+import { ActivityBell } from '@/Components/shell/ActivityBell';
 import { Logo } from '@/Components/shell/Logo';
 import { adminNav, portalNav, workspaceNav, type NavGroup, type NavItem } from '@/Components/shell/navigation';
 import { LanguageSwitcher, ThemeToggle } from '@/Components/shell/Preferences';
@@ -105,6 +106,7 @@ export default function AppLayout({ title, children, area = 'workspace', wide = 
                         <div className="flex-1" />
                         <LanguageSwitcher className="text-navy-700 dark:text-navy-200" />
                         <ThemeToggle className="text-navy-700 dark:text-navy-200" />
+                        {area === 'workspace' && auth.organization && route().has('activity.recent') && <ActivityBell />}
                         {route().has('notifications.index') && (
                             <Link href={route('notifications.index')} className="relative rounded-md p-2 text-navy-700 hover:bg-navy-100 dark:text-navy-200 dark:hover:bg-navy-800" aria-label={t('Notifications')}>
                                 <Bell className="size-4" />
@@ -117,13 +119,14 @@ export default function AppLayout({ title, children, area = 'workspace', wide = 
                             <Dropdown
                                 trigger={
                                     <span className="flex items-center gap-2 rounded-md p-1 hover:bg-navy-100 dark:hover:bg-navy-800">
-                                        <Avatar name={auth.user.name} size="sm" />
+                                        <Avatar name={auth.user.name} src={auth.user.avatar_url} size="sm" />
                                         <span className="hidden max-w-36 truncate text-sm font-medium text-navy-800 md:inline dark:text-navy-100">{auth.user.name}</span>
                                         <ChevronDown className="hidden size-4 text-navy-400 md:inline" />
                                     </span>
                                 }
                                 items={[
                                     { label: t('Account settings'), href: route('account.edit'), icon: <UserIcon className="size-4" /> },
+                                    { label: t('Send feedback'), href: route('feedback.create'), icon: <MessageSquareHeart className="size-4" /> },
                                     'divider',
                                     { label: t('Sign out'), href: route('logout'), method: 'post', icon: <LogOut className="size-4" />, danger: true },
                                 ]}

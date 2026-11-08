@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Account\AccountController;
+use App\Http\Controllers\Account\FeedbackController;
 use App\Http\Controllers\Account\HomeRedirectController;
 use App\Http\Controllers\Account\NotificationController;
 use App\Http\Controllers\Account\OnboardingController;
@@ -17,7 +18,12 @@ Route::middleware('auth')->group(function () {
     Route::post('theme', [PreferenceController::class, 'theme'])->name('theme.update');
     Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
 
+    Route::get('feedback', [FeedbackController::class, 'create'])->name('feedback.create');
+    Route::post('feedback', [FeedbackController::class, 'store'])->middleware('throttle:6,1')->name('feedback.store');
+
     Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
+    Route::post('account/avatar', [AccountController::class, 'updateAvatar'])->name('account.avatar.update');
+    Route::delete('account/avatar', [AccountController::class, 'removeAvatar'])->name('account.avatar.destroy');
     Route::post('account/sessions/logout-others', [AccountController::class, 'logoutOtherSessions'])->name('account.sessions.logout');
     Route::post('account/deletion', [AccountController::class, 'requestDeletion'])->name('account.deletion.request');
     Route::delete('account/deletion', [AccountController::class, 'cancelDeletion'])->name('account.deletion.cancel');

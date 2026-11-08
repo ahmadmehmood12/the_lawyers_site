@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Enums\SupportMessageKind;
 use App\Http\Controllers\Controller;
-use App\Models\ContactMessage;
 use App\Models\Page;
 use App\Models\Plan;
+use App\Rules\PakistaniPhone;
+use App\Services\Support\SupportInbox;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -53,22 +55,28 @@ class PageController extends Controller
 
     public function contact(): Response
     {
-        return Inertia::render('Public/Contact', ['canonical' => route('contact')]);
+        $user = request()->user();
+
+        return Inertia::render('Public/Contact', [
+            'canonical' => route('contact'),
+            'prefill' => $user ? ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone ?? ''] : null,
+        ]);
     }
 
-    public function submitContact(Request $request): RedirectResponse
+    public function submitContact(Request $request, SupportInbox $inbox): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', new PakistaniPhone],
+            'whatsapp_consent' => ['boolean'],
             'subject' => ['required', 'string', 'max:160'],
             'body' => ['required', 'string', 'min:10', 'max:5000'],
             'website' => ['prohibited'], // honeypot
         ]);
 
-        ContactMessage::create($validated);
+        $message = $inbox->receive(SupportMessageKind::Contact, $validated, $request->user());
 
-        return back()->with('success', __('Thank you. We will get back to you shortly.'));
+        return back()->with('success', __('Thank you. Your reference is :reference. A confirmation has been sent to your email.', ['reference' => $message->reference]));
     }
 }

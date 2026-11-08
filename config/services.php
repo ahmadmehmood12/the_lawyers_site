@@ -36,8 +36,9 @@ return [
     ],
 
     /*
-    | Official WhatsApp Business Cloud API (Meta). Leave blank to disable —
-    | deliveries are then logged as "skipped" (never faked as sent).
+    | Official WhatsApp Business Cloud API (Meta). These environment values are
+    | fallbacks: credentials saved in Admin → Settings take precedence. Leave
+    | blank to disable — deliveries are then logged as "skipped" (never faked).
     | See docs/Features/WhatsApp.md.
     */
     'whatsapp' => [

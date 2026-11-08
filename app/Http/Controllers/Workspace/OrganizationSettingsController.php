@@ -9,9 +9,11 @@ use App\Rules\PakistaniPhone;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Subscriptions\SubscriptionService;
 use App\Services\WhatsApp\WhatsAppClient;
+use App\Support\ImageReencoder;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,7 +34,7 @@ class OrganizationSettingsController extends Controller
         $reminders = ReminderSetting::query()->forOrganization($organization)->orderBy('event')->orderByDesc('days_before')->get(['event', 'days_before', 'notify_lawyer', 'notify_client']);
 
         return Inertia::render('Workspace/Settings/Organization', [
-            'organization' => [...$organization->only(['id', 'name', 'type', 'description', 'description_ur', 'email', 'phone', 'website', 'address', 'city_id', 'registration_number', 'ntn', 'founded_year', 'is_public', 'slug']), 'type' => $organization->type->value],
+            'organization' => [...$organization->only(['id', 'name', 'type', 'description', 'description_ur', 'email', 'phone', 'website', 'address', 'city_id', 'registration_number', 'ntn', 'founded_year', 'is_public', 'slug']), 'type' => $organization->type->value, 'logo_url' => $organization->logo_path ? Storage::disk('public')->url($organization->logo_path) : null],
             'canManage' => $this->canManage($request),
             'reminders' => $reminders->isEmpty()
                 ? collect(config('legal.default_reminders'))->flatMap(fn ($days, $event) => collect($days)->map(fn ($d) => ['event' => $event, 'days_before' => $d, 'notify_lawyer' => true, 'notify_client' => true]))->values()
@@ -71,6 +73,37 @@ class OrganizationSettingsController extends Controller
         $this->organization()->update($validated);
 
         return back()->with('success', __('Organization details saved.'));
+    }
+
+    /** Logo shown on the public firm page, directory cards and the workspace header. */
+    public function updateLogo(Request $request): RedirectResponse
+    {
+        abort_unless($this->canManage($request), 403);
+        $request->validate(['logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=64,min_height=64,max_width=5000,max_height=5000']]);
+        $organization = $this->organization();
+
+        if ($organization->logo_path) {
+            Storage::disk('public')->delete($organization->logo_path);
+        }
+
+        $organization->update(['logo_path' => ImageReencoder::fittedPng($request->file('logo'), 'organization-logos')]);
+        activity('organization')->causedBy($request->user())->performedOn($organization)->log('logo_updated');
+
+        return back()->with('success', __('Logo updated.'));
+    }
+
+    public function removeLogo(Request $request): RedirectResponse
+    {
+        abort_unless($this->canManage($request), 403);
+        $organization = $this->organization();
+
+        if ($organization->logo_path) {
+            Storage::disk('public')->delete($organization->logo_path);
+            $organization->update(['logo_path' => null]);
+            activity('organization')->causedBy($request->user())->performedOn($organization)->log('logo_removed');
+        }
+
+        return back()->with('success', __('Logo removed.'));
     }
 
     public function updateReminders(Request $request): RedirectResponse

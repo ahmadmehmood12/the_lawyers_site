@@ -12,12 +12,15 @@ use Illuminate\Http\Response;
 /** Meta webhook: verification handshake + message status callbacks (signature verified). */
 class WhatsAppWebhookController extends Controller
 {
-    public function verify(Request $request): Response
+    public function verify(Request $request, WhatsAppClient $client): Response
     {
-        $token = config('services.whatsapp.verify_token');
+        $token = $client->verifyToken();
+        $mode = $request->query('hub.mode', $request->query('hub_mode'));
+        $verifyToken = (string) $request->query('hub.verify_token', $request->query('hub_verify_token'));
+        $challenge = (string) $request->query('hub.challenge', $request->query('hub_challenge'));
 
-        if ($token && $request->query('hub_mode') === 'subscribe' && hash_equals($token, (string) $request->query('hub_verify_token'))) {
-            return response((string) $request->query('hub_challenge'), 200);
+        if ($token && $mode === 'subscribe' && hash_equals($token, $verifyToken)) {
+            return response($challenge, 200);
         }
 
         return response('Forbidden', 403);

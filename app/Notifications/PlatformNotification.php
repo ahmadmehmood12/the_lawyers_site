@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\Channels\WhatsAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -40,6 +41,15 @@ abstract class PlatformNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
+        if ($notifiable instanceof AnonymousNotifiable) {
+            // On-demand recipients (clients without a portal account): the caller only adds a
+            // whatsapp route when consent is recorded, so each route present is a channel to use.
+            return array_values(array_filter([
+                $notifiable->routeNotificationFor('mail') ? 'mail' : null,
+                $notifiable->routeNotificationFor('whatsapp') && $this->whatsAppTemplate($notifiable) ? WhatsAppChannel::class : null,
+            ]));
+        }
+
         if (! $notifiable instanceof User) {
             return ['mail'];
         }

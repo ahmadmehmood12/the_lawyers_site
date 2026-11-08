@@ -4,25 +4,30 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\PlanFeature;
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
 use App\Models\NotificationDelivery;
 use App\Models\Plan;
 use App\Models\Setting;
 use App\Models\Subscription;
 use App\Models\WhatsAppTemplate;
 use App\Services\Ai\AiProvider;
+use App\Services\Mail\MailSettings;
 use App\Services\WhatsApp\WhatsAppClient;
+use App\Support\ActivityPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
 /** Plans, notification configuration, platform settings and audit log. */
 class PlatformController extends Controller
 {
-    /** Keys editable from Admin → Settings. Secrets live in .env only. */
-    public const SETTINGS = ['default_plan', 'support_email', 'ai_enabled', 'ai_redact_personal_data', 'reviews_require_moderation'];
+    /** Keys editable from Admin → Settings. Secret values are never returned to the browser. */
+    public const SETTINGS = ['default_plan', 'support_email', 'ai_enabled', 'ai_redact_personal_data', 'reviews_require_moderation', 'site_theme'];
 
     public function plans(): Response
     {
@@ -69,6 +74,9 @@ class PlatformController extends Controller
                 ->latest('id')->paginate(30)->withQueryString()
                 ->through(fn ($d) => ['id' => $d->id, 'channel' => $d->channel->value, 'event' => $d->event, 'recipient' => substr($d->recipient, 0, 5).'••••'.substr($d->recipient, -2), 'template' => $d->template, 'status' => $d->status->value, 'attempts' => $d->attempts, 'error' => $d->error, 'created_at' => $d->created_at->toIso8601String()]),
             'configured' => app(WhatsAppClient::class)->isConfigured(),
+            'enabled' => app(WhatsAppClient::class)->isEnabled(),
+            'displayName' => app(WhatsAppClient::class)->displayName(),
+            'settingsUrl' => route('admin.settings.edit'),
             'filters' => $request->only('status'),
         ]);
     }
@@ -90,8 +98,10 @@ class PlatformController extends Controller
         return Inertia::render('Admin/Settings', [
             'settings' => collect(self::SETTINGS)->mapWithKeys(fn ($k) => [$k => Setting::get($k)]),
             'plans' => Plan::query()->orderBy('sort_order')->get(['slug', 'name'])->map(fn ($p) => ['value' => $p->slug, 'label' => $p->name]),
+            'whatsapp' => $this->whatsAppSettings(),
+            'mail' => app(MailSettings::class)->values(),
+            'branding' => $this->brandingSettings(),
             'env' => [
-                'whatsapp' => app(WhatsAppClient::class)->isConfigured(),
                 'ai' => app(AiProvider::class)->isEnabled(),
                 'ai_model' => config('services.ai.model'),
                 'payments' => filled(config('services.payments.gateway')),
@@ -101,12 +111,188 @@ class PlatformController extends Controller
         ]);
     }
 
+    /** @return array{enabled: bool, display_name: string, phone_number_id: string, api_version: string, configured: bool, has_token: bool, has_app_secret: bool, has_verify_token: bool, webhook_url: string} */
+    private function whatsAppSettings(): array
+    {
+        return [
+            'enabled' => Setting::get('whatsapp_enabled', '1') === '1',
+            'display_name' => Setting::get('whatsapp_display_name') ?: config('app.name'),
+            'phone_number_id' => (string) Setting::get('whatsapp_phone_number_id', ''),
+            'api_version' => Setting::get('whatsapp_api_version') ?: config('services.whatsapp.api_version'),
+            'configured' => app(WhatsAppClient::class)->isConfigured(),
+            'has_token' => filled(Setting::getSecret('whatsapp_token')) || filled(config('services.whatsapp.token')),
+            'has_app_secret' => filled(Setting::getSecret('whatsapp_app_secret')) || filled(config('services.whatsapp.app_secret')),
+            'has_verify_token' => filled(Setting::getSecret('whatsapp_verify_token')) || filled(config('services.whatsapp.verify_token')),
+            'webhook_url' => url('/api/webhooks/whatsapp'),
+        ];
+    }
+
+    /** Saves WhatsApp Business Cloud API credentials from the admin panel. */
+    public function saveWhatsAppSettings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enabled' => ['required', Rule::in(['0', '1'])],
+            'display_name' => ['required', 'string', 'max:60'],
+            'phone_number_id' => ['nullable', 'string', 'max:60'],
+            'api_version' => ['required', 'string', 'max:20', 'regex:/^v\d+\.\d+$/'],
+            'token' => ['nullable', 'string', 'max:1000'],
+            'app_secret' => ['nullable', 'string', 'max:1000'],
+            'verify_token' => ['nullable', 'string', 'max:255'],
+            'clear_token' => ['boolean'],
+            'clear_app_secret' => ['boolean'],
+            'clear_verify_token' => ['boolean'],
+        ]);
+
+        Setting::put('whatsapp_enabled', $validated['enabled']);
+        Setting::put('whatsapp_display_name', trim($validated['display_name']));
+        Setting::put('whatsapp_phone_number_id', trim((string) ($validated['phone_number_id'] ?? '')) ?: null);
+        Setting::put('whatsapp_api_version', trim($validated['api_version']));
+
+        foreach (['token' => 'whatsapp_token', 'app_secret' => 'whatsapp_app_secret', 'verify_token' => 'whatsapp_verify_token'] as $field => $key) {
+            if ($request->boolean("clear_{$field}")) {
+                Setting::putSecret($key, null);
+            } elseif (filled($validated[$field] ?? null)) {
+                Setting::putSecret($key, $validated[$field]);
+            }
+        }
+
+        activity('admin')->causedBy($request->user())
+            ->withProperties(collect($validated)->except(['token', 'app_secret', 'verify_token'])->all())
+            ->log('whatsapp_settings_changed');
+
+        return back()->with('success', __('WhatsApp settings saved.'));
+    }
+
+    /** @return array<string, mixed> */
+    private function brandingSettings(): array
+    {
+        $logo = Setting::get('site_logo_path');
+        $favicon = Setting::get('site_favicon_path');
+
+        return [
+            'site_name' => Setting::get('site_name') ?: config('app.name'),
+            'site_tagline' => Setting::get('site_tagline') ?: '',
+            'logo_url' => $logo ? Storage::disk('public')->url($logo) : null,
+            'favicon_url' => $favicon ? Storage::disk('public')->url($favicon) : null,
+            'social' => [
+                'facebook' => Setting::get('social_facebook') ?: '',
+                'instagram' => Setting::get('social_instagram') ?: '',
+                'youtube' => Setting::get('social_youtube') ?: '',
+                'linkedin' => Setting::get('social_linkedin') ?: '',
+                'x' => Setting::get('social_x') ?: '',
+                'whatsapp' => Setting::get('social_whatsapp') ?: '',
+            ],
+        ];
+    }
+
+    /** Saves the public brand name, logo/favicon and social profile links. */
+    public function saveBrandingSettings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'site_name' => ['required', 'string', 'max:60'],
+            'site_tagline' => ['nullable', 'string', 'max:160'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'favicon' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,ico', 'max:512'],
+            'remove_logo' => ['boolean'],
+            'remove_favicon' => ['boolean'],
+            'social_facebook' => ['nullable', 'url:https,http', 'max:255'],
+            'social_instagram' => ['nullable', 'url:https,http', 'max:255'],
+            'social_youtube' => ['nullable', 'url:https,http', 'max:255'],
+            'social_linkedin' => ['nullable', 'url:https,http', 'max:255'],
+            'social_x' => ['nullable', 'url:https,http', 'max:255'],
+            'social_whatsapp' => ['nullable', 'url:https,http', 'max:255'],
+        ]);
+
+        Setting::put('site_name', trim($validated['site_name']));
+        Setting::put('site_tagline', filled($validated['site_tagline'] ?? null) ? trim($validated['site_tagline']) : null);
+
+        foreach (['facebook', 'instagram', 'youtube', 'linkedin', 'x', 'whatsapp'] as $network) {
+            Setting::put('social_'.$network, filled($validated['social_'.$network] ?? null) ? trim($validated['social_'.$network]) : null);
+        }
+
+        foreach (['logo' => 'site_logo_path', 'favicon' => 'site_favicon_path'] as $field => $key) {
+            if ($request->boolean('remove_'.$field)) {
+                if ($old = Setting::get($key)) {
+                    Storage::disk('public')->delete($old);
+                }
+                Setting::put($key, null);
+            }
+
+            if ($request->hasFile($field)) {
+                if ($old = Setting::get($key)) {
+                    Storage::disk('public')->delete($old);
+                }
+                Setting::put($key, $request->file($field)->store('branding', 'public'));
+            }
+        }
+
+        activity('admin')->causedBy($request->user())->withProperties(collect($validated)->except(['logo', 'favicon'])->all())->log('branding_settings_changed');
+
+        return back()->with('success', __('Branding saved.'));
+    }
+
+    /** Saves SMTP settings; blank values fall back to the server environment. */
+    public function saveMailSettings(Request $request, MailSettings $mail): RedirectResponse
+    {
+        $validated = $request->validate([
+            'mail_mailer' => ['required', Rule::in(['smtp', 'log', 'array', 'failover', 'roundrobin', 'sendmail', 'ses', 'postmark', 'resend', 'mailgun'])],
+            'mail_scheme' => ['nullable', Rule::in(['smtp', 'smtps'])],
+            'mail_host' => ['nullable', 'string', 'max:255'],
+            'mail_port' => ['nullable', 'integer', 'between:1,65535'],
+            'mail_username' => ['nullable', 'string', 'max:255'],
+            'mail_password' => ['nullable', 'string', 'max:1000'],
+            'mail_from_address' => ['nullable', 'email', 'max:255'],
+            'mail_from_name' => ['nullable', 'string', 'max:120'],
+            'clear_password' => ['boolean'],
+        ]);
+
+        foreach (['mail_mailer', 'mail_scheme', 'mail_host', 'mail_port', 'mail_username', 'mail_from_address', 'mail_from_name'] as $key) {
+            $value = $validated[$key] ?? null;
+            Setting::put($key, filled($value) ? (string) $value : null);
+        }
+
+        if ($request->boolean('clear_password')) {
+            Setting::putSecret('mail_password', null);
+        } elseif (filled($validated['mail_password'] ?? null)) {
+            Setting::putSecret('mail_password', $validated['mail_password']);
+        }
+
+        $mail->apply();
+        activity('admin')->causedBy($request->user())->withProperties(collect($validated)->except('mail_password')->all())->log('mail_settings_changed');
+
+        return back()->with('success', __('Mail settings saved.'));
+    }
+
+    /** Sends a plain test message with the saved mail settings and reports the real outcome. */
+    public function sendTestMail(Request $request, MailSettings $mail): RedirectResponse
+    {
+        $validated = $request->validate(['to' => ['required', 'email', 'max:255']]);
+        $mail->apply();
+
+        try {
+            Mail::raw(__('This is a test message from :site. If you can read it, outgoing mail works.', ['site' => Setting::get('site_name') ?: config('app.name')]), function ($message) use ($validated): void {
+                $message->to($validated['to'])->subject(__('Test email'));
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('The test email could not be sent: :reason', ['reason' => Str::limit($e->getMessage(), 180)]));
+        }
+
+        activity('admin')->causedBy($request->user())->withProperties(['to' => $validated['to'], 'mailer' => config('mail.default')])->log('mail_test_sent');
+
+        return back()->with('success', config('mail.default') === 'log'
+            ? __('Test email written to the log. Switch the mailer to SMTP to deliver real email.')
+            : __('Test email handed to the mail server. Check the inbox of :to.', ['to' => $validated['to']]));
+    }
+
     public function saveSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'default_plan' => ['required', 'exists:plans,slug'], 'support_email' => ['required', 'email'],
             'ai_enabled' => ['required', Rule::in(['0', '1'])], 'ai_redact_personal_data' => ['required', Rule::in(['0', '1'])],
             'reviews_require_moderation' => ['required', Rule::in(['0', '1'])],
+            'site_theme' => ['required', Rule::in(['navy-gold', 'white-green'])],
         ]);
         foreach ($validated as $key => $value) {
             Setting::put($key, (string) $value);
@@ -120,11 +306,19 @@ class PlatformController extends Controller
     public function audit(Request $request): Response
     {
         return Inertia::render('Admin/Audit', [
-            'activities' => Activity::query()->with('causer:id,name')
+            'activities' => ActivityPresenter::eagerLoad(Activity::query())
+                ->with('organization:id,name')
                 ->when($request->string('log')->toString(), fn ($q, $l) => $q->where('log_name', $l))
                 ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('description', 'like', "%{$s}%"))
                 ->latest('id')->paginate(50)->withQueryString()
-                ->through(fn ($a) => ['id' => $a->id, 'log' => $a->log_name, 'description' => $a->description, 'subject' => $a->subject_type ? class_basename($a->subject_type).' #'.$a->subject_id : null, 'causer' => $a->causer?->name, 'properties' => in_array($a->log_name, ['cases', 'hearings'], true) ? ['fields' => array_keys((array) ($a->properties['attributes'] ?? []))] : $a->properties, 'created_at' => $a->created_at->toIso8601String()]),
+                ->through(fn ($a) => [
+                    ...ActivityPresenter::present($a, 'platform'),
+                    'description' => $a->description,
+                    'subject' => $a->subject_type ? class_basename($a->subject_type).' #'.$a->subject_id : null,
+                    'causer' => $a->causer?->name,
+                    'organization' => $a->organization?->name,
+                    'properties' => in_array($a->log_name, ['cases', 'hearings', 'clients', 'tasks', 'documents', 'drafts'], true) ? ['fields' => array_keys((array) ($a->properties['attributes'] ?? []))] : $a->properties,
+                ]),
             'logs' => Activity::query()->distinct()->pluck('log_name'),
             'filters' => $request->only(['log', 'search']),
         ]);

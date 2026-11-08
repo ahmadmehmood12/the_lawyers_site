@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Notification as NotificationFacade;
  * Delivers a hearing notification to the right people:
  *  - the assigned lawyer (or case lead) as a platform user
  *  - linked clients, only when the hearing is visible to clients:
- *      portal users via their account; others via WhatsApp only with recorded consent
+ *      portal users via their account; others by email (if recorded) and by
+ *      WhatsApp only with recorded consent
  */
 class HearingRecipients
 {
@@ -38,8 +39,16 @@ class HearingRecipients
             /** @var Client $client */
             if ($client->user_id && ($user = User::find($client->user_id)) && ! $user->isSuspended()) {
                 $user->notify($make(true, $client->id));
-            } elseif ($client->hasWhatsAppConsent() && $client->whatsAppNumber()) {
-                NotificationFacade::route('whatsapp', $client->whatsAppNumber())->notify($make(true, $client->id));
+            } else {
+                // No portal account: email when the chambers recorded one, WhatsApp only with consent.
+                $route = null;
+                if ($client->email) {
+                    $route = NotificationFacade::route('mail', [$client->email => $client->name]);
+                }
+                if ($client->hasWhatsAppConsent() && $client->whatsAppNumber()) {
+                    $route = ($route ?? NotificationFacade::route('whatsapp', $client->whatsAppNumber()))->route('whatsapp', $client->whatsAppNumber());
+                }
+                $route?->notify($make(true, $client->id)->locale($client->preferred_locale ?: 'en'));
             }
         }
     }

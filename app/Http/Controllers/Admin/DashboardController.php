@@ -11,10 +11,12 @@ use App\Models\LegalCase;
 use App\Models\NotificationDelivery;
 use App\Models\Organization;
 use App\Models\Review;
+use App\Models\Specialization;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Ai\AiProvider;
 use App\Services\WhatsApp\WhatsAppClient;
+use App\Support\DirectoryPresenter;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,6 +49,34 @@ class DashboardController extends Controller
                 'ai' => app(AiProvider::class)->isEnabled(),
                 'payments' => filled(config('services.payments.gateway')) && filled(config('services.payments.webhook_secret')),
                 'mail' => config('mail.default') !== 'log',
+            ],
+            'directory' => [
+                'lawyers' => LawyerProfile::query()->listed()
+                    ->where('verification_status', VerificationStatus::Approved->value)
+                    ->with([
+                        'user:id,name',
+                        'user.memberships' => fn ($q) => $q->where('status', 'active')
+                            ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
+                        'user.memberships.organization:id,name,slug',
+                        'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code',
+                        'educations', 'courts:id,name,name_ur', 'languages',
+                    ])
+                    ->orderByDesc('rating_average')->limit(3)->get()
+                    ->map(fn (LawyerProfile $p) => DirectoryPresenter::lawyer($p)),
+                'firms' => Organization::query()->where('type', 'firm')->where('is_public', true)->where('status', 'active')
+                    ->with('city:id,name,name_ur')->withCount('activeMembers')
+                    ->orderByDesc('active_members_count')->limit(3)->get()
+                    ->map(fn (Organization $o) => DirectoryPresenter::firm($o)),
+                'practiceAreas' => Specialization::query()->where('is_active', true)
+                    ->withCount(['lawyers' => fn ($q) => $q->listed()])
+                    ->orderByDesc('lawyers_count')->limit(4)->get()
+                    ->map(fn (Specialization $s) => [
+                        'slug' => $s->slug,
+                        'name' => app()->getLocale() === 'ur' && $s->name_ur ? $s->name_ur : $s->name,
+                        'description' => app()->getLocale() === 'ur' && $s->description_ur ? $s->description_ur : $s->description,
+                        'icon' => $s->icon,
+                        'count' => $s->lawyers_count,
+                    ]),
             ],
         ]);
     }

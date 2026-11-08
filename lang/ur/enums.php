@@ -228,4 +228,21 @@ return [
         'support' => 'معاونت',
         'finance-admin' => 'مالیاتی ایڈمن',
     ],
+    'support_kind' => [
+        'contact' => 'رابطہ',
+        'feedback' => 'رائے',
+    ],
+    'support_status' => [
+        'new' => 'نیا',
+        'in_progress' => 'زیرِ کارروائی',
+        'resolved' => 'حل شدہ',
+    ],
+    'feedback_category' => [
+        'general' => 'عمومی',
+        'problem' => 'کچھ کام نہیں کر رہا',
+        'suggestion' => 'تجویز',
+        'billing' => 'بلنگ اور پلان',
+        'account' => 'اکاؤنٹ اور تصدیق',
+        'complaint' => 'شکایت',
+    ],
 ];

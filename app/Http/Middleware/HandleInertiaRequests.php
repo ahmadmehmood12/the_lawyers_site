@@ -2,10 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use App\Services\Access\CurrentOrganization;
 use App\Services\Access\OrganizationAccess;
 use App\Support\Translations;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Middleware;
 
@@ -30,14 +32,29 @@ class HandleInertiaRequests extends Middleware
         $locale = app()->getLocale();
         $organization = $user?->isProfessional() ? app(CurrentOrganization::class)->for($user) : null;
         $access = app(OrganizationAccess::class);
+        $logoPath = Setting::get('site_logo_path');
+        $faviconPath = Setting::get('site_favicon_path');
+        $avatarPath = $user?->avatar_path;
 
         return [
             ...parent::share($request),
             'app' => [
-                'name' => config('app.name'),
+                'name' => Setting::get('site_name') ?: config('app.name'),
+                'tagline' => Setting::get('site_tagline') ?: '',
+                'logo_url' => $logoPath ? Storage::disk('public')->url($logoPath) : null,
+                'favicon_url' => $faviconPath ? Storage::disk('public')->url($faviconPath) : null,
+                'social' => [
+                    'facebook' => Setting::get('social_facebook') ?: null,
+                    'instagram' => Setting::get('social_instagram') ?: null,
+                    'youtube' => Setting::get('social_youtube') ?: null,
+                    'linkedin' => Setting::get('social_linkedin') ?: null,
+                    'x' => Setting::get('social_x') ?: null,
+                    'whatsapp' => Setting::get('social_whatsapp') ?: null,
+                ],
                 'locale' => $locale,
                 'dir' => $locale === 'ur' ? 'rtl' : 'ltr',
                 'locales' => ['en' => 'English', 'ur' => 'اردو'],
+                'site_theme' => Setting::get('site_theme', 'navy-gold') === 'white-green' ? 'white-green' : 'navy-gold',
             ],
             'translations' => Inertia::once(fn () => Translations::forLocale($locale))->as('translations-'.$locale),
             'auth' => [
@@ -46,6 +63,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone' => $user->phone,
+                    'avatar_url' => $avatarPath ? Storage::disk('public')->url($avatarPath) : null,
                     'account_type' => $user->account_type->value,
                     'locale' => $user->locale,
                     'theme' => $user->theme,
@@ -59,6 +77,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $organization->id,
                     'name' => $organization->name,
                     'type' => $organization->type->value,
+                    'logo_url' => $organization->logo_path ? Storage::disk('public')->url($organization->logo_path) : null,
                     'role' => $access->role($user, $organization)?->value,
                     'permissions' => $access->permissions($user, $organization),
                 ] : null,

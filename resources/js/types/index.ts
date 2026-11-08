@@ -5,6 +5,7 @@ export type AuthUser = {
     name: string;
     email: string;
     phone: string | null;
+    avatar_url: string | null;
     account_type: 'lawyer' | 'client' | 'staff' | 'platform';
     locale: 'en' | 'ur';
     theme: 'light' | 'dark' | 'system';
@@ -24,7 +25,17 @@ export type CurrentOrganization = {
 };
 
 export type SharedProps = {
-    app: { name: string; locale: 'en' | 'ur'; dir: 'ltr' | 'rtl'; locales: Record<string, string> };
+    app: {
+        name: string;
+        tagline: string;
+        logo_url: string | null;
+        favicon_url: string | null;
+        social: Record<'facebook' | 'instagram' | 'youtube' | 'linkedin' | 'x' | 'whatsapp', string | null>;
+        locale: 'en' | 'ur';
+        dir: 'ltr' | 'rtl';
+        locales: Record<string, string>;
+        site_theme: 'navy-gold' | 'white-green';
+    };
     translations: Record<string, string>;
     auth: {
         user: AuthUser | null;

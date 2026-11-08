@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Hearing;
+use Illuminate\Notifications\AnonymousNotifiable;
 
 class HearingReminder extends PlatformNotification
 {
@@ -26,7 +27,7 @@ class HearingReminder extends PlatformNotification
                 'court' => $h->court?->name ?? __('court'),
                 'purpose' => $h->purpose ?: $h->hearing_type?->label(),
             ]),
-            'url' => $this->forClient ? route('portal.cases.show', $h->legal_case_id) : route('cases.show', ['case' => $h->legal_case_id, 'tab' => 'hearings']),
+            'url' => $notifiable instanceof AnonymousNotifiable ? null : ($this->forClient ? route('portal.cases.show', $h->legal_case_id) : route('cases.show', ['case' => $h->legal_case_id, 'tab' => 'hearings'])),
             'icon' => 'calendar',
         ];
     }

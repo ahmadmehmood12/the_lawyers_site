@@ -1,4 +1,4 @@
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Alert, Badge, Button, Card, CardHeader, Input, Modal, PageHeader, Pagination, Select, StatusBadge, Textarea } from '@/Components/ui';
@@ -9,14 +9,15 @@ import type { Paginated } from '@/types';
 
 type Template = { id: number; key: string; name: string; language: string; body_preview: string; variable_count: number; status: string };
 
-export default function Notifications({ templates, deliveries, configured, filters }: { templates: Template[]; deliveries: Paginated<any>; configured: boolean; filters: Record<string, string> }) {
+export default function Notifications({ templates, deliveries, configured, enabled, displayName, settingsUrl, filters }: { templates: Template[]; deliveries: Paginated<any>; configured: boolean; enabled: boolean; displayName: string; settingsUrl: string; filters: Record<string, string> }) {
     const t = useT();
     const { locale } = useLocale();
     const [editing, setEditing] = useState<Template | null | undefined>(undefined);
     return (
         <AppLayout title={t('Notifications')} area="admin" wide>
-            <PageHeader title={t('WhatsApp & notification delivery')} />
-            {!configured && <Alert tone="warning" className="mb-5" title={t('WhatsApp Business API not configured')}>{t('Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID on the server. Until then, WhatsApp deliveries are recorded as “skipped” — never as sent.')}</Alert>}
+            <PageHeader title={t('WhatsApp & notification delivery')} actions={<Badge tone={configured ? 'green' : 'amber'}>{configured ? t('Sending as :name', { name: displayName }) : t('Not configured')}</Badge>} />
+            {!configured && <Alert tone="warning" className="mb-5" title={t('WhatsApp Business API not configured')}>{t('Save your access token and phone number ID in platform settings. Until then, WhatsApp deliveries are recorded as “skipped” — never as sent.')} <Link href={settingsUrl} className="font-medium underline">{t('Open WhatsApp settings')}</Link></Alert>}
+            {configured && !enabled && <Alert tone="warning" className="mb-5">{t('WhatsApp alerts are turned off. Deliveries will be skipped until you enable them.')} <Link href={settingsUrl} className="font-medium underline">{t('Open WhatsApp settings')}</Link></Alert>}
             <div className="grid gap-6 xl:grid-cols-2">
                 <Card>
                     <CardHeader title={t('Message templates')} description={t('Each must be approved in Meta Business Manager before marking it approved here.')} actions={<Button size="sm" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>{t('Add')}</Button>} />

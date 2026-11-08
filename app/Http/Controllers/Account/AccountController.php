@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Support\ImageReencoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,6 +38,38 @@ class AccountController extends Controller
             'deletionRequestedAt' => $request->user()->deletion_requested_at?->toIso8601String(),
             'area' => $request->user()->isClient() ? 'portal' : ($request->user()->isPlatformStaff() ? 'admin' : 'workspace'),
         ]);
+    }
+
+    public function updateAvatar(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072', 'dimensions:min_width=100,min_height=100,max_width=5000,max_height=5000'],
+        ]);
+
+        $path = ImageReencoder::squareJpeg($request->file('avatar'), 'avatars');
+        $user = $request->user();
+
+        if ($user->avatar_path) {
+            Storage::disk('public')->delete($user->avatar_path);
+        }
+
+        $user->update(['avatar_path' => $path]);
+        activity('account')->causedBy($user)->performedOn($user)->log('avatar_updated');
+
+        return back()->with('success', __('Profile photo updated.'));
+    }
+
+    public function removeAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->avatar_path) {
+            Storage::disk('public')->delete($user->avatar_path);
+            $user->update(['avatar_path' => null]);
+            activity('account')->causedBy($user)->performedOn($user)->log('avatar_removed');
+        }
+
+        return back()->with('success', __('Profile photo removed.'));
     }
 
     public function logoutOtherSessions(Request $request): RedirectResponse

@@ -21,7 +21,7 @@ return [
         'drafts.manage', 'drafts.approve',
         'finance.view', 'finance.invoice', 'finance.record_payment', 'finance.refund', 'finance.export',
         'appointments.manage', 'messages.client',
-        'team.manage', 'organization.settings', 'analytics.view', 'ai.use',
+        'team.manage', 'organization.settings', 'analytics.view', 'ai.use', 'activity.view_all',
     ],
 
     'org_roles' => [
@@ -33,7 +33,7 @@ return [
             'diary.view_all', 'tasks.manage', 'expenses.manage',
             'documents.view', 'documents.upload', 'documents.share', 'documents.delete', 'documents.view_confidential',
             'drafts.manage', 'drafts.approve', 'finance.view', 'finance.invoice', 'finance.record_payment',
-            'appointments.manage', 'messages.client', 'analytics.view', 'ai.use',
+            'appointments.manage', 'messages.client', 'analytics.view', 'ai.use', 'activity.view_all',
         ],
         'associate_advocate' => [
             'cases.view_assigned', 'cases.create', 'cases.update',

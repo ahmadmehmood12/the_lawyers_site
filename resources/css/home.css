@@ -33,6 +33,31 @@
     --hm-night-accent-ink: #e9d596;
     --hm-night-panel: #0f1e36;
     --hm-night-shadow: rgb(0 0 0 / 0.5);
+    --hm-forest-paper: #ffffff;
+    --hm-forest-ink: #0f2c1e;
+    --hm-forest-ink-2: #264333;
+    --hm-forest-muted: #4a6a56;
+    --hm-forest-rule: #e3ebe6;
+    --hm-forest-panel: #f4f7f5;
+    --hm-forest-night-paper: #081a11;
+    --hm-forest-night-rule: #193426;
+    --hm-forest-night-panel: #0f2c1e;
+}
+
+/* Admin, Settings, Site theme: white, dark green and gold. */
+html[data-site-theme='white-green'] {
+    --hm-paper: var(--hm-forest-paper);
+    --hm-ink: var(--hm-forest-ink);
+    --hm-ink-2: var(--hm-forest-ink-2);
+    --hm-muted: var(--hm-forest-muted);
+    --hm-rule: var(--hm-forest-rule);
+    --hm-panel: var(--hm-forest-panel);
+}
+
+html.dark[data-site-theme='white-green'] {
+    --hm-paper: var(--hm-forest-night-paper);
+    --hm-rule: var(--hm-forest-night-rule);
+    --hm-panel: var(--hm-forest-night-panel);
 }
 
 .hm {
