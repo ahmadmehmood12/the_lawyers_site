@@ -68,6 +68,8 @@ class DiaryController extends Controller
             'hearings' => $hearings->map(fn (Hearing $h) => $this->present($h)),
             'entries' => $entries->map(fn (DiaryEntry $e) => ['id' => $e->id, 'entry_date' => $e->entry_date->toDateString(), 'entry_time' => $e->entry_time ? substr($e->entry_time, 0, 5) : null, 'title' => $e->title, 'notes' => $e->notes, 'case' => $e->legalCase ? ['id' => $e->legalCase->id, 'title' => $e->legalCase->title] : null]),
             'monthCounts' => $monthCounts,
+            // Status totals for the visible period, so scheduled / rescheduled / done / cancelled read at a glance.
+            'statusCounts' => $hearings->countBy(fn (Hearing $h) => $h->status->value),
             'filters' => $request->only(['court_id', 'district_id', 'judge', 'lawyer_id', 'case_id', 'status']),
             'options' => [
                 'courts' => ReferenceOptions::courts(),
@@ -76,6 +78,7 @@ class DiaryController extends Controller
                 'cases' => LegalCase::query()->visibleTo($user, $organization)->whereIn('status', CaseStatus::openValues())->orderBy('title')->limit(500)->get(['id', 'title', 'reference'])->map(fn ($c) => ['value' => $c->id, 'label' => $c->reference.', '.$c->title]),
                 'attendance' => Attendance::options(),
                 'hearingTypes' => HearingType::options(),
+                'statuses' => HearingStatus::options(),
             ],
             'can' => [
                 'manage' => $access->allows($user, $organization, 'hearings.manage'),
@@ -148,10 +151,8 @@ class DiaryController extends Controller
         $access = app(OrganizationAccess::class);
         $seeAll = $access->allows($user, $organization, 'diary.view_all') || $access->allows($user, $organization, 'cases.view_all');
 
-        return Hearing::query()->forOrganization($organization)
-            ->with(['legalCase:id,title,reference,case_number', 'legalCase.clients:id,name,phone', 'court:id,name,district_id', 'judge:id,name', 'assignedLawyer:id,name'])
-            ->when(! $seeAll, fn ($q) => $q->where(fn ($w) => $w->where('assigned_lawyer_id', $user->id)
-                ->orWhereHas('legalCase.lawyers', fn ($l) => $l->whereKey($user->id))))
+        return Hearing::query()->visibleTo($user, $organization)
+            ->with(['legalCase:id,title,reference,case_number', 'legalCase.clients:id,name,phone', 'court:id,name,district_id', 'judge:id,name', 'assignedLawyer:id,name', 'rescheduledFrom:id,rescheduled_to_id,hearing_date,hearing_time,reschedule_reason', 'rescheduledTo:id,hearing_date,hearing_time'])
             ->when($request->integer('court_id'), fn ($q, $id) => $q->where('court_id', $id))
             ->when($request->integer('district_id'), fn ($q, $id) => $q->whereHas('court', fn ($c) => $c->where('district_id', $id)))
             ->when($request->string('judge')->trim()->toString(), fn ($q, $judge) => $q->where(fn ($w) => $w->where('judge_name', 'like', "%{$judge}%")->orWhereHas('judge', fn ($j) => $j->where('name', 'like', "%{$judge}%"))))

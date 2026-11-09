@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/cn';
 
 export function PageHeader({ title, description, actions, breadcrumbs }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; breadcrumbs?: { label: string; href?: string }[] }) {
@@ -76,8 +77,9 @@ export function Avatar({ name, src, size = 'md' }: { name: string; src?: string 
         .slice(0, 2)
         .map((part) => part[0]?.toUpperCase())
         .join('');
-    return src ? (
-        <img src={src} alt={name} className={cn('shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-navy-800', sizes[size])} />
+    const [failed, setFailed] = useState<string | null>(null);
+    return src && failed !== src ? (
+        <img src={src} alt={name} loading="lazy" onError={() => setFailed(src)} className={cn('shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-navy-800', sizes[size])} />
     ) : (
         <span className={cn('inline-flex shrink-0 items-center justify-center rounded-full bg-navy-800 font-semibold text-gold-200 dark:bg-navy-700', sizes[size])} aria-hidden>
             {initials}

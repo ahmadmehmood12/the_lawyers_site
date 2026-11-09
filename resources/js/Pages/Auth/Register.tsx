@@ -1,6 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
-import { Briefcase, Building2, ChevronDown, TicketPercent, User } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { Briefcase, Building2, ChevronDown, Gift, TicketPercent, User } from 'lucide-react';
+import type { FormEvent, ReactNode } from 'react';
+import { useState } from 'react';
 import { Button, Checkbox, Input, Select } from '@/Components/ui';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { cn } from '@/lib/cn';
@@ -34,6 +35,7 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
         { value: 'client', label: t('Client'), hint: t('Find & work with a lawyer'), icon: User },
     ];
     const professional = form.data.registration_type !== 'client';
+    const [codes, setCodes] = useState({ referral: false, coupon: false, firm: false });
 
     function chooseType(value: RegistrationType) {
         form.setData((data) => ({
@@ -50,7 +52,7 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
     }
 
     return (
-        <AuthLayout title={t('Create your account')} description={form.data.registration_type === 'client' ? t('Find verified advocates and follow your case online.') : t('Your court diary, cases and clients — in one secure place.')}>
+        <AuthLayout wide={professional} title={t('Create your account')} description={form.data.registration_type === 'client' ? t('Find verified advocates and follow your case online.') : t('Your court diary, cases and clients — in one secure place.')}>
             <div className="mb-5 grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('Account type')}>
                 {choices.map((choice) => (
                     <button
@@ -71,15 +73,20 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
                 ))}
             </div>
             <form onSubmit={submit} className="space-y-4">
+                {/* 1. Personal / business information */}
                 {form.data.registration_type === 'firm' && (
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Input label={t('Firm name')} value={form.data.firm_name} onChange={(e) => form.setData('firm_name', e.target.value)} error={form.errors.firm_name} required />
                         <Input label={t('Firm registration number')} value={form.data.firm_registration_number} onChange={(e) => form.setData('firm_registration_number', e.target.value)} error={form.errors.firm_registration_number} required />
                     </div>
                 )}
-                <Input label={form.data.registration_type === 'firm' ? t('Your full name') : t('Full name')} autoComplete="name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} required />
-                <Input label={t('Email')} type="email" autoComplete="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} required />
-                <Input label={t('Mobile number')} type="tel" autoComplete="tel" placeholder="03XX XXXXXXX" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} required />
+                <div className={cn('grid gap-4', professional && 'sm:grid-cols-2')}>
+                    <Input wrapperClassName={professional ? 'sm:col-span-2' : undefined} label={form.data.registration_type === 'firm' ? t('Your full name') : t('Full name')} autoComplete="name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} required />
+                    <Input label={t('Email')} type="email" autoComplete="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} required />
+                    <Input label={t('Mobile number')} type="tel" autoComplete="tel" placeholder="03XX XXXXXXX" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} required />
+                </div>
+
+                {/* 2. Registration details */}
 
                 {professional && (
                     <div className="space-y-4 rounded-lg border border-navy-100 p-4 dark:border-navy-700">
@@ -118,60 +125,44 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
                     </div>
                 )}
 
-                {professional && (
-                    <details className="group rounded-lg border border-navy-100 dark:border-navy-700">
-                        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-navy-800 dark:text-navy-100">
-                            <span className="inline-flex items-center gap-2">
-                                <TicketPercent className="size-4 text-navy-500" aria-hidden />
-                                {t('Referral or coupon code')}
-                            </span>
-                            <ChevronDown className="size-4 text-navy-400 transition-transform group-open:rotate-180" aria-hidden />
-                        </summary>
-                        <div className="grid gap-4 border-t border-navy-100 px-4 py-4 sm:grid-cols-2 dark:border-navy-700">
-                            <Input
-                                label={t('Referral code')}
-                                placeholder="WD-REF-2026"
-                                value={form.data.referral_code}
-                                onChange={(e) => form.setData('referral_code', e.target.value.toUpperCase())}
-                                error={form.errors.referral_code}
-                            />
-                            <Input
-                                label={t('Coupon code')}
-                                placeholder="WD-TRIAL-14"
-                                value={form.data.coupon_code}
-                                onChange={(e) => form.setData('coupon_code', e.target.value.toUpperCase())}
-                                error={form.errors.coupon_code}
-                            />
-                        </div>
-                    </details>
-                )}
-
-                {form.data.registration_type === 'lawyer' && (
-                    <details className="group rounded-lg border border-navy-100 dark:border-navy-700">
-                        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-navy-800 dark:text-navy-100">
-                            <span className="inline-flex items-center gap-2">
-                                <Building2 className="size-4 text-navy-500" aria-hidden />
-                                {t('Joining an existing law firm?')}
-                            </span>
-                            <ChevronDown className="size-4 text-navy-400 transition-transform group-open:rotate-180" aria-hidden />
-                        </summary>
-                        <div className="border-t border-navy-100 px-4 py-4 dark:border-navy-700">
-                            <Input
-                                label={t('Firm invite code')}
-                                placeholder="WD-ABC123"
-                                value={form.data.firm_invite_code}
-                                onChange={(e) => form.setData('firm_invite_code', e.target.value.toUpperCase())}
-                                error={form.errors.firm_invite_code}
-                                hint={t('Enter the code your firm shared. Leave blank to start your own chambers.')}
-                            />
-                        </div>
-                    </details>
-                )}
-
+                {/* 3-4. Password before the optional codes. */}
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Input label={t('Password')} type="password" autoComplete="new-password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} error={form.errors.password} required />
                     <Input label={t('Confirm password')} type="password" autoComplete="new-password" value={form.data.password_confirmation} onChange={(e) => form.setData('password_confirmation', e.target.value)} required />
                 </div>
+
+                {/* 5-7. Optional codes: each opens its own field when asked for. */}
+                {professional && (
+                    <div className="space-y-2">
+                        <OptionalCode
+                            icon={<Gift className="size-4" aria-hidden />}
+                            question={t('Have a referral code?')}
+                            open={codes.referral || !!form.errors.referral_code}
+                            onToggle={() => setCodes((c) => ({ ...c, referral: !c.referral }))}
+                        >
+                            <Input label={t('Referral code')} placeholder="WD-REF-2026" value={form.data.referral_code} onChange={(e) => form.setData('referral_code', e.target.value.toUpperCase())} error={form.errors.referral_code} />
+                        </OptionalCode>
+                        <OptionalCode
+                            icon={<TicketPercent className="size-4" aria-hidden />}
+                            question={t('Have a coupon code?')}
+                            open={codes.coupon || !!form.errors.coupon_code}
+                            onToggle={() => setCodes((c) => ({ ...c, coupon: !c.coupon }))}
+                        >
+                            <Input label={t('Coupon code')} placeholder="WD-TRIAL-14" value={form.data.coupon_code} onChange={(e) => form.setData('coupon_code', e.target.value.toUpperCase())} error={form.errors.coupon_code} />
+                        </OptionalCode>
+                        {form.data.registration_type === 'lawyer' && (
+                            <OptionalCode
+                                icon={<Building2 className="size-4" aria-hidden />}
+                                question={t('Joining an existing law firm?')}
+                                open={codes.firm || !!form.errors.firm_invite_code}
+                                onToggle={() => setCodes((c) => ({ ...c, firm: !c.firm }))}
+                            >
+                                <Input label={t('Firm invite code')} placeholder="WD-ABC123" value={form.data.firm_invite_code} onChange={(e) => form.setData('firm_invite_code', e.target.value.toUpperCase())} error={form.errors.firm_invite_code} hint={t('Enter the code your firm shared. Leave blank to start your own chambers.')} />
+                            </OptionalCode>
+                        )}
+                    </div>
+                )}
+
                 <Checkbox
                     label={
                         <>
@@ -194,5 +185,18 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
                 <Link href={route('login')} className="font-medium text-navy-900 hover:underline dark:text-gold-300">{t('Sign in')}</Link>
             </p>
         </AuthLayout>
+    );
+}
+
+/** "Have a … code?" row that reveals its field on click. */
+function OptionalCode({ icon, question, open, onToggle, children }: { icon: ReactNode; question: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+    return (
+        <div className="rounded-lg border border-navy-100 dark:border-navy-700">
+            <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center justify-between px-4 py-3 text-start text-sm font-medium text-navy-800 hover:bg-navy-50 dark:text-navy-100 dark:hover:bg-white/5">
+                <span className="inline-flex items-center gap-2 text-navy-700 dark:text-navy-200">{icon}{question}</span>
+                <ChevronDown className={cn('size-4 text-navy-400 transition-transform', open && 'rotate-180')} aria-hidden />
+            </button>
+            {open && <div className="border-t border-navy-100 px-4 py-4 dark:border-navy-700">{children}</div>}
+        </div>
     );
 }

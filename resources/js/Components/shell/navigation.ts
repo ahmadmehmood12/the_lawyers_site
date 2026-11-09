@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-    Activity, BadgeCheck, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
+    Activity, BadgeCheck, CalendarRange, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
     LayoutDashboard, Landmark, MapPinned, MessageSquare, Newspaper, Receipt, ScrollText, Search, Settings, ShieldCheck, Sparkles, Star, Tags, UserCog, Users, Wallet, AlertOctagon, Globe, Inbox, KeyRound,
 } from 'lucide-react';
 
@@ -12,6 +12,7 @@ export const workspaceNav: NavGroup[] = [
         items: [
             { label: 'Dashboard', route: 'dashboard', icon: LayoutDashboard, mobile: true },
             { label: 'Court Diary', route: 'diary.index', icon: CalendarDays, match: 'diary.*', permission: 'hearings.view', mobile: true },
+            { label: 'Calendar', route: 'calendar.index', icon: CalendarRange, match: 'calendar.*' },
             { label: 'Cases', route: 'cases.index', icon: Briefcase, match: 'cases.*', mobile: true },
             { label: 'Clients', route: 'clients.index', icon: Users, match: 'clients.*', permission: 'clients.view' },
             { label: 'Tasks', route: 'tasks.index', icon: ClipboardList, match: 'tasks.*' },
@@ -44,6 +45,7 @@ export const portalNav: NavGroup[] = [
     {
         items: [
             { label: 'Dashboard', route: 'portal.dashboard', icon: LayoutDashboard, mobile: true },
+            { label: 'Calendar', route: 'calendar.index', icon: CalendarRange, match: 'calendar.*' },
             { label: 'My Cases', route: 'portal.cases.index', icon: Briefcase, match: 'portal.cases.*', mobile: true },
             { label: 'Documents', route: 'portal.documents.index', icon: FileText, match: 'portal.documents.*' },
             { label: 'Messages', route: 'portal.messages.index', icon: MessageSquare, match: 'portal.messages.*', mobile: true },
@@ -59,6 +61,7 @@ export const adminNav: NavGroup[] = [
     {
         items: [
             { label: 'Dashboard', route: 'admin.dashboard', icon: LayoutDashboard, mobile: true },
+            { label: 'Calendar', route: 'calendar.index', icon: CalendarRange, match: 'calendar.*' },
             { label: 'Users', route: 'admin.users.index', icon: Users, match: 'admin.users.*', platform: 'users.view', mobile: true },
             { label: 'Verification', route: 'admin.verifications.index', icon: ShieldCheck, match: 'admin.verifications.*', platform: 'verification.review', mobile: true },
             { label: 'Organizations', route: 'admin.organizations.index', icon: Building2, match: 'admin.organizations.*', platform: 'organizations.view' },

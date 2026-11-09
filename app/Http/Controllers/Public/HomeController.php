@@ -8,6 +8,7 @@ use App\Models\LawyerProfile;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\Specialization;
+use App\Services\Directory\HomepageShowcase;
 use App\Support\ReferenceOptions;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -39,6 +40,11 @@ class HomeController extends Controller
                 'price_yearly' => $p->price_yearly,
                 'trial_days' => $p->trial_days,
             ]),
+            // Deferred: real counts and the ranked lawyers load after first paint (skeletons meanwhile).
+            'showcase' => Inertia::defer(fn () => [
+                'stats' => app(HomepageShowcase::class)->stats(),
+                'top' => app(HomepageShowcase::class)->topLawyers(),
+            ], 'showcase'),
             'canonical' => route('home'),
         ]);
     }

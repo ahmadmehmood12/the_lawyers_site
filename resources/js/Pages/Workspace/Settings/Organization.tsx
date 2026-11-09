@@ -1,8 +1,9 @@
 import { router, useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, Input, LinkButton, PageHeader, Select, Textarea } from '@/Components/ui';
+import { controlClasses } from '@/Components/ui/Field';
 import AppLayout from '@/Layouts/AppLayout';
-import { formatDate, formatMoney } from '@/lib/format';
+import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
 
@@ -15,9 +16,10 @@ type Props = {
     plans: { slug: string; name: string; price_monthly: number; audience: string }[];
     cities: SelectOption[];
     whatsappConfigured: boolean;
+    reminderStats: Record<string, { next_run: string; due: number | null; last_sent: string | null; last_count: number }>;
 };
 
-export default function OrganizationSettings({ organization: o, canManage, reminders, subscription, plans, cities, whatsappConfigured }: Props) {
+export default function OrganizationSettings({ organization: o, canManage, reminders, subscription, plans, cities, whatsappConfigured, reminderStats }: Props) {
     const t = useT();
     const { locale } = useLocale();
     const s = (v: unknown) => (v === null || v === undefined ? '' : String(v));
@@ -68,22 +70,6 @@ export default function OrganizationSettings({ organization: o, canManage, remin
                         </CardBody>
                         {canManage && <div className="flex justify-end border-t border-navy-100 px-5 py-3 dark:border-navy-800"><Button type="submit" loading={form.processing}>{t('Save')}</Button></div>}
                     </Card>
-                    <Card>
-                        <CardHeader title={t('Reminder schedule')} description={t('When reminders are sent before hearings, appointments and payments.')} />
-                        <CardBody className="space-y-2">
-                            {!whatsappConfigured && <Alert tone="info">{t('WhatsApp is not connected on this platform yet; reminders currently go by in-app notification and email.')}</Alert>}
-                            {rem.data.reminders.map((r, i) => (
-                                <div key={i} className="flex flex-wrap items-center gap-3 rounded-lg border border-navy-100 px-3 py-2 text-sm dark:border-navy-800">
-                                    <select disabled={!canManage} value={r.event} onChange={(e) => setRem(i, { event: e.target.value })} className="rounded-md border-0 py-1 text-sm ring-1 ring-navy-200 dark:bg-navy-900 dark:ring-navy-700" aria-label={t('Event')}><option value="hearing">{t('Hearing')}</option><option value="appointment">{t('Appointment')}</option><option value="payment">{t('Payment')}</option></select>
-                                    <select disabled={!canManage} value={r.days_before} onChange={(e) => setRem(i, { days_before: Number(e.target.value) })} className="rounded-md border-0 py-1 text-sm ring-1 ring-navy-200 dark:bg-navy-900 dark:ring-navy-700" aria-label={t('When')}>{[0, 1, 2, 3, 5, 7, 14].map((d) => <option key={d} value={d}>{d === 0 ? t('Same day') : t(':count days before', { count: d })}</option>)}</select>
-                                    <Checkbox disabled={!canManage} label={t('Lawyer')} checked={r.notify_lawyer} onChange={(e) => setRem(i, { notify_lawyer: e.target.checked })} />
-                                    <Checkbox disabled={!canManage} label={t('Client')} checked={r.notify_client} onChange={(e) => setRem(i, { notify_client: e.target.checked })} />
-                                    {canManage && <button type="button" className="ms-auto text-navy-400 hover:text-red-600" onClick={() => rem.setData('reminders', rem.data.reminders.filter((_, j) => j !== i))} aria-label={t('Remove')}><Trash2 className="size-4" /></button>}
-                                </div>
-                            ))}
-                            {canManage && <div className="flex justify-between pt-2"><Button size="sm" variant="ghost" icon={<Plus className="size-4" />} onClick={() => rem.setData('reminders', [...rem.data.reminders, { event: 'hearing', days_before: 1, notify_lawyer: true, notify_client: true }])}>{t('Add reminder')}</Button><Button size="sm" loading={rem.processing} onClick={() => rem.put(route('settings.reminders.update'), { preserveScroll: true })}>{t('Save schedule')}</Button></div>}
-                        </CardBody>
-                    </Card>
                 </form>
                 <Card>
                     <CardHeader title={t('Subscription')} />
@@ -100,6 +86,53 @@ export default function OrganizationSettings({ organization: o, canManage, remin
                                 ))}
                             </div>
                         )}
+                    </CardBody>
+                </Card>
+                <Card className="lg:col-span-3">
+                    <CardHeader title={t('Reminder schedule')} description={t('When reminders are sent before hearings, appointments and payments.')} />
+                    <CardBody className="space-y-3">
+                        {!whatsappConfigured && <Alert tone="info">{t('WhatsApp is not connected on this platform yet; reminders currently go by in-app notification and email.')}</Alert>}
+                        <p className="text-xs text-navy-500 dark:text-navy-400">{t('Reminders go out once a day at 7:00 am (Pakistan time). Each rule sends only once per item.')}</p>
+                        <div className="-mx-5 overflow-x-auto">
+                            <table className="w-full min-w-[920px] text-sm">
+                                <thead className="border-y border-navy-100 bg-navy-50/60 text-start dark:border-navy-800 dark:bg-navy-800/40">
+                                    <tr className="text-[13px] text-navy-600 dark:text-navy-300">
+                                        <th scope="col" className="px-3 py-2 text-start font-semibold whitespace-nowrap">{t('Event')}</th>
+                                        <th scope="col" className="px-3 py-2 text-start font-semibold whitespace-nowrap">{t('When')}</th>
+                                        <th scope="col" className="px-3 py-2 text-center font-semibold whitespace-nowrap">{t('Lawyer')}</th>
+                                        <th scope="col" className="px-3 py-2 text-center font-semibold whitespace-nowrap">{t('Client')}</th>
+                                        <th scope="col" className="px-3 py-2 text-start font-semibold whitespace-nowrap">{t('Channels')}</th>
+                                        <th scope="col" className="px-3 py-2 text-end font-semibold whitespace-nowrap">{t('Due on next run')}</th>
+                                        <th scope="col" className="px-3 py-2 text-start font-semibold whitespace-nowrap">{t('Last sent')}</th>
+                                        <th scope="col" className="px-3 py-2 text-start font-semibold whitespace-nowrap">{t('Status')}</th>
+                                        <th scope="col" className="px-3 py-2"><span className="sr-only">{t('Actions')}</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-navy-100 dark:divide-navy-800">
+                                    {rem.data.reminders.map((r, i) => {
+                                        const key = `${r.event}:${r.days_before}`;
+                                        const stat = reminderStats[key];
+                                        const duplicate = rem.data.reminders.findIndex((x) => x.event === r.event && x.days_before === r.days_before) !== i;
+                                        const sends = r.event !== 'payment';
+                                        const status = duplicate ? { tone: 'amber' as const, label: t('Duplicate') } : !sends ? { tone: 'neutral' as const, label: t('Not sent automatically yet') } : !r.notify_lawyer && !r.notify_client ? { tone: 'neutral' as const, label: t('Off') } : { tone: 'green' as const, label: t('Active') };
+                                        return (
+                                            <tr key={i} className="align-middle">
+                                                <td className="px-3 py-2"><select disabled={!canManage} value={r.event} onChange={(e) => setRem(i, { event: e.target.value })} className={controlClasses(false, 'h-9 min-w-36 py-1')} aria-label={t('Event')}><option value="hearing">{t('Hearing')}</option><option value="appointment">{t('Appointment')}</option><option value="payment">{t('Payment')}</option></select></td>
+                                                <td className="px-3 py-2"><select disabled={!canManage} value={r.days_before} onChange={(e) => setRem(i, { days_before: Number(e.target.value) })} className={controlClasses(false, 'h-9 min-w-40 py-1')} aria-label={t('When')}>{[0, 1, 2, 3, 5, 7, 14].map((d) => <option key={d} value={d}>{d === 0 ? t('Same day') : t(':count days before', { count: d })}</option>)}</select></td>
+                                                <td className="px-3 py-2 text-center"><input type="checkbox" disabled={!canManage} checked={r.notify_lawyer} onChange={(e) => setRem(i, { notify_lawyer: e.target.checked })} className="size-4 rounded border-navy-300" aria-label={t('Notify lawyer')} /></td>
+                                                <td className="px-3 py-2 text-center"><input type="checkbox" disabled={!canManage} checked={r.notify_client} onChange={(e) => setRem(i, { notify_client: e.target.checked })} className="size-4 rounded border-navy-300" aria-label={t('Notify client')} /></td>
+                                                <td className="px-3 py-2 text-xs whitespace-nowrap text-navy-600 dark:text-navy-300">{t('In-app, email')}{whatsappConfigured ? t(', WhatsApp (with consent)') : ''}</td>
+                                                <td className="px-3 py-2 text-end tabular-nums">{stat && stat.due !== null ? <span title={formatDateTime(stat.next_run, locale)}>{stat.due}</span> : <span className="text-navy-400">—</span>}</td>
+                                                <td className="px-3 py-2 text-xs whitespace-nowrap">{stat?.last_sent ? `${formatDate(stat.last_sent, locale)}, ${t(':count items', { count: stat.last_count })}` : <span className="text-navy-400">{stat ? t('Not yet') : t('Save to see')}</span>}</td>
+                                                <td className="px-3 py-2 whitespace-nowrap"><Badge tone={status.tone}>{status.label}</Badge></td>
+                                                <td className="px-3 py-2 text-end">{canManage && <button type="button" className="rounded p-1 text-navy-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40" onClick={() => rem.setData('reminders', rem.data.reminders.filter((_, j) => j !== i))} aria-label={t('Remove')}><Trash2 className="size-4" /></button>}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                        {canManage && <div className="flex justify-between pt-2"><Button size="sm" variant="ghost" icon={<Plus className="size-4" />} onClick={() => rem.setData('reminders', [...rem.data.reminders, { event: 'hearing', days_before: 1, notify_lawyer: true, notify_client: true }])}>{t('Add reminder')}</Button><Button size="sm" loading={rem.processing} onClick={() => rem.put(route('settings.reminders.update'), { preserveScroll: true })}>{t('Save schedule')}</Button></div>}
                     </CardBody>
                 </Card>
             </div>

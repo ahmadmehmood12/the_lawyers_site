@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, MotionConfig, useInView } from 'framer-motion';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -9,6 +9,12 @@ import { cn } from '@/lib/cn';
 import { formatDate, formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
+import { DraftingTyper } from '@/Components/home/DraftingTyper';
+import { Reveal } from '@/Components/home/Reveal';
+import { type ShowcaseStats, StatsStrip } from '@/Components/home/StatsStrip';
+import { TopLawyers, type TopLawyersData } from '@/Components/home/TopLawyers';
+import { WhatsAppAlert } from '@/Components/home/WhatsAppAlert';
+import type { SharedProps } from '@/types';
 import '../../../css/home.css';
 
 type Plan = { slug: string; name: string; audience: string; description: string | null; price_monthly: number; price_yearly: number; trial_days: number };
@@ -17,6 +23,8 @@ type Props = {
     cities: SelectOption[];
     articles: { slug: string; title: string; excerpt: string | null; author: string; published_at: string }[];
     plans: Plan[];
+    /** Deferred: real platform totals and ranked lawyers (App\Services\Directory\HomepageShowcase). */
+    showcase?: { stats: ShowcaseStats; top: TopLawyersData };
     canonical: string;
 };
 
@@ -33,7 +41,7 @@ function Shot({ capture, eager = false, className }: { capture: Capture; eager?:
     );
 }
 
-export default function Home({ specializations, cities, articles, plans, canonical }: Props) {
+export default function Home({ specializations, cities, articles, plans, showcase, canonical }: Props) {
     const t = useT();
     const { locale } = useLocale();
     const [query, setQuery] = useState({ search: '', city: '', specialization: '' });
@@ -50,10 +58,12 @@ export default function Home({ specializations, cities, articles, plans, canonic
             <MotionConfig reducedMotion="user">
                 <div className="hm">
                     <Hero />
+                    <StatsStrip stats={showcase?.stats} />
                     <HearingRun />
                     <CaseFile />
                     <Desks />
                     <Paperwork />
+                    <TopLawyers data={showcase?.top} />
                     <Plans plans={plans} />
                     <Questions />
 
@@ -122,6 +132,7 @@ export default function Home({ specializations, cities, articles, plans, canonic
 
 function Hero() {
     const t = useT();
+    const { app } = usePage<SharedProps>().props;
     return (
         <section className="flex items-center overflow-hidden py-12 lg:min-h-[calc(100svh-4rem)] lg:py-16" aria-labelledby="hm-hero">
             <div className="hm-wrap grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -133,8 +144,9 @@ function Hero() {
                         <LinkButton href={route('lawyers.index')} variant="secondary" size="lg">{t('Find a lawyer')}</LinkButton>
                     </div>
                 </div>
-                <motion.div className="lg:w-[118%]" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
+                <motion.div className="relative lg:w-[118%]" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
                     <Shot eager capture={{ src: '/images/screens/dashboard.webp', alt: t('An advocate’s dashboard with three hearings in court today') }} />
+                    <WhatsAppAlert siteName={app.name} />
                 </motion.div>
             </div>
         </section>
@@ -208,8 +220,8 @@ function CaseFile() {
     return (
         <section className="py-20 lg:py-28" aria-labelledby="hm-file">
             <div className="hm-wrap grid items-center gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-                <Shot capture={{ src: '/images/screens/case-overview.webp', alt: t('A bail case file with parties, court and next hearing') }} />
-                <div>
+                <Reveal><Shot capture={{ src: '/images/screens/case-overview.webp', alt: t('A bail case file with parties, court and next hearing') }} /></Reveal>
+                <Reveal delay={0.1}>
                     <h2 id="hm-file" className="text-4xl font-semibold sm:text-5xl">{t('The file holds the whole matter')}</h2>
                     <dl className="mt-8 divide-y divide-navy-100 border-y border-navy-100 dark:divide-navy-800 dark:border-navy-800">
                         {rows.map(([term, detail]) => (
@@ -219,7 +231,7 @@ function CaseFile() {
                             </div>
                         ))}
                     </dl>
-                </div>
+                </Reveal>
             </div>
         </section>
     );
@@ -280,7 +292,7 @@ function Paperwork() {
     return (
         <section className="py-20 lg:py-28" aria-labelledby="hm-paper">
             <div className="hm-wrap grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-                <div>
+                <Reveal>
                     <h2 id="hm-paper" className="text-4xl font-semibold sm:text-5xl">{t('Drafts, documents and receipts')}</h2>
                     <dl className="mt-8 space-y-6">
                         {rows.map(([term, detail]) => (
@@ -290,8 +302,13 @@ function Paperwork() {
                             </div>
                         ))}
                     </dl>
+                </Reveal>
+                <div className="relative pb-6 lg:pb-0">
+                    <Reveal><Shot capture={{ src: '/images/screens/draft-editor.webp', alt: t('A post-arrest bail application in the drafting editor') }} /></Reveal>
+                    <div className="relative mx-auto -mt-10 w-[min(22rem,90%)] lg:absolute lg:-bottom-8 lg:end-[-1rem] lg:mt-0">
+                        <DraftingTyper />
+                    </div>
                 </div>
-                <Shot capture={{ src: '/images/screens/draft-editor.webp', alt: t('A post-arrest bail application in the drafting editor') }} />
             </div>
         </section>
     );

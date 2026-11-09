@@ -7,9 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\LawyerProfile;
 use App\Models\Organization;
 use App\Support\DirectoryPresenter;
+use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,8 +39,8 @@ class FirmDirectoryController extends Controller
 
         $lawyers = LawyerProfile::query()->listed()
             ->whereIn('user_id', $firm->activeMembers()->select('user_id'))
-            ->with(['user:id,name', 'specializations:id,name,slug', 'city:id,name'])->get()
-            ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->user->name, 'headline' => $p->headline, 'verified' => $p->isVerified(), 'photo_url' => $p->photo_path ? Storage::disk('public')->url($p->photo_path) : null, 'specializations' => $p->specializations->pluck('name')]);
+            ->with(['user:id,name,avatar_path', 'specializations:id,name,slug', 'city:id,name'])->get()
+            ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->user->name, 'headline' => $p->headline, 'verified' => $p->isVerified(), 'photo_url' => PublicFile::url($p->photo_path), 'specializations' => $p->specializations->pluck('name')]);
 
         return Inertia::render('Public/Firms/Show', [
             'firm' => [...DirectoryPresenter::firm($firm), 'description' => app()->getLocale() === 'ur' && $firm->description_ur ? $firm->description_ur : $firm->description, 'address' => $firm->address, 'phone' => $firm->phone, 'email' => $firm->email, 'website' => $firm->website, 'founded_year' => $firm->founded_year],

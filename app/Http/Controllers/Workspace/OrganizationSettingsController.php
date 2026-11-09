@@ -2,7 +2,13 @@
 
 namespace App\Http\Controllers\Workspace;
 
+use App\Enums\AppointmentStatus;
+use App\Enums\HearingStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
+use App\Models\Hearing;
+use App\Models\NotificationDelivery;
+use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\ReminderSetting;
 use App\Rules\PakistaniPhone;
@@ -10,6 +16,7 @@ use App\Services\Access\OrganizationAccess;
 use App\Services\Subscriptions\SubscriptionService;
 use App\Services\WhatsApp\WhatsAppClient;
 use App\Support\ImageReencoder;
+use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,7 +41,7 @@ class OrganizationSettingsController extends Controller
         $reminders = ReminderSetting::query()->forOrganization($organization)->orderBy('event')->orderByDesc('days_before')->get(['event', 'days_before', 'notify_lawyer', 'notify_client']);
 
         return Inertia::render('Workspace/Settings/Organization', [
-            'organization' => [...$organization->only(['id', 'name', 'type', 'description', 'description_ur', 'email', 'phone', 'website', 'address', 'city_id', 'registration_number', 'ntn', 'founded_year', 'is_public', 'slug']), 'type' => $organization->type->value, 'logo_url' => $organization->logo_path ? Storage::disk('public')->url($organization->logo_path) : null],
+            'organization' => [...$organization->only(['id', 'name', 'type', 'description', 'description_ur', 'email', 'phone', 'website', 'address', 'city_id', 'registration_number', 'ntn', 'founded_year', 'is_public', 'slug']), 'type' => $organization->type->value, 'logo_url' => PublicFile::url($organization->logo_path)],
             'canManage' => $this->canManage($request),
             'reminders' => $reminders->isEmpty()
                 ? collect(config('legal.default_reminders'))->flatMap(fn ($days, $event) => collect($days)->map(fn ($d) => ['event' => $event, 'days_before' => $d, 'notify_lawyer' => true, 'notify_client' => true]))->values()
@@ -48,7 +55,53 @@ class OrganizationSettingsController extends Controller
             'plans' => Plan::query()->where('is_active', true)->orderBy('sort_order')->get(['slug', 'name', 'price_monthly', 'price_yearly', 'audience']),
             'cities' => ReferenceOptions::cities(),
             'whatsappConfigured' => app(WhatsAppClient::class)->isConfigured(),
+            'reminderStats' => $this->reminderStats($organization, $reminders->isEmpty()
+                ? collect(config('legal.default_reminders'))->flatMap(fn ($days, $event) => collect($days)->map(fn ($d) => ['event' => $event, 'days_before' => $d]))
+                : $reminders->map(fn ($r) => ['event' => $r->event, 'days_before' => $r->days_before])),
         ]);
+    }
+
+    /**
+     * Real figures for each reminder rule in the Reminder schedule table: how many items the
+     * next 07:00 run will remind about, and when this rule last sent (from the job's claim rows
+     * in notification_deliveries). Payment reminders are configurable but not dispatched yet.
+     *
+     * @param  iterable<array{event: string, days_before: int}>  $rules
+     * @return array<string, array{next_run: string, due: int|null, last_sent: string|null, last_count: int}>
+     */
+    private function reminderStats(Organization $organization, iterable $rules): array
+    {
+        $now = now();
+        $run = $now->hour < 7 ? $now->copy()->startOfDay() : $now->copy()->addDay()->startOfDay();
+        $stats = [];
+
+        foreach ($rules as $rule) {
+            $key = $rule['event'].':'.$rule['days_before'];
+            if (isset($stats[$key])) {
+                continue;
+            }
+            $target = $run->copy()->addDays((int) $rule['days_before'])->toDateString();
+            $due = match ($rule['event']) {
+                'hearing' => Hearing::query()->forOrganization($organization)->where('status', HearingStatus::Scheduled->value)->whereDate('hearing_date', $target)->count(),
+                'appointment' => Appointment::query()->forOrganization($organization)->where('status', AppointmentStatus::Confirmed->value)->whereDate('starts_at', $target)->count(),
+                default => null,
+            };
+            $last = in_array($rule['event'], ['hearing', 'appointment'], true)
+                ? NotificationDelivery::query()->where('organization_id', $organization->id)->where('event', $rule['event'].'_reminder')
+                    ->where('dedupe_key', 'like', 'reminder:'.$rule['event'].':%:'.(int) $rule['days_before'])
+                    ->selectRaw('DATE(MAX(sent_at)) as day')->value('day')
+                : null;
+
+            $stats[$key] = [
+                'next_run' => $run->copy()->setTime(7, 0)->toIso8601String(),
+                'due' => $due,
+                'last_sent' => $last,
+                'last_count' => $last ? NotificationDelivery::query()->where('organization_id', $organization->id)->where('event', $rule['event'].'_reminder')
+                    ->where('dedupe_key', 'like', 'reminder:'.$rule['event'].':%:'.(int) $rule['days_before'])->whereDate('sent_at', $last)->count() : 0,
+            ];
+        }
+
+        return $stats;
     }
 
     public function update(Request $request): RedirectResponse

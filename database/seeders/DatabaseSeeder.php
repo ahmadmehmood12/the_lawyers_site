@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
 
         if (app()->environment('local')) {
             $this->call(DemoSeeder::class);
+            // Legal-awareness articles; in production run `php artisan db:seed --class=ArticleSeeder` after counsel review.
+            $this->call(ArticleSeeder::class);
         }
     }
 }

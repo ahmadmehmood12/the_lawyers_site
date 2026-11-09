@@ -272,6 +272,20 @@ class CaseController extends Controller
             'preparation_notes' => $h->preparation_notes,
             'visible_to_client' => $h->visible_to_client,
             'has_outcome' => $h->hasOutcome(),
+            // Reschedule chain (only when eager-loaded): the date this hearing replaced, or where it moved to.
+            'rescheduled_from' => $h->relationLoaded('rescheduledFrom') && $h->rescheduledFrom ? [
+                'id' => $h->rescheduledFrom->id,
+                'hearing_date' => $h->rescheduledFrom->hearing_date->toDateString(),
+                'hearing_time' => $h->rescheduledFrom->hearing_time ? substr($h->rescheduledFrom->hearing_time, 0, 5) : null,
+                'reason' => $h->rescheduledFrom->reschedule_reason,
+            ] : null,
+            'rescheduled_to' => $h->relationLoaded('rescheduledTo') && $h->rescheduledTo ? [
+                'id' => $h->rescheduledTo->id,
+                'hearing_date' => $h->rescheduledTo->hearing_date->toDateString(),
+                'hearing_time' => $h->rescheduledTo->hearing_time ? substr($h->rescheduledTo->hearing_time, 0, 5) : null,
+            ] : null,
+            'reschedule_reason' => $h->reschedule_reason,
+            'cancellation_reason' => $h->cancellation_reason,
         ];
     }
 
@@ -285,7 +299,7 @@ class CaseController extends Controller
         return match ($tab) {
             'parties' => ['parties' => $case->parties()->get()->map(fn ($p) => [...$p->only(['id', 'name', 'father_name', 'address', 'counsel_name', 'is_our_side']), 'role' => $p->role->value, 'role_label' => $p->role->label()])],
             'hearings' => [
-                'hearings' => $case->hearings()->with(['court:id,name', 'judge:id,name', 'assignedLawyer:id,name', 'recorder:id,name'])
+                'hearings' => $case->hearings()->with(['court:id,name', 'judge:id,name', 'assignedLawyer:id,name', 'recorder:id,name', 'rescheduledFrom:id,rescheduled_to_id,hearing_date,hearing_time,reschedule_reason', 'rescheduledTo:id,hearing_date,hearing_time'])
                     ->orderByDesc('hearing_date')->orderByDesc('id')->get()
                     ->map(fn (Hearing $h) => [
                         ...self::hearingSummary($h),

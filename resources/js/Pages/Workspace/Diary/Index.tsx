@@ -1,7 +1,8 @@
-import { router, useForm } from '@inertiajs/react';
-import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPlus, Filter, NotebookPen, Printer, Trash2 } from 'lucide-react';
+import { Link, router, useForm } from '@inertiajs/react';
+import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, ClipboardPlus, Filter, NotebookPen, Printer, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { HearingCard } from '@/Components/domain/HearingCard';
+import { HearingHistoryDialog } from '@/Components/domain/HearingHistoryDialog';
 import { OutcomeDialog, RescheduleDialog } from '@/Components/domain/HearingDialogs';
 import { TaskDialog } from '@/Components/domain/TaskDialog';
 import { Button, Card, CardBody, CardHeader, EmptyState, Input, Modal, MonthCalendar, PageHeader, Select, Tabs } from '@/Components/ui';
@@ -22,7 +23,8 @@ type Props = {
     entries: Entry[];
     monthCounts: Record<string, number>;
     filters: Record<string, string>;
-    options: { courts: SelectOption[]; districts: SelectOption[]; lawyers: SelectOption[]; cases: SelectOption[]; attendance: Option[]; hearingTypes: Option[] };
+    options: { courts: SelectOption[]; districts: SelectOption[]; lawyers: SelectOption[]; cases: SelectOption[]; attendance: Option[]; hearingTypes: Option[]; statuses: Option[] };
+    statusCounts: Record<string, number>;
     can: { manage: boolean; record: boolean; upload: boolean; tasks: boolean; viewAll: boolean };
 };
 
@@ -32,13 +34,14 @@ const shiftDate = (iso: string, days: number) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-export default function DiaryIndex({ view, date, month, range, hearings, entries, monthCounts, filters, options, can }: Props) {
+export default function DiaryIndex({ view, date, month, range, hearings, entries, monthCounts, statusCounts, filters, options, can }: Props) {
     const t = useT();
     const { locale } = useLocale();
     const [outcome, setOutcome] = useState<HearingSummary | null>(null);
     const [reschedule, setReschedule] = useState<HearingSummary | null>(null);
     const [taskFor, setTaskFor] = useState<HearingSummary | null>(null);
     const [noteOpen, setNoteOpen] = useState(false);
+    const [history, setHistory] = useState<HearingSummary | null>(null);
     const [showFilters, setShowFilters] = useState(Object.keys(filters).length > 0);
     const visit = (params: Record<string, string | undefined>) => router.get(route('diary.index'), { view, date, ...filters, ...params }, { preserveState: true, preserveScroll: true, replace: true });
 
@@ -74,6 +77,7 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
                 description={view === 'day' ? formatDate(date, locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : `${formatDate(range.from, locale)} – ${formatDate(range.to, locale)}`}
                 actions={
                     <>
+                        <Link href={route('calendar.index', { view: view === 'agenda' ? 'agenda' : view, date })} className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-navy-700 hover:bg-navy-100 dark:text-navy-200 dark:hover:bg-white/10 dark:hover:text-gold-300"><CalendarRange className="size-4" />{t('Calendar')}</Link>
                         <Button variant="secondary" icon={<NotebookPen className="size-4" />} onClick={() => setNoteOpen(true)}>{t('Diary note')}</Button>
                         <a href={route('diary.pdf', { date, ...filters })} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-4 text-sm font-medium ring-1 ring-navy-200 ring-inset hover:bg-navy-50 dark:bg-navy-900 dark:ring-navy-700">
                             <Printer className="size-4" />{t('Print / PDF')}
@@ -106,6 +110,7 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
                         <Input label={t('Judge')} defaultValue={filters.judge ?? ''} onBlur={(e) => visit({ judge: e.target.value || undefined })} />
                         <Select label={t('Case')} value={filters.case_id ?? ''} onChange={(e) => visit({ case_id: e.target.value || undefined })} options={options.cases} placeholder={t('All')} />
                         {can.viewAll && <Select label={t('Lawyer')} value={filters.lawyer_id ?? ''} onChange={(e) => visit({ lawyer_id: e.target.value || undefined })} options={options.lawyers} placeholder={t('All')} />}
+                        <Select label={t('Status')} value={filters.status ?? ''} onChange={(e) => visit({ status: e.target.value || undefined })} options={options.statuses} placeholder={t('All')} />
                     </CardBody>
                 </Card>
             )}
@@ -118,6 +123,16 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
                             <p className="text-sm">{t(':count hearings scheduled', { count: scheduledToday })}</p>
                         </div>
                     )}
+                    {hearings.length > 0 && (
+                        <div className="flex flex-wrap gap-2" aria-label={t('Hearings by status')}>
+                            {options.statuses.filter((s) => statusCounts[s.value]).map((s) => (
+                                <button key={s.value} type="button" onClick={() => visit({ status: filters.status === s.value ? undefined : s.value })} aria-pressed={filters.status === s.value}
+                                    className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium', filters.status === s.value ? 'border-navy-900 bg-navy-900 text-white dark:border-gold-500 dark:bg-gold-500 dark:text-navy-950' : 'border-navy-200 text-navy-700 hover:border-navy-400 dark:border-navy-700 dark:text-navy-200')}>
+                                    <span className="tabular-nums">{statusCounts[s.value]}</span> {s.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     {grouped.length === 0 && entries.length === 0 && <Card><EmptyState icon={<CalendarDays className="size-5" />} title={t('No hearings in this period')} description={t('Hearings you schedule on cases appear here.')} /></Card>}
                     {grouped.map(([day, items]) => (
                         <section key={day}>
@@ -125,9 +140,9 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
                             <div className="space-y-2.5">
                                 {items.map((h) => (
                                     <div key={h.id}>
-                                        <HearingCard hearing={h} actions={actions(h)} />
+                                        <HearingCard hearing={h} actions={actions(h)} onHistory={setHistory} />
                                         {h.clients && h.clients.length > 0 && view === 'day' && (
-                                            <p className="mt-1 ps-20 text-xs text-navy-500">
+                                            <p className="mt-1 ps-4 text-xs text-navy-500">
                                                 {h.clients.map((c) => (
                                                     <span key={c.name} className="me-3">{c.name}{c.phone && <a href={`tel:${c.phone}`} className="ltr-nums ms-1 underline">{c.phone}</a>}</span>
                                                 ))}
@@ -167,6 +182,7 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
 
             <OutcomeDialog hearing={outcome} onClose={() => setOutcome(null)} options={options} canUpload={can.upload} />
             <RescheduleDialog hearing={reschedule} onClose={() => setReschedule(null)} />
+            <HearingHistoryDialog hearing={history} onClose={() => setHistory(null)} />
             <TaskDialog open={!!taskFor} onClose={() => setTaskFor(null)} caseId={taskFor?.case?.id} hearingId={taskFor?.id} members={options.lawyers} priorities={[{ value: 'normal', label: t('Normal') }, { value: 'high', label: t('High') }, { value: 'urgent', label: t('Urgent') }, { value: 'low', label: t('Low') }]} />
             <DiaryNoteDialog open={noteOpen} onClose={() => setNoteOpen(false)} date={date} cases={options.cases} />
         </AppLayout>

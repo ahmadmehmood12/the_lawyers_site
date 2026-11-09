@@ -33,7 +33,7 @@ class LawyerDirectoryController extends Controller
 
         $lawyers = LawyerProfile::query()->listed()
             ->with([
-                'user:id,name',
+                'user:id,name,avatar_path',
                 'user.memberships' => fn ($q) => $q->where('status', 'active')
                     ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
                 'user.memberships.organization:id,name,slug',
@@ -81,7 +81,7 @@ class LawyerDirectoryController extends Controller
         abort_unless(LawyerProfile::query()->listed()->whereKey($lawyer->id)->exists(), 404);
 
         $lawyer->load([
-            'user:id,name',
+            'user:id,name,avatar_path',
             'user.memberships' => fn ($q) => $q->where('status', 'active')
                 ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
             'user.memberships.organization:id,name,slug',

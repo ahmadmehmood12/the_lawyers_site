@@ -54,7 +54,7 @@ class DashboardController extends Controller
                 'lawyers' => LawyerProfile::query()->listed()
                     ->where('verification_status', VerificationStatus::Approved->value)
                     ->with([
-                        'user:id,name',
+                        'user:id,name,avatar_path',
                         'user.memberships' => fn ($q) => $q->where('status', 'active')
                             ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
                         'user.memberships.organization:id,name,slug',

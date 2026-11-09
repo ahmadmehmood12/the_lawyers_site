@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['organization_id', 'lawyer_id', 'client_id', 'requested_by', 'legal_case_id', 'contact_name', 'contact_phone', 'contact_email', 'mode', 'kind', 'starts_at', 'ends_at', 'status', 'fee', 'client_message', 'lawyer_notes', 'meeting_link', 'cancellation_reason', 'rescheduled_from_id'])]
 class Appointment extends Model
@@ -44,6 +45,18 @@ class Appointment extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    /** The appointment this one replaced (the old row is cancelled, never edited). */
+    public function rescheduledFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'rescheduled_from_id');
+    }
+
+    /** The replacement booked when this appointment was rescheduled. */
+    public function rescheduledTo(): HasOne
+    {
+        return $this->hasOne(self::class, 'rescheduled_from_id');
     }
 
     public function legalCase(): BelongsTo

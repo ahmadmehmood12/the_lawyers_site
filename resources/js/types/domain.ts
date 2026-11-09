@@ -18,6 +18,12 @@ export type HearingSummary = {
     has_outcome: boolean;
     case?: { id: number; title: string; reference: string; case_number?: string | null };
     clients?: { name: string; phone: string | null }[];
+    /** Set when this hearing replaced an earlier date (rescheduled). */
+    rescheduled_from?: { id: number; hearing_date: string; hearing_time: string | null; reason: string | null } | null;
+    /** Set on the old row when it was moved. */
+    rescheduled_to?: { id: number; hearing_date: string; hearing_time: string | null } | null;
+    reschedule_reason?: string | null;
+    cancellation_reason?: string | null;
 };
 
 export type TaskItem = {

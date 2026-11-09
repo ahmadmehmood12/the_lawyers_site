@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Activity;
+use App\Models\CalendarEvent;
 use App\Models\Client;
 use App\Models\ContactMessage;
 use App\Models\Document;
@@ -17,7 +18,6 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -67,7 +67,7 @@ class ActivityPresenter
             'id' => $activity->id,
             'sentence' => $sentence,
             'actor' => $actor,
-            'actor_avatar' => $activity->causer instanceof User && $activity->causer->avatar_path ? Storage::disk('public')->url($activity->causer->avatar_path) : null,
+            'actor_avatar' => $activity->causer instanceof User ? PublicFile::url($activity->causer->avatar_path) : null,
             'icon' => self::icon($activity),
             'url' => $audience === 'organization' ? self::url($activity) : null,
             'log' => (string) $activity->log_name,
@@ -143,6 +143,12 @@ class ActivityPresenter
             $event === 'mail_test_sent' => ':actor sent a test email',
             $event === 'whatsapp_settings_changed' => ':actor updated the WhatsApp settings',
             $event === 'support_message_updated' => ':actor updated feedback :subject',
+            $event === 'calendar_event_created' => ':actor added :subject to the calendar',
+            $event === 'calendar_event_updated' => ':actor updated the event :subject',
+            $event === 'calendar_event_rescheduled' => ':actor rescheduled the event :subject',
+            $event === 'calendar_event_cancelled' => ':actor cancelled the event :subject',
+            $event === 'calendar_event_completed' => ':actor marked the event :subject as done',
+            $event === 'auth_media_changed' => ':actor updated the sign-in page media',
 
             default => ':actor :action :subject',
         };
@@ -166,6 +172,7 @@ class ActivityPresenter
             $s instanceof Organization => $s->name,
             $s instanceof User => $s->name,
             $s instanceof ContactMessage => (string) $s->reference,
+            $s instanceof CalendarEvent => $private ? __('event #:id', ['id' => $s->id]) : $s->title,
             $s !== null && method_exists($s, 'getAttribute') && $s->getAttribute('name') => (string) $s->getAttribute('name'),
             $activity->subject_type !== null => __('a deleted record'),
             default => '',

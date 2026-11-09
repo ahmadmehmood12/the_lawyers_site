@@ -10,7 +10,7 @@ const variants: Record<Variant, string> = {
     primary: 'bg-navy-900 text-white hover:bg-navy-800 dark:bg-gold-500 dark:text-navy-950 dark:hover:bg-gold-400',
     secondary:
         'bg-white text-navy-800 ring-1 ring-inset ring-navy-200 hover:bg-navy-50 dark:bg-navy-900 dark:text-navy-100 dark:ring-navy-700 dark:hover:bg-navy-800',
-    ghost: 'text-navy-700 hover:bg-navy-100 dark:text-navy-200 dark:hover:bg-navy-800',
+    ghost: 'text-navy-700 hover:bg-navy-100 hover:text-navy-950 dark:text-navy-200 dark:hover:bg-white/10 dark:hover:text-gold-300',
     danger: 'bg-red-700 text-white hover:bg-red-800',
     success: 'bg-verdant-700 text-white hover:bg-verdant-800',
     gold: 'bg-gold-500 text-navy-950 hover:bg-gold-400',

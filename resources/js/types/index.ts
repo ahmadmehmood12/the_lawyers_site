@@ -44,6 +44,8 @@ export type SharedProps = {
     };
     unread: { notifications: number } | null;
     flash: { success: string | null; error: string | null };
+    /** Only on sign-in / sign-up pages (Admin, Settings, Sign-in page media). */
+    authMedia?: AuthMedia | null;
     errors: Record<string, string>;
     [key: string]: unknown;
 };
@@ -60,3 +62,16 @@ export type Paginated<T> = {
 };
 
 export type Enum = { value: string; label: string };
+
+export type AuthMedia = {
+    enabled: boolean;
+    mode: 'image' | 'video';
+    image_url: string | null;
+    video_url: string | null;
+    poster_url: string | null;
+    heading: string;
+    description: string;
+    heading_ur: string;
+    description_ur: string;
+    default_image: string;
+};

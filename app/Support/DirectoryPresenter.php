@@ -5,7 +5,6 @@ namespace App\Support;
 use App\Models\LawyerProfile;
 use App\Models\Organization;
 use App\Models\Specialization;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Shapes public directory records for the shared React cards. Used by the
@@ -28,7 +27,7 @@ class DirectoryPresenter
             'slug' => $p->slug,
             'name' => trim(($p->title ? $p->title.' ' : '').$p->user->name),
             'headline' => $p->headline,
-            'photo_url' => ($photo = $p->photo_path ?: $p->user->avatar_path) ? Storage::disk('public')->url($photo) : null,
+            'photo_url' => PublicFile::url($p->photo_path) ?? PublicFile::url($p->user->avatar_path),
             'city' => $p->city ? ($ur && $p->city->name_ur ? $p->city->name_ur : $p->city->name) : null,
             'specializations' => $p->specializations->map(fn ($s) => ['slug' => $s->slug, 'name' => $ur && $s->name_ur ? $s->name_ur : $s->name])->values(),
             'bar_council' => $p->barCouncil?->name,
@@ -61,7 +60,7 @@ class DirectoryPresenter
             'slug' => $o->slug,
             'name' => $o->name,
             'city' => $o->city ? ($ur && $o->city->name_ur ? $o->city->name_ur : $o->city->name) : null,
-            'logo_url' => $o->logo_path ? Storage::disk('public')->url($o->logo_path) : null,
+            'logo_url' => PublicFile::url($o->logo_path),
             'members' => $o->active_members_count ?? $o->activeMembers()->count(),
             'founded_year' => $o->founded_year,
             'excerpt' => str($ur && $o->description_ur ? $o->description_ur : $o->description)->limit(180)->toString(),

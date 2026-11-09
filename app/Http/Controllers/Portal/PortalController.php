@@ -22,11 +22,11 @@ use App\Services\Appointments\AppointmentService;
 use App\Services\Cases\Timeline;
 use App\Services\Documents\DocumentVault;
 use App\Services\Pdf\PdfRenderer;
+use App\Support\PublicFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -234,7 +234,7 @@ class PortalController extends Controller
     {
         return Inertia::render('Portal/Favourites', [
             'lawyers' => $request->user()->favouriteLawyers()->listed()->with(['user:id,name', 'city:id,name'])->get()
-                ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->user->name, 'headline' => $p->headline, 'city' => $p->city?->name, 'verified' => $p->isVerified(), 'photo_url' => $p->photo_path ? Storage::disk('public')->url($p->photo_path) : null]),
+                ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->user->name, 'headline' => $p->headline, 'city' => $p->city?->name, 'verified' => $p->isVerified(), 'photo_url' => PublicFile::url($p->photo_path)]),
         ]);
     }
 

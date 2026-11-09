@@ -7,6 +7,7 @@ use App\Http\Controllers\Account\NotificationController;
 use App\Http\Controllers\Account\OnboardingController;
 use App\Http\Controllers\Account\OrganizationSwitchController;
 use App\Http\Controllers\Account\PreferenceController;
+use App\Http\Controllers\Shared\CalendarController;
 use App\Http\Controllers\Workspace\InvitationController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,16 @@ Route::middleware('auth')->group(function () {
     Route::get('home', HomeRedirectController::class)->name('home.redirect');
     Route::post('theme', [PreferenceController::class, 'theme'])->name('theme.update');
     Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
+
+    // Calendar for every account type (docs/Modules/Calendar.md).
+    Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('calendar/events', [CalendarController::class, 'events'])->middleware('throttle:120,1')->name('calendar.events');
+    Route::post('calendar/events', [CalendarController::class, 'store'])->middleware('throttle:30,1')->name('calendar.store');
+    Route::put('calendar/events/{event}', [CalendarController::class, 'update'])->name('calendar.update');
+    Route::post('calendar/events/{event}/reschedule', [CalendarController::class, 'reschedule'])->name('calendar.reschedule');
+    Route::post('calendar/events/{event}/cancel', [CalendarController::class, 'cancel'])->name('calendar.cancel');
+    Route::post('calendar/events/{event}/complete', [CalendarController::class, 'complete'])->name('calendar.complete');
+    Route::get('calendar/history/{source}/{id}', [CalendarController::class, 'history'])->whereIn('source', ['event', 'hearing', 'appointment'])->whereNumber('id')->name('calendar.history');
 
     Route::get('feedback', [FeedbackController::class, 'create'])->name('feedback.create');
     Route::post('feedback', [FeedbackController::class, 'store'])->middleware('throttle:6,1')->name('feedback.store');

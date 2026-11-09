@@ -2,12 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Admin\PlatformController;
 use App\Models\Setting;
 use App\Services\Access\CurrentOrganization;
 use App\Services\Access\OrganizationAccess;
+use App\Support\PublicFile;
 use App\Support\Translations;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Middleware;
 
@@ -41,8 +42,8 @@ class HandleInertiaRequests extends Middleware
             'app' => [
                 'name' => Setting::get('site_name') ?: config('app.name'),
                 'tagline' => Setting::get('site_tagline') ?: '',
-                'logo_url' => $logoPath ? Storage::disk('public')->url($logoPath) : null,
-                'favicon_url' => $faviconPath ? Storage::disk('public')->url($faviconPath) : null,
+                'logo_url' => PublicFile::url($logoPath),
+                'favicon_url' => PublicFile::url($faviconPath),
                 'social' => [
                     'facebook' => Setting::get('social_facebook') ?: null,
                     'instagram' => Setting::get('social_instagram') ?: null,
@@ -56,6 +57,10 @@ class HandleInertiaRequests extends Middleware
                 'locales' => ['en' => 'English', 'ur' => 'اردو'],
                 'site_theme' => Setting::get('site_theme', 'navy-gold') === 'white-green' ? 'white-green' : 'navy-gold',
             ],
+            // Sign-in / sign-up promotional panel, only on the auth pages (Admin, Settings, Sign-in page).
+            'authMedia' => $request->routeIs('login', 'register', 'password.request', 'password.reset', 'two-factor.login', 'verification.notice', 'password.confirm', 'invitations.show')
+                ? fn () => PlatformController::authMedia()
+                : null,
             'translations' => Inertia::once(fn () => Translations::forLocale($locale))->as('translations-'.$locale),
             'auth' => [
                 'user' => $user ? [
@@ -63,7 +68,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone' => $user->phone,
-                    'avatar_url' => $avatarPath ? Storage::disk('public')->url($avatarPath) : null,
+                    'avatar_url' => PublicFile::url($avatarPath),
                     'account_type' => $user->account_type->value,
                     'locale' => $user->locale,
                     'theme' => $user->theme,
@@ -77,7 +82,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $organization->id,
                     'name' => $organization->name,
                     'type' => $organization->type->value,
-                    'logo_url' => $organization->logo_path ? Storage::disk('public')->url($organization->logo_path) : null,
+                    'logo_url' => PublicFile::url($organization->logo_path),
                     'role' => $access->role($user, $organization)?->value,
                     'permissions' => $access->permissions($user, $organization),
                 ] : null,

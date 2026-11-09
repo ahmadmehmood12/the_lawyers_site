@@ -245,4 +245,30 @@ return [
         'account' => 'Account and verification',
         'complaint' => 'Complaint',
     ],
+    'calendar_event_type' => [
+        'meeting' => 'Meeting',
+        'consultation' => 'Consultation',
+        'court_visit' => 'Court visit',
+        'deadline' => 'Deadline',
+        'reminder' => 'Reminder',
+        'personal' => 'Personal',
+        'other' => 'Other',
+    ],
+    'calendar_event_status' => [
+        'scheduled' => 'Scheduled',
+        'rescheduled' => 'Rescheduled',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ],
+    'calendar_visibility' => [
+        'private' => 'Only me',
+        'team' => 'My team',
+        'client' => 'Team and the client',
+    ],
+    'recurrence' => [
+        'none' => 'Does not repeat',
+        'daily' => 'Daily',
+        'weekly' => 'Weekly',
+        'monthly' => 'Monthly',
+    ],
 ];

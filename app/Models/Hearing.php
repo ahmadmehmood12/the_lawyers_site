@@ -6,12 +6,16 @@ use App\Enums\Attendance;
 use App\Enums\HearingStatus;
 use App\Enums\HearingType;
 use App\Models\Concerns\BelongsToOrganization;
+use App\Services\Access\OrganizationAccess;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\LogOptions;
@@ -65,6 +69,31 @@ class Hearing extends Model
             ->logOnly(['hearing_date', 'hearing_time', 'status', 'purpose', 'assigned_lawyer_id', 'court_id', 'order_passed', 'proceedings', 'next_hearing_date', 'lawyer_attendance'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    /** The earlier hearing this one replaced when it was rescheduled (old row keeps its date). */
+    public function rescheduledFrom(): HasOne
+    {
+        return $this->hasOne(self::class, 'rescheduled_to_id');
+    }
+
+    /**
+     * Hearings a member may see: everything with diary.view_all or cases.view_all,
+     * otherwise hearings assigned to them or on cases they are a lawyer on.
+     * Shared by the court diary and the calendar (docs/Modules/Calendar.md).
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user, Organization $organization): void
+    {
+        $query->forOrganization($organization);
+        $access = app(OrganizationAccess::class);
+
+        if ($access->allows($user, $organization, 'diary.view_all') || $access->allows($user, $organization, 'cases.view_all')) {
+            return;
+        }
+
+        $query->where(fn (Builder $w) => $w->where('assigned_lawyer_id', $user->id)
+            ->orWhereHas('legalCase.lawyers', fn (Builder $l) => $l->whereKey($user->id)));
     }
 
     public function legalCase(): BelongsTo

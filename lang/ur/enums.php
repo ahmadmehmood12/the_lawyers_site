@@ -245,4 +245,30 @@ return [
         'account' => 'اکاؤنٹ اور تصدیق',
         'complaint' => 'شکایت',
     ],
+    'calendar_event_type' => [
+        'meeting' => 'میٹنگ',
+        'consultation' => 'مشاورت',
+        'court_visit' => 'عدالتی حاضری',
+        'deadline' => 'آخری تاریخ',
+        'reminder' => 'یاد دہانی',
+        'personal' => 'ذاتی',
+        'other' => 'دیگر',
+    ],
+    'calendar_event_status' => [
+        'scheduled' => 'طے شدہ',
+        'rescheduled' => 'دوبارہ طے شدہ',
+        'completed' => 'مکمل',
+        'cancelled' => 'منسوخ',
+    ],
+    'calendar_visibility' => [
+        'private' => 'صرف میں',
+        'team' => 'میری ٹیم',
+        'client' => 'ٹیم اور موکل',
+    ],
+    'recurrence' => [
+        'none' => 'دہرایا نہیں جاتا',
+        'daily' => 'روزانہ',
+        'weekly' => 'ہفتہ وار',
+        'monthly' => 'ماہانہ',
+    ],
 ];

@@ -14,6 +14,7 @@ use App\Services\Ai\AiProvider;
 use App\Services\Mail\MailSettings;
 use App\Services\WhatsApp\WhatsAppClient;
 use App\Support\ActivityPresenter;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -101,6 +102,7 @@ class PlatformController extends Controller
             'whatsapp' => $this->whatsAppSettings(),
             'mail' => app(MailSettings::class)->values(),
             'branding' => $this->brandingSettings(),
+            'authMedia' => self::authMedia(),
             'env' => [
                 'ai' => app(AiProvider::class)->isEnabled(),
                 'ai_model' => config('services.ai.model'),
@@ -172,8 +174,8 @@ class PlatformController extends Controller
         return [
             'site_name' => Setting::get('site_name') ?: config('app.name'),
             'site_tagline' => Setting::get('site_tagline') ?: '',
-            'logo_url' => $logo ? Storage::disk('public')->url($logo) : null,
-            'favicon_url' => $favicon ? Storage::disk('public')->url($favicon) : null,
+            'logo_url' => PublicFile::url($logo),
+            'favicon_url' => PublicFile::url($favicon),
             'social' => [
                 'facebook' => Setting::get('social_facebook') ?: '',
                 'instagram' => Setting::get('social_instagram') ?: '',
@@ -229,6 +231,68 @@ class PlatformController extends Controller
         activity('admin')->causedBy($request->user())->withProperties(collect($validated)->except(['logo', 'favicon'])->all())->log('branding_settings_changed');
 
         return back()->with('success', __('Branding saved.'));
+    }
+
+    /**
+     * Promotional panel on the sign-in / sign-up pages (also shared to those pages).
+     *
+     * @return array{enabled: bool, mode: string, image_url: string|null, video_url: string|null, poster_url: string|null, heading: string, description: string, heading_ur: string, description_ur: string, default_image: string}
+     */
+    public static function authMedia(): array
+    {
+        return [
+            'enabled' => Setting::get('auth_media_enabled', '1') === '1',
+            'mode' => Setting::get('auth_media_mode') === 'video' ? 'video' : 'image',
+            'image_url' => PublicFile::url(Setting::get('auth_media_image_path')),
+            'video_url' => PublicFile::url(Setting::get('auth_media_video_path')),
+            'poster_url' => PublicFile::url(Setting::get('auth_media_poster_path')),
+            'heading' => Setting::get('auth_media_heading') ?: 'Every hearing on record. Every date kept.',
+            'description' => Setting::get('auth_media_description') ?: 'Court diary, case files, drafting and client updates for advocates and law firms across Pakistan.',
+            'heading_ur' => Setting::get('auth_media_heading_ur') ?: '',
+            'description_ur' => Setting::get('auth_media_description_ur') ?: '',
+            'default_image' => asset('images/screens/dashboard.webp'),
+        ];
+    }
+
+    /** Saves the sign-in page media: image or short muted video, with a still fallback. */
+    public function saveAuthMediaSettings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enabled' => ['required', Rule::in(['0', '1'])],
+            'mode' => ['required', Rule::in(['image', 'video'])],
+            'heading' => ['nullable', 'string', 'max:90'],
+            'description' => ['nullable', 'string', 'max:240'],
+            'heading_ur' => ['nullable', 'string', 'max:120'],
+            'description_ur' => ['nullable', 'string', 'max:300'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096', 'dimensions:min_width=800,min_height=600'],
+            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm', 'max:20480'],
+            'poster' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_image' => ['boolean'],
+            'remove_video' => ['boolean'],
+            'remove_poster' => ['boolean'],
+        ]);
+
+        foreach (['enabled', 'mode', 'heading', 'description', 'heading_ur', 'description_ur'] as $key) {
+            Setting::put('auth_media_'.$key, filled($validated[$key] ?? null) ? trim((string) $validated[$key]) : null);
+        }
+
+        foreach (['image', 'video', 'poster'] as $field) {
+            $key = 'auth_media_'.$field.'_path';
+            if ($request->boolean('remove_'.$field) || $request->hasFile($field)) {
+                if ($old = Setting::get($key)) {
+                    Storage::disk('public')->delete($old);
+                }
+                Setting::put($key, $request->hasFile($field) ? $request->file($field)->store('auth-media', 'public') : null);
+            }
+        }
+
+        if ($validated['mode'] === 'video' && ! Setting::get('auth_media_video_path')) {
+            return back()->with('error', __('Saved, but no video is uploaded yet, so the sign-in page shows the image instead.'));
+        }
+
+        activity('admin')->causedBy($request->user())->withProperties(collect($validated)->except(['image', 'video', 'poster'])->all())->log('auth_media_changed');
+
+        return back()->with('success', __('Sign-in page media saved.'));
     }
 
     /** Saves SMTP settings; blank values fall back to the server environment. */

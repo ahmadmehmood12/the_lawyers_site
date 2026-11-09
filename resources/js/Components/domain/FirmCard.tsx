@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { Building2, CalendarDays, MapPin, Users } from 'lucide-react';
 import { Badge } from '@/Components/ui';
@@ -16,11 +17,12 @@ export type FirmCardData = {
 
 export function FirmCard({ firm: f }: { firm: FirmCardData }) {
     const t = useT();
+    const [logoFailed, setLogoFailed] = useState(false);
     return (
         <Link href={route('firms.show', f.slug)} className="group flex h-full flex-col rounded-card border border-navy-100 bg-white p-5 shadow-card transition hover:border-navy-300 hover:shadow-pop dark:border-navy-800 dark:bg-navy-900">
             <div className="flex items-center gap-3">
-                {f.logo_url ? (
-                    <img src={f.logo_url} alt="" className="size-14 rounded-lg object-cover" />
+                {f.logo_url && !logoFailed ? (
+                    <img src={f.logo_url} alt="" loading="lazy" onError={() => setLogoFailed(true)} className="size-14 rounded-lg border border-navy-100 bg-white object-contain p-1 dark:border-navy-700" />
                 ) : (
                     <span className="flex size-14 items-center justify-center rounded-lg bg-navy-900 font-serif text-xl font-semibold text-gold-300 dark:bg-navy-800">
                         {f.name.slice(0, 1)}

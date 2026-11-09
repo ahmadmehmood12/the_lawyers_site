@@ -95,6 +95,7 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::put('settings/mail', [PlatformController::class, 'saveMailSettings'])->name('mail-settings.update');
         Route::post('settings/mail/test', [PlatformController::class, 'sendTestMail'])->middleware('throttle:6,1')->name('mail-settings.test');
         Route::post('settings/branding', [PlatformController::class, 'saveBrandingSettings'])->name('branding-settings.update');
+        Route::post('settings/auth-media', [PlatformController::class, 'saveAuthMediaSettings'])->name('auth-media-settings.update');
     });
 
     Route::get('audit', [PlatformController::class, 'audit'])->middleware('permission:audit.view')->name('audit.index');

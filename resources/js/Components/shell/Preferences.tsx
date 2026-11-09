@@ -12,7 +12,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         <button
             type="button"
             onClick={() => router.post(route('locale.update'), { locale: next }, { onSuccess: () => window.location.reload() })}
-            className={cn('inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:bg-navy-100 dark:hover:bg-navy-800', className)}
+            className={cn('inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:bg-navy-100 dark:hover:bg-white/10 dark:hover:text-gold-300', className)}
             aria-label="Change language"
         >
             <Languages className="size-4" />
@@ -39,7 +39,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     }
 
     return (
-        <button type="button" onClick={toggle} className={cn('rounded-md p-2 hover:bg-navy-100 dark:hover:bg-navy-800', className)} aria-label="Toggle dark mode">
+        <button type="button" onClick={toggle} className={cn('rounded-md p-2 hover:bg-navy-100 dark:hover:bg-white/10 dark:hover:text-gold-300', className)} aria-label="Toggle dark mode">
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </button>
     );

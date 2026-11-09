@@ -24,7 +24,7 @@ export function Dropdown({ trigger, items, align = 'end', className }: { trigger
     const itemClass = (danger?: boolean) =>
         cn(
             'flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm',
-            danger ? 'text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40' : 'text-navy-700 hover:bg-navy-50 dark:text-navy-200 dark:hover:bg-navy-800',
+            danger ? 'text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40' : 'text-navy-700 hover:bg-navy-50 hover:text-navy-950 dark:text-navy-200 dark:hover:bg-white/10 dark:hover:text-gold-300',
         );
 
     return (

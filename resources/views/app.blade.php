@@ -10,7 +10,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" href="{{ $favicon ? \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) : asset('favicon.ico') }}">
+        <link rel="icon" href="{{ \App\Support\PublicFile::url($favicon) ?? asset('favicon.ico') }}">
         <meta name="application-name" content="{{ $siteName }}">
         <meta name="theme-color" content="{{ $siteTheme === 'white-green' ? '#0f2c1e' : '#0f1e36' }}">
         <script>

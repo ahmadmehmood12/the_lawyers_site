@@ -35,12 +35,10 @@ class DashboardController extends Controller
         $user = $request->user();
         $can = fn (string $p) => $access->allows($user, $organization, $p);
         $cases = fn () => LegalCase::query()->visibleTo($user, $organization);
-        $seeAllHearings = $can('diary.view_all') || $can('cases.view_all');
-        $hearings = fn () => Hearing::query()->forOrganization($organization)
-            ->when(! $seeAllHearings, fn ($q) => $q->where(fn ($w) => $w->where('assigned_lawyer_id', $user->id)->orWhereHas('legalCase.lawyers', fn ($l) => $l->whereKey($user->id))));
+        $hearings = fn () => Hearing::query()->visibleTo($user, $organization);
 
         $today = $hearings()->where('status', HearingStatus::Scheduled->value)->whereDate('hearing_date', today())
-            ->with(['legalCase:id,title,reference,case_number', 'court:id,name', 'assignedLawyer:id,name'])
+            ->with(['legalCase:id,title,reference,case_number', 'court:id,name', 'assignedLawyer:id,name', 'rescheduledFrom:id,rescheduled_to_id,hearing_date,hearing_time,reschedule_reason'])
             ->orderByRaw('hearing_time IS NULL, hearing_time')->get();
 
         $lawyerProfile = $user->lawyerProfile;

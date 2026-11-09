@@ -15,6 +15,20 @@ export type Seo = { title: string; description?: string; canonical?: string; ima
 export default function PublicLayout({ seo, children }: { seo: Seo; children: ReactNode }) {
     const t = useT();
     const { auth, app } = usePage<SharedProps>().props;
+    const currentUrl = usePage().url;
+    /** Active when the current path is the link's path or below it (e.g. /lawyers/ayesha under /lawyers). */
+    const isActive = (href: string) => {
+        const path = new URL(href, window.location.origin).pathname;
+        const here = currentUrl.split('?')[0];
+        return path === '/' ? here === '/' : here === path || here.startsWith(path + '/');
+    };
+    /*
+     * Header links: in dark mode the old hover set navy-900 text on a navy-800 background,
+     * so the label vanished. Hover and active now use white/gold on dark, navy on light.
+     */
+    const navLink =
+        'rounded-md text-sm font-medium text-navy-700 transition-colors hover:bg-navy-100/70 hover:text-navy-950 aria-[current=page]:bg-navy-100 aria-[current=page]:text-navy-950 ' +
+        'dark:text-navy-200 dark:hover:bg-white/10 dark:hover:text-gold-300 dark:aria-[current=page]:bg-white/10 dark:aria-[current=page]:text-gold-300';
     const [open, setOpen] = useState(false);
     const nav = [
         { label: 'Find a Lawyer', href: route('lawyers.index') },
@@ -48,7 +62,7 @@ export default function PublicLayout({ seo, children }: { seo: Seo; children: Re
                         </Link>
                         <nav className="ms-6 hidden items-center gap-1 lg:flex" aria-label={t('Primary')}>
                             {nav.map((item) => (
-                                <Link key={item.href} href={item.href} className="rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap text-navy-700 hover:bg-navy-100/70 hover:text-navy-900 dark:text-navy-200 dark:hover:bg-navy-800">
+                                <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} className={cn(navLink, 'px-3 py-2 whitespace-nowrap')}>
                                     {t(item.label)}
                                 </Link>
                             ))}
@@ -78,7 +92,7 @@ export default function PublicLayout({ seo, children }: { seo: Seo; children: Re
                         <div className="border-t border-navy-100 px-4 py-3 lg:hidden dark:border-navy-800">
                             <nav className="grid gap-1">
                                 {nav.map((item) => (
-                                    <Link key={item.href} href={item.href} className="rounded-md px-3 py-2.5 text-sm font-medium text-navy-800 hover:bg-navy-100 dark:text-navy-100 dark:hover:bg-navy-800">
+                                    <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} className={cn(navLink, 'px-3 py-2.5')}>
                                         {t(item.label)}
                                     </Link>
                                 ))}

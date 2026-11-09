@@ -9,6 +9,7 @@ use App\Models\LawyerProfile;
 use App\Rules\Cnic;
 use App\Rules\PakistaniPhone;
 use App\Services\Lawyers\LawyerProfileService;
+use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class LawyerProfileController extends Controller
                 'cnic' => $profile->cnic,
                 'advocate_category' => $profile->advocate_category?->value,
                 'enrollment_date' => $profile->enrollment_date?->toDateString(),
-                'photo_url' => $profile->photo_path ? Storage::disk('public')->url($profile->photo_path) : null,
+                'photo_url' => PublicFile::url($profile->photo_path),
                 'verification_status' => $profile->verification_status->value,
                 'verification_label' => $profile->verification_status->label(),
                 'specialization_ids' => $profile->specializations->pluck('id'),

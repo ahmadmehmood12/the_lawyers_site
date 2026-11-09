@@ -1,8 +1,8 @@
 import { useForm, usePage } from '@inertiajs/react';
-import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, DetailList, Input, PageHeader, Select } from '@/Components/ui';
+import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, DetailList, Input, PageHeader, Select, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { useT } from '@/lib/i18n';
-import type { SharedProps } from '@/types';
+import type { AuthMedia, SharedProps } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
 type WhatsAppSettings = {
@@ -29,7 +29,7 @@ type Branding = {
 
 const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-800 hover:file:bg-navy-200 dark:text-navy-200 dark:file:bg-navy-800 dark:file:text-navy-100';
 
-export default function Settings({ settings, plans, env, whatsapp, mail, branding }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding }) {
+export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia }) {
     const t = useT();
     const { auth } = usePage<SharedProps>().props;
     const brand = useForm<{ site_name: string; site_tagline: string; logo: File | null; favicon: File | null; remove_logo: boolean; remove_favicon: boolean } & Record<`social_${keyof Branding['social']}`, string>>({
@@ -58,6 +58,20 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
         clear_password: false,
     });
     const testMail = useForm({ to: auth.user?.email ?? '' });
+    const media = useForm<{ enabled: string; mode: string; heading: string; description: string; heading_ur: string; description_ur: string; image: File | null; video: File | null; poster: File | null; remove_image: boolean; remove_video: boolean; remove_poster: boolean }>({
+        enabled: authMedia.enabled ? '1' : '0',
+        mode: authMedia.mode,
+        heading: authMedia.heading,
+        description: authMedia.description,
+        heading_ur: authMedia.heading_ur,
+        description_ur: authMedia.description_ur,
+        image: null,
+        video: null,
+        poster: null,
+        remove_image: false,
+        remove_video: false,
+        remove_poster: false,
+    });
     const socialFields: { key: keyof Branding['social']; label: string; placeholder: string }[] = [
         { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/…' },
         { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/…' },
@@ -216,7 +230,43 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                         <p className="text-xs text-navy-500 dark:text-navy-400">{t('Save first, then send a test. The test uses the saved settings.')}</p>
                     </CardBody>
                 </Card>
+                <Card className="lg:col-span-2">
+                    <CardHeader title={t('Sign-in page')} description={t('The panel beside the sign-in and sign-up forms on large screens. Use a professional image, or a short looping video with no sound.')} />
+                    <CardBody className="space-y-5">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Select label={t('Show the media panel')} value={media.data.enabled} onChange={(e) => media.setData('enabled', e.target.value)} options={yesNo} />
+                            <Select label={t('Media type')} value={media.data.mode} onChange={(e) => media.setData('mode', e.target.value)} options={[{ value: 'image', label: t('Image') }, { value: 'video', label: t('Video (muted, looping)') }]} error={media.errors.mode} />
+                            <Input label={t('Heading')} value={media.data.heading} onChange={(e) => media.setData('heading', e.target.value)} error={media.errors.heading} maxLength={90} />
+                            <Input label={t('Heading in Urdu')} dir="rtl" value={media.data.heading_ur} onChange={(e) => media.setData('heading_ur', e.target.value)} error={media.errors.heading_ur} />
+                            <Textarea label={t('Description')} rows={2} value={media.data.description} onChange={(e) => media.setData('description', e.target.value)} error={media.errors.description} maxLength={240} />
+                            <Textarea label={t('Description in Urdu')} dir="rtl" rows={2} value={media.data.description_ur} onChange={(e) => media.setData('description_ur', e.target.value)} error={media.errors.description_ur} />
+                        </div>
+                        <div className="grid gap-5 md:grid-cols-3">
+                            <MediaField label={t('Image')} hint={t('JPG, PNG or WebP, at least 800 × 600, up to 4 MB.')} current={authMedia.image_url} kind="image" accept="image/jpeg,image/png,image/webp" error={media.errors.image} onFile={(f) => media.setData('image', f)} remove={media.data.remove_image} onRemove={(v) => media.setData('remove_image', v)} />
+                            <MediaField label={t('Video')} hint={t('MP4 or WebM, up to 20 MB. Keep it under 15 seconds, 720p and silent so it loads fast.')} current={authMedia.video_url} kind="video" accept="video/mp4,video/webm" error={media.errors.video} onFile={(f) => media.setData('video', f)} remove={media.data.remove_video} onRemove={(v) => media.setData('remove_video', v)} />
+                            <MediaField label={t('Still fallback')} hint={t('Shown while the video loads, on phones, with reduced motion or data saver. Defaults to the image.')} current={authMedia.poster_url} kind="image" accept="image/jpeg,image/png,image/webp" error={media.errors.poster} onFile={(f) => media.setData('poster', f)} remove={media.data.remove_poster} onRemove={(v) => media.setData('remove_poster', v)} />
+                        </div>
+                        <p className="text-xs text-navy-500 dark:text-navy-400">{t('With nothing uploaded, the panel shows a real screenshot of the advocate dashboard.')}</p>
+                        <Button loading={media.processing} onClick={() => media.post(route('admin.auth-media-settings.update'), { preserveScroll: true, forceFormData: true, onSuccess: () => media.reset('image', 'video', 'poster', 'remove_image', 'remove_video', 'remove_poster') })}>{t('Save sign-in page')}</Button>
+                    </CardBody>
+                </Card>
             </div>
         </AppLayout>
+    );
+}
+
+function MediaField({ label, hint, current, kind, accept, error, onFile, remove, onRemove }: { label: string; hint: string; current: string | null; kind: 'image' | 'video'; accept: string; error?: string; onFile: (file: File | null) => void; remove: boolean; onRemove: (value: boolean) => void }) {
+    const t = useT();
+    return (
+        <div className="space-y-2">
+            <p className="text-sm font-medium text-navy-800 dark:text-navy-200">{label}</p>
+            {current && (kind === 'video'
+                ? <video src={current} className="aspect-video w-full rounded border border-navy-100 bg-navy-950 object-cover dark:border-navy-700" muted playsInline preload="metadata" controls />
+                : <img src={current} alt="" className="aspect-video w-full rounded border border-navy-100 object-cover dark:border-navy-700" />)}
+            <input type="file" accept={accept} className={fileClasses} aria-label={label} onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
+            <p className="text-xs text-navy-500 dark:text-navy-400">{hint}</p>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            {current && <Checkbox label={t('Remove')} checked={remove} onChange={(e) => onRemove(e.target.checked)} />}
+        </div>
     );
 }
