@@ -7,6 +7,7 @@ use App\Enums\PlatformRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -29,7 +30,7 @@ class UserController extends Controller
             ->when($request->boolean('deletion'), fn ($q) => $q->whereNotNull('deletion_requested_at'))
             ->orderBy($sort, $direction)->orderByDesc('id')->paginate(25)->withQueryString()
             ->through(fn (User $u) => [
-                'id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'phone' => $u->phone,
+                'id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'phone' => $u->phone, 'avatar_url' => PublicFile::url($u->avatar_path),
                 'account_type' => $u->account_type->value, 'account_type_label' => $u->account_type->label(),
                 'status' => $u->status->value, 'status_label' => $u->status->label(), 'roles' => $u->roles->pluck('name'),
                 'created_at' => $u->created_at->toIso8601String(), 'last_login_at' => $u->last_login_at?->toIso8601String(),

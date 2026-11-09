@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\VerificationDocument;
 use App\Models\VerificationRequest;
 use App\Services\Verification\VerificationService;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,13 +23,14 @@ class VerificationController extends Controller
     {
         $status = $request->string('status')->toString() ?: 'queue';
 
-        $requests = VerificationRequest::query()->with(['lawyerProfile.user:id,name,email', 'lawyerProfile.barCouncil:id,name', 'reviewer:id,name'])->withCount('documents')
+        $requests = VerificationRequest::query()->with(['lawyerProfile.user:id,name,email,avatar_path', 'lawyerProfile.barCouncil:id,name', 'reviewer:id,name'])->withCount('documents')
             ->when($status === 'queue', fn ($q) => $q->whereIn('status', [VerificationStatus::Submitted->value, VerificationStatus::UnderReview->value]))
             ->when($status !== 'queue' && $status !== 'all', fn ($q) => $q->where('status', $status))
             ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->whereHas('lawyerProfile', fn ($p) => $p->where('enrollment_number', 'like', "%{$s}%")->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"))))
             ->orderBy('submitted_at')->orderBy('id')->paginate(25)->withQueryString()
             ->through(fn (VerificationRequest $r) => [
                 'id' => $r->id, 'lawyer' => $r->lawyerProfile->user->name, 'email' => $r->lawyerProfile->user->email,
+                'avatar_url' => PublicFile::url($r->lawyerProfile->photo_path) ?? PublicFile::url($r->lawyerProfile->user->avatar_path),
                 'bar_council' => $r->lawyerProfile->barCouncil?->name, 'enrollment_number' => $r->lawyerProfile->enrollment_number,
                 'status' => $r->status->value, 'status_label' => $r->status->label(), 'documents' => $r->documents_count,
                 'submitted_at' => $r->submitted_at?->toIso8601String(), 'reviewer' => $r->reviewer?->name,

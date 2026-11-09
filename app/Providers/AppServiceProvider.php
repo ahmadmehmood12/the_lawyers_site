@@ -10,6 +10,7 @@ use App\Services\Ai\AiProvider;
 use App\Services\Ai\AnthropicProvider;
 use App\Services\Ai\DisabledProvider;
 use App\Services\Mail\MailSettings;
+use App\Services\Messaging\MessagingService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
@@ -54,7 +55,11 @@ class AppServiceProvider extends ServiceProvider
         // Super admins pass every platform permission check (not organization-scoped ones).
         Gate::before(fn ($user, string $ability) => str_contains($ability, '.') && $user->isPlatformStaff() && $user->isSuperAdmin() ? true : null);
 
-        Event::listen(Login::class, fn (Login $event) => $event->user->forceFill(['last_login_at' => now()])->saveQuietly());
+        Event::listen(Login::class, function (Login $event): void {
+            $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
+            // Messages waiting for this user are now delivered (double grey tick).
+            app(MessagingService::class)->markDelivered($event->user);
+        });
 
         // Stamp each audit entry with the organization it belongs to (firm activity feed scoping).
         Activity::creating(function (Activity $activity): void {

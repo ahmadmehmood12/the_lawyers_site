@@ -25,8 +25,10 @@ Route::middleware(['auth', 'verified', 'account:client'])->prefix('portal')->nam
 
     Route::get('messages', [ConversationController::class, 'index'])->name('messages.index');
     Route::post('messages', [ConversationController::class, 'store'])->name('messages.store');
+    Route::post('messages/read-all', [ConversationController::class, 'markAllRead'])->name('messages.read-all');
     Route::get('messages/{conversation}', [ConversationController::class, 'show'])->name('messages.show');
     Route::post('messages/{conversation}', [ConversationController::class, 'send'])->middleware('throttle:60,1')->name('messages.send');
+    Route::post('messages/{conversation}/read', [ConversationController::class, 'markRead'])->name('messages.read');
     Route::post('messages/{conversation}/archive', [ConversationController::class, 'archive'])->name('messages.archive');
     Route::get('messages/{conversation}/attachments/{message}', [ConversationController::class, 'attachment'])->name('messages.attachment');
 });

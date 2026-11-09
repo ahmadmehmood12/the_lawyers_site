@@ -9,6 +9,7 @@ use App\Models\LegalCase;
 use App\Models\Message;
 use App\Models\User;
 use App\Services\Messaging\MessagingService;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +42,7 @@ class ConversationController extends Controller
     public function show(Request $request, Conversation $conversation, MessagingService $messaging): Response
     {
         $this->authorize('participate', $conversation);
-        $conversation->participants()->where('user_id', $request->user()->id)->update(['last_read_at' => now()]);
+        $messaging->markRead($conversation, $request->user());
 
         return $this->render($request, $messaging, $conversation);
     }
@@ -56,7 +57,7 @@ class ConversationController extends Controller
             ->when(! $this->portal($request), fn ($q) => $q->forOrganization($this->organization()))
             ->whereHas('participants', fn ($q) => $q->where('user_id', $user->id)->when($archived, fn ($w) => $w->whereNotNull('archived_at'), fn ($w) => $w->whereNull('archived_at')))
             ->when($search, fn ($q) => $q->where(fn ($w) => $w->where('subject', 'like', "%{$search}%")->orWhereHas('users', fn ($u) => $u->where('name', 'like', "%{$search}%"))))
-            ->with(['users:id,name', 'participants', 'organization:id,name', 'latestMessage'])
+            ->with(['users:id,name,avatar_path', 'participants', 'organization:id,name', 'latestMessage'])
             ->orderByDesc('last_message_at')->orderByDesc('id')->limit(100)->get();
 
         return Inertia::render('Shared/Messages', [
@@ -66,22 +67,27 @@ class ConversationController extends Controller
                 'id' => $c->id,
                 'subject' => $c->subject,
                 'with' => $c->users->where('id', '!=', $user->id)->pluck('name')->implode(', '),
+                'with_avatar' => PublicFile::url($c->users->firstWhere('id', '!=', $user->id)?->avatar_path),
                 'organization' => $c->organization->name,
                 'last_message_at' => $c->last_message_at?->toIso8601String(),
                 'preview' => $c->latestMessage ? ($c->latestMessage->body ? str($c->latestMessage->body)->limit(60)->toString() : '📎 '.$c->latestMessage->attachment_name) : null,
                 'unread' => $messaging->unreadCount($c, $user),
             ]),
+            'me' => ['id' => $user->id, 'name' => $user->name, 'avatar' => PublicFile::url($user->avatar_path)],
             'active' => $active ? [
                 'id' => $active->id,
                 'subject' => $active->subject,
                 'with' => $active->users()->where('users.id', '!=', $user->id)->pluck('name')->implode(', '),
+                'with_avatar' => PublicFile::url($active->users()->where('users.id', '!=', $user->id)->value('avatar_path')),
                 'case' => ! $this->portal($request) && $active->legalCase ? ['id' => $active->legalCase->id, 'title' => $active->legalCase->title] : null,
                 'archived' => (bool) $active->participants()->where('user_id', $user->id)->value('archived_at'),
-                'messages' => $active->messages()->with('sender:id,name')->latest('id')->limit(100)->get()->reverse()->values()->map(fn (Message $m) => [
+                'messages' => $active->messages()->with('sender:id,name,avatar_path')->latest('id')->limit(100)->get()->reverse()->values()->map(fn (Message $m) => [
                     'id' => $m->id, 'body' => $m->body, 'mine' => $m->sender_id === $user->id, 'sender' => $m->sender->name,
+                    'sender_id' => $m->sender_id, 'sender_avatar' => PublicFile::url($m->sender->avatar_path),
+                    // Single tick = sent, grey double = delivered, blue double = read (mine only).
+                    'status' => $m->sender_id === $user->id ? $messaging->statusFor($m, $active->loadMissing('participants'), $user) : null,
                     'attachment' => $m->attachment_path ? ['name' => $m->attachment_name, 'size' => $m->attachment_size, 'url' => route($this->prefix($request).'.attachment', [$active->id, $m->id])] : null,
                     'created_at' => $m->created_at->toIso8601String(),
-                    'read' => $m->sender_id === $user->id && $active->participants->where('user_id', '!=', $user->id)->contains(fn ($p) => $p->last_read_at && $p->last_read_at->gte($m->created_at)),
                 ]),
             ] : null,
             'starters' => $this->portal($request) ? $this->clientStarters($user) : null,
@@ -122,6 +128,26 @@ class ConversationController extends Controller
         $messaging->send($conversation, $request->user(), $request->input('body'), $request->file('attachment'));
 
         return back();
+    }
+
+    /** "Mark as read" from the conversation list. */
+    public function markRead(Request $request, Conversation $conversation, MessagingService $messaging): RedirectResponse
+    {
+        $this->authorize('participate', $conversation);
+        $messaging->markRead($conversation, $request->user());
+
+        return back();
+    }
+
+    /** "Mark all as read" for every conversation the user is in (scoped to the current organization in the workspace). */
+    public function markAllRead(Request $request, MessagingService $messaging): RedirectResponse
+    {
+        $user = $request->user();
+        Conversation::query()->forParticipant($user)
+            ->when(! $this->portal($request), fn ($q) => $q->forOrganization($this->organization()))
+            ->get()->each(fn (Conversation $c) => $messaging->markRead($c, $user));
+
+        return back()->with('success', __('All conversations marked as read.'));
     }
 
     public function archive(Request $request, Conversation $conversation): RedirectResponse

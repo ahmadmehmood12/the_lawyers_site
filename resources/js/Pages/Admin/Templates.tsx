@@ -42,7 +42,7 @@ function TemplateDialog({ template, categories, onClose }: { template: Row | nul
                     <Select label={t('Category')} value={form.data.category} onChange={(e) => form.setData('category', e.target.value)} options={categories.map((c) => ({ value: c, label: t(`template.${c}`) }))} />
                 </div>
                 <Textarea label={t('Description')} rows={2} value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} />
-                <RichTextEditor value={form.data.body} onChange={(v) => form.setData('body', v)} dir={form.data.language === 'ur' ? 'rtl' : 'ltr'} />
+                <RichTextEditor compact value={form.data.body} onChange={(v) => form.setData('body', v)} dir={form.data.language === 'ur' ? 'rtl' : 'ltr'} />
                 <div className="flex flex-wrap gap-5">
                     <Select label={t('Language')} value={form.data.language} onChange={(e) => form.setData('language', e.target.value)} options={[{ value: 'en', label: 'English' }, { value: 'ur', label: 'اردو' }]} />
                     <Checkbox label={t('Active')} checked={form.data.is_active} onChange={(e) => form.setData('is_active', e.target.checked)} />

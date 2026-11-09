@@ -4,6 +4,7 @@ namespace App\Services\Messaging;
 
 use App\Models\Client;
 use App\Models\Conversation;
+use App\Models\ConversationParticipant;
 use App\Models\LegalCase;
 use App\Models\Message;
 use App\Models\User;
@@ -83,6 +84,47 @@ class MessagingService
 
             return $message;
         });
+    }
+
+    /**
+     * Delivery receipts: everything that reached this user's conversations so far counts as
+     * delivered once they are signed in and load a page (HandleInertiaRequests, at most every
+     * 20 s) or sign in (Login event). One UPDATE, only rows with something new.
+     */
+    public function markDelivered(User $user): void
+    {
+        ConversationParticipant::query()->where('user_id', $user->id)
+            ->whereHas('conversation', fn ($q) => $q->whereNotNull('last_message_at'))
+            ->where(fn ($q) => $q->whereNull('last_delivered_at')
+                ->orWhereColumn('last_delivered_at', '<', DB::raw('(select last_message_at from conversations where conversations.id = conversation_participants.conversation_id)')))
+            ->update(['last_delivered_at' => now()]);
+    }
+
+    /** Marks a conversation read (and therefore delivered) for this user. */
+    public function markRead(Conversation $conversation, User $user): void
+    {
+        $conversation->participants()->where('user_id', $user->id)->update(['last_read_at' => now(), 'last_delivered_at' => now()]);
+    }
+
+    /**
+     * Status of a message the user sent, judged against every other participant:
+     * "read" (blue double tick) when all have read past it, "delivered" (grey double tick)
+     * when all have received it, otherwise "sent" (single tick).
+     */
+    public function statusFor(Message $message, Conversation $conversation, User $sender): string
+    {
+        $others = $conversation->participants->where('user_id', '!=', $sender->id);
+        if ($others->isEmpty()) {
+            return 'sent';
+        }
+        if ($others->every(fn ($p) => $p->last_read_at && $p->last_read_at->gte($message->created_at))) {
+            return 'read';
+        }
+        if ($others->every(fn ($p) => ($p->last_delivered_at && $p->last_delivered_at->gte($message->created_at)) || ($p->last_read_at && $p->last_read_at->gte($message->created_at)))) {
+            return 'delivered';
+        }
+
+        return 'sent';
     }
 
     public function unreadCount(Conversation $conversation, User $user): int

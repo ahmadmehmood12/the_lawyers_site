@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureAccountType;
+use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureOrganizationContext;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetLocale::class,
             EnsureAccountIsActive::class,
+            EnsureEmailIsVerified::class,
             HandleInertiaRequests::class,
         ]);
 

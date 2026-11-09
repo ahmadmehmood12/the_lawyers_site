@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['conversation_id', 'user_id', 'last_read_at', 'archived_at'])]
+#[Fillable(['conversation_id', 'user_id', 'last_read_at', 'last_delivered_at', 'archived_at'])]
 class ConversationParticipant extends Model
 {
     /**
@@ -16,6 +16,7 @@ class ConversationParticipant extends Model
     {
         return [
             'last_read_at' => 'datetime',
+            'last_delivered_at' => 'datetime',
             'archived_at' => 'datetime',
         ];
     }

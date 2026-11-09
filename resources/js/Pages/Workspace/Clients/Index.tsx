@@ -1,12 +1,12 @@
 import { router } from '@inertiajs/react';
 import { Plus, UserCheck } from 'lucide-react';
-import { Badge, Card, DataTable, LinkButton, PageHeader, Select } from '@/Components/ui';
+import { Badge, Card, DataTable, LinkButton, PageHeader, Select, UserCell } from '@/Components/ui';
 import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/Layouts/AppLayout';
 import { useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 
-type Row = { id: number; name: string; type: string; company_name: string | null; phone: string | null; email: string | null; city: string | null; cases_count: number; has_portal: boolean };
+type Row = { id: number; name: string; avatar_url: string | null; type: string; company_name: string | null; phone: string | null; email: string | null; city: string | null; cases_count: number; has_portal: boolean };
 
 export default function ClientsIndex({ clients, filters }: { clients: Paginated<Row>; filters: Record<string, string> }) {
     const t = useT();
@@ -31,7 +31,7 @@ export default function ClientsIndex({ clients, filters }: { clients: Paginated<
                         />
                     }
                     columns={[
-                        { key: 'name', label: t('Name'), sortable: true, render: (r) => (<div><p className="font-medium">{r.name}</p>{r.company_name && <p className="text-xs text-navy-500">{r.company_name}</p>}</div>) },
+                        { key: 'name', label: t('Name'), sortable: true, render: (r) => <UserCell name={r.name} avatar={r.avatar_url} subtitle={r.company_name} /> },
                         { key: 'phone', label: t('Phone'), render: (r) => <span className="ltr-nums">{r.phone ?? '—'}</span> },
                         { key: 'city', label: t('City'), hideOnMobile: true, render: (r) => r.city ?? '—' },
                         { key: 'cases_count', label: t('Cases'), render: (r) => r.cases_count },

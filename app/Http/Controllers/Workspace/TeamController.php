@@ -11,6 +11,7 @@ use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMember;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Subscriptions\SubscriptionService;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -33,9 +34,9 @@ class TeamController extends Controller
         $organization = $this->organization();
 
         return Inertia::render('Workspace/Team/Index', [
-            'members' => $organization->members()->with('user:id,name,email,phone')->whereIn('status', [MembershipStatus::Active->value, MembershipStatus::Suspended->value])->orderBy('id')->get()
+            'members' => $organization->members()->with('user:id,name,email,phone,avatar_path')->whereIn('status', [MembershipStatus::Active->value, MembershipStatus::Suspended->value])->orderBy('id')->get()
                 ->map(fn (OrganizationMember $m) => [
-                    'id' => $m->id, 'user_id' => $m->user_id, 'name' => $m->user->name, 'email' => $m->user->email, 'phone' => $m->user->phone,
+                    'id' => $m->id, 'user_id' => $m->user_id, 'name' => $m->user->name, 'avatar_url' => PublicFile::url($m->user->avatar_path), 'email' => $m->user->email, 'phone' => $m->user->phone,
                     'role' => $m->role->value, 'role_label' => $m->role->label(), 'status' => $m->status->value, 'status_label' => $m->status->label(),
                     'is_owner' => $m->user_id === $organization->owner_id, 'joined_at' => $m->joined_at?->toDateString(),
                 ]),

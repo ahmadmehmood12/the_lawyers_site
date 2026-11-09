@@ -193,6 +193,33 @@ html[data-site-theme='white-green'] {
     .prose-legal .page-break {
         @apply my-6 border-t-2 border-dashed border-navy-300;
     }
+    /* TipTap editor (docs/Features/Rich-Text-Editor.md) */
+    .prose-legal p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        @apply pointer-events-none float-start h-0 text-navy-400;
+    }
+    .prose-legal .ProseMirror-selectednode {
+        @apply outline-2 outline-offset-2 outline-gold-500;
+    }
+    .prose-legal .selectedCell {
+        @apply bg-gold-100/60 dark:bg-gold-700/20;
+    }
+    .prose-legal .page-break {
+        @apply relative;
+    }
+    .prose-legal .page-break::after {
+        content: 'Page break';
+        @apply absolute -top-2.5 start-1/2 -translate-x-1/2 bg-white px-2 text-[10px] text-navy-400 dark:bg-navy-950;
+    }
+    .prose-legal blockquote {
+        @apply my-3 border-s-4 border-navy-200 ps-4 text-navy-700 dark:border-navy-700 dark:text-navy-200;
+    }
+    .prose-legal hr {
+        @apply my-6 border-navy-200 dark:border-navy-700;
+    }
+    .prose-legal a {
+        @apply underline;
+    }
     .prose-legal .placeholder {
         @apply rounded bg-gold-100 px-1 text-gold-700 dark:bg-gold-700/30 dark:text-gold-200;
     }

@@ -1,13 +1,13 @@
 import { router, useForm } from '@inertiajs/react';
 import { UserPlus } from 'lucide-react';
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, ConfirmAction, DataTable, Input, Modal, PageHeader, Select, StatusBadge } from '@/Components/ui';
+import { Badge, Button, Card, Checkbox, ConfirmAction, DataTable, Input, Modal, PageHeader, Select, StatusBadge, UserCell } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Option, Paginated } from '@/types';
 
-type Row = { id: number; name: string; email: string; phone: string | null; account_type: string; account_type_label: string; status: string; status_label: string; roles: string[]; created_at: string; last_login_at: string | null; deletion_requested: boolean };
+type Row = { id: number; name: string; avatar_url: string | null; email: string; phone: string | null; account_type: string; account_type_label: string; status: string; status_label: string; roles: string[]; created_at: string; last_login_at: string | null; deletion_requested: boolean };
 
 export default function UsersIndex({ users, filters, options, can }: { users: Paginated<Row>; filters: Record<string, string>; options: { types: Option[]; statuses: Option[]; roles: Option[] }; can: { manage: boolean; suspend: boolean; roles: boolean } }) {
     const t = useT();
@@ -22,7 +22,7 @@ export default function UsersIndex({ users, filters, options, can }: { users: Pa
                 <DataTable rows={users} filters={filters}
                     toolbar={<><Select aria-label={t('Type')} wrapperClassName="w-36" value={filters.type ?? ''} onChange={(e) => visit({ type: e.target.value || undefined })} options={options.types} placeholder={t('All types')} /><Select aria-label={t('Status')} wrapperClassName="w-36" value={filters.status ?? ''} onChange={(e) => visit({ status: e.target.value || undefined })} options={options.statuses} placeholder={t('All statuses')} /></>}
                     columns={[
-                        { key: 'name', label: t('User'), sortable: true, render: (r) => (<div><p className="font-medium">{r.name} {r.deletion_requested && <Badge tone="red">{t('Deletion requested')}</Badge>}</p><p className="text-xs text-navy-500">{r.email}</p></div>) },
+                        { key: 'name', label: t('User'), sortable: true, render: (r) => <UserCell name={r.name} avatar={r.avatar_url} subtitle={r.email} extra={r.deletion_requested && <Badge tone="red">{t('Deletion requested')}</Badge>} /> },
                         { key: 'type', label: t('Type'), render: (r) => (<div className="flex flex-wrap gap-1"><Badge>{r.account_type_label}</Badge>{r.roles.map((x) => <Badge key={x} tone="navy">{x}</Badge>)}</div>) },
                         { key: 'created_at', label: t('Joined'), sortable: true, hideOnMobile: true, render: (r) => formatDate(r.created_at, locale) },
                         { key: 'last_login_at', label: t('Last sign-in'), sortable: true, hideOnMobile: true, render: (r) => (r.last_login_at ? formatDate(r.last_login_at, locale) : '—') },

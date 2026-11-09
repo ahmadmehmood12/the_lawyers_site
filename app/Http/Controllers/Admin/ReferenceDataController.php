@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -90,6 +91,23 @@ class ReferenceDataController extends Controller
         ];
     }
 
+    /** @return list<array{key: string, label: string, total: int, active: int|null}> */
+    private function kpis(): array
+    {
+        return collect($this->resources())->map(function (array $def, string $key) {
+            /** @var class-string<Model> $model */
+            $model = $def['model'];
+            $hasActive = Schema::hasColumn((new $model)->getTable(), 'is_active');
+
+            return [
+                'key' => $key,
+                'label' => __($def['label']),
+                'total' => $model::query()->count(),
+                'active' => $hasActive ? $model::query()->where('is_active', true)->count() : null,
+            ];
+        })->values()->all();
+    }
+
     private function resource(string $key): array
     {
         return $this->resources()[$key] ?? abort(404);
@@ -109,6 +127,8 @@ class ReferenceDataController extends Controller
         return Inertia::render('Admin/Reference', [
             'resource' => $resource,
             'resources' => collect($this->resources())->map(fn ($r, $k) => ['key' => $k, 'label' => __($r['label'])])->values(),
+            // KPI cards: one per reference table (total, and active where the table has is_active).
+            'kpis' => $this->kpis(),
             'label' => __($def['label']),
             'fields' => collect($def['fields'])->map(fn ($f) => [...collect($f)->except(['rules', 'display', 'unique'])->all(), 'label' => __($f['label'])])->values(),
             'rows' => $rows,

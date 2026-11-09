@@ -1,6 +1,6 @@
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { Badge, Button, Card, DataTable, Modal, PageHeader, Select, Textarea } from '@/Components/ui';
+import { Badge, Button, Card, DataTable, Modal, PageHeader, Select, Textarea, UserCell } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDateTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
@@ -13,6 +13,7 @@ type Row = {
     kind_label: string;
     account_type: string | null;
     name: string;
+    avatar_url: string | null;
     email: string;
     phone: string | null;
     subject: string;
@@ -60,7 +61,7 @@ export default function Support({ messages, filters, kinds, statuses, counts }: 
                     empty={t('No messages yet.')}
                     columns={[
                         { key: 'reference', label: t('Reference'), render: (r) => <button type="button" className="ltr-nums font-medium text-navy-900 underline-offset-2 hover:underline dark:text-white" onClick={() => setOpen(r)}>{r.reference}</button> },
-                        { key: 'from', label: t('From'), render: (r) => (<div><p className="font-medium">{r.name}</p><p className="text-xs text-navy-500">{r.email}{r.account_type ? `, ${r.account_type}` : ''}</p></div>) },
+                        { key: 'from', label: t('From'), render: (r) => <UserCell name={r.name} avatar={r.avatar_url} subtitle={`${r.email}${r.account_type ? `, ${r.account_type}` : ''}`} /> },
                         { key: 'subject', label: t('Subject'), render: (r) => (<div className="max-w-sm"><p className="truncate">{r.subject}</p><p className="text-xs text-navy-500">{r.kind_label}{r.category ? `, ${r.category}` : ''}</p></div>) },
                         { key: 'created_at', label: t('Received'), hideOnMobile: true, render: (r) => formatDateTime(r.created_at, locale) },
                         { key: 'status', label: t('Status'), render: (r) => <Badge tone={statusTone[r.status]}>{statusLabel(r.status)}</Badge> },

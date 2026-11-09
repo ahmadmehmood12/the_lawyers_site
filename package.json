@@ -27,6 +27,13 @@
     },
     "dependencies": {
         "@inertiajs/react": "^3.11.0",
+        "@tiptap/core": "^3.33.0",
+        "@tiptap/extension-table": "^3.33.0",
+        "@tiptap/extension-text-align": "^3.33.0",
+        "@tiptap/extensions": "^3.33.0",
+        "@tiptap/pm": "^3.33.0",
+        "@tiptap/react": "^3.33.0",
+        "@tiptap/starter-kit": "^3.33.0",
         "clsx": "^2.1.1",
         "framer-motion": "^12.43.0",
         "lucide-react": "^1.70.0",

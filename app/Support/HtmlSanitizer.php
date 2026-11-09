@@ -8,15 +8,15 @@ use DOMNode;
 
 /**
  * Allow-list HTML sanitizer for rich text (drafts, articles, templates).
- * Strips scripts, event handlers, styles and non-http(s) URLs.
+ * Strips scripts, event handlers, styles (except text-align on blocks) and non-http(s) URLs.
  */
 class HtmlSanitizer
 {
     /** @var array<string, list<string>> tag => allowed attributes */
     private const ALLOWED = [
-        'p' => ['class'], 'br' => [], 'strong' => [], 'b' => [], 'em' => [], 'i' => [], 'u' => [], 's' => [],
-        'h1' => [], 'h2' => [], 'h3' => [], 'h4' => [], 'blockquote' => [], 'ol' => [], 'ul' => [], 'li' => [],
-        'table' => [], 'thead' => [], 'tbody' => [], 'tr' => [], 'th' => ['colspan', 'rowspan'], 'td' => ['colspan', 'rowspan'],
+        'p' => ['class', 'style'], 'br' => [], 'strong' => [], 'b' => [], 'em' => [], 'i' => [], 'u' => [], 's' => [],
+        'h1' => ['style'], 'h2' => ['style'], 'h3' => ['style'], 'h4' => ['style'], 'blockquote' => [], 'ol' => [], 'ul' => [], 'li' => [],
+        'table' => [], 'thead' => [], 'tbody' => [], 'tr' => [], 'th' => ['colspan', 'rowspan', 'style'], 'td' => ['colspan', 'rowspan', 'style'],
         'a' => ['href'], 'span' => ['class', 'data-placeholder'], 'div' => ['class'], 'hr' => [], 'sup' => [], 'sub' => [],
     ];
 
@@ -77,6 +77,15 @@ class HtmlSanitizer
 
                     if ($keep && $name === 'href' && ! preg_match('#^(https?://|mailto:|/|\#)#i', trim($attribute->value))) {
                         $keep = false;
+                    }
+
+                    // Only text alignment survives from inline styles (the editor's align buttons; mPDF honours it).
+                    if ($keep && $name === 'style') {
+                        if (preg_match('/text-align\s*:\s*(left|right|center|justify)/i', $attribute->value, $align)) {
+                            $attribute->value = 'text-align: '.strtolower($align[1]);
+                        } else {
+                            $keep = false;
+                        }
                     }
 
                     if ($keep && $name === 'class') {

@@ -8,6 +8,7 @@ use App\Http\Requests\Workspace\ClientRequest;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Services\Subscriptions\SubscriptionService;
+use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class ClientController extends Controller
 
         $clients = $this->organization()->clients()
             ->withCount('cases')
-            ->with('city:id,name')
+            ->with(['city:id,name', 'user:id,avatar_path'])
             ->when($request->string('search')->trim()->toString(), function ($q, string $search): void {
                 $q->where(fn ($w) => $w->where('name', 'like', "%{$search}%")->orWhere('company_name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"));
             })
@@ -34,6 +35,7 @@ class ClientController extends Controller
                 'id' => $c->id, 'name' => $c->name, 'type' => $c->type, 'company_name' => $c->company_name,
                 'phone' => $c->phone, 'email' => $c->email, 'city' => $c->city?->name, 'cases_count' => $c->cases_count,
                 'has_portal' => $c->user_id !== null,
+                'avatar_url' => PublicFile::url($c->user?->avatar_path),
             ]);
 
         return Inertia::render('Workspace/Clients/Index', [

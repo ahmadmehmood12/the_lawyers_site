@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Services\Subscriptions\SubscriptionService;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,12 +18,12 @@ class OrganizationController extends Controller
 {
     public function index(Request $request): Response
     {
-        $organizations = Organization::query()->with(['owner:id,name,email', 'activeSubscription.plan:id,name'])->withCount(['activeMembers', 'cases', 'clients'])
+        $organizations = Organization::query()->with(['owner:id,name,email,avatar_path', 'activeSubscription.plan:id,name'])->withCount(['activeMembers', 'cases', 'clients'])
             ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('type', $t))
             ->latest()->paginate(25)->withQueryString()
             ->through(fn (Organization $o) => [
-                'id' => $o->id, 'name' => $o->name, 'type' => $o->type->value, 'type_label' => $o->type->label(), 'status' => $o->status,
+                'id' => $o->id, 'name' => $o->name, 'logo_url' => PublicFile::url($o->logo_path), 'owner_avatar' => PublicFile::url($o->owner->avatar_path), 'type' => $o->type->value, 'type_label' => $o->type->label(), 'status' => $o->status,
                 'owner' => $o->owner->name, 'owner_email' => $o->owner->email, 'members' => $o->active_members_count, 'cases' => $o->cases_count, 'clients' => $o->clients_count,
                 'plan' => $o->activeSubscription?->plan?->name, 'plan_ends_at' => $o->activeSubscription?->ends_at?->toDateString(), 'created_at' => $o->created_at->toDateString(),
             ]);

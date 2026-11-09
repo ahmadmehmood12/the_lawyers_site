@@ -7,6 +7,7 @@ use App\Enums\SupportMessageStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
 use App\Models\NotificationDelivery;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,7 +26,7 @@ class SupportInboxController extends Controller
         ]);
 
         $messages = ContactMessage::query()
-            ->with(['handler:id,name'])
+            ->with(['handler:id,name', 'user:id,avatar_path'])
             ->when($filters['kind'] ?? null, fn ($q, $kind) => $q->where('kind', $kind))
             ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
             ->when($filters['search'] ?? null, fn ($q, $term) => $q->where(fn ($q) => $q
@@ -48,6 +49,7 @@ class SupportInboxController extends Controller
             'kind_label' => $m->kind->label(),
             'account_type' => $m->account_type,
             'name' => $m->name,
+            'avatar_url' => PublicFile::url($m->user?->avatar_path),
             'email' => $m->email,
             'phone' => $m->phone,
             'subject' => $m->subject,

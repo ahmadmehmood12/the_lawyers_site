@@ -73,7 +73,7 @@ function ArticleDialog({ article, onClose, categories }: { article: Article | nu
                     <Input label={t('Tags (comma separated)')} value={form.data.tags} onChange={(e) => form.setData('tags', e.target.value)} />
                 </div>
                 <Textarea label={t('Summary')} rows={2} value={form.data.excerpt} onChange={(e) => form.setData('excerpt', e.target.value)} />
-                <RichTextEditor value={form.data.body} onChange={(html) => form.setData('body', html)} dir={form.data.language === 'ur' ? 'rtl' : 'ltr'} />
+                <RichTextEditor compact value={form.data.body} onChange={(html) => form.setData('body', html)} dir={form.data.language === 'ur' ? 'rtl' : 'ltr'} />
             </div>
         </Modal>
     );

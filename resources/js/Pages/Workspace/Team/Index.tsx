@@ -1,12 +1,12 @@
 import { router, useForm } from '@inertiajs/react';
 import { Mail, UserPlus } from 'lucide-react';
-import { Alert, Badge, Button, Card, CardBody, CardHeader, Input, PageHeader, Select, StatusBadge } from '@/Components/ui';
+import { Alert, Badge, Button, Card, CardBody, CardHeader, Input, PageHeader, Select, StatusBadge, UserCell } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Option } from '@/types';
 
-type Member = { id: number; user_id: number; name: string; email: string; phone: string | null; role: string; role_label: string; status: string; status_label: string; is_owner: boolean; joined_at: string | null };
+type Member = { id: number; user_id: number; name: string; avatar_url: string | null; email: string; phone: string | null; role: string; role_label: string; status: string; status_label: string; is_owner: boolean; joined_at: string | null };
 
 export default function TeamIndex({ members, invitations, roles, permissions, isFirm }: { members: Member[]; invitations: { id: number; email: string; role_label: string; expires_at: string }[]; roles: Option[]; permissions: Record<string, string[]>; isFirm: boolean }) {
     const t = useT();
@@ -23,10 +23,7 @@ export default function TeamIndex({ members, invitations, roles, permissions, is
                     <ul className="divide-y divide-navy-100 dark:divide-navy-800">
                         {members.map((m) => (
                             <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-                                <div className="min-w-0">
-                                    <p className="font-medium">{m.name} {m.is_owner && <Badge tone="gold">{t('Owner')}</Badge>}</p>
-                                    <p className="text-xs text-navy-500">{m.email}{m.joined_at ? `, ${t('Joined :date', { date: formatDate(m.joined_at, locale) })}` : ''}</p>
-                                </div>
+                                <UserCell name={m.name} avatar={m.avatar_url} subtitle={`${m.email}${m.joined_at ? `, ${t('Joined :date', { date: formatDate(m.joined_at, locale) })}` : ''}`} extra={m.is_owner && <Badge tone="gold">{t('Owner')}</Badge>} />
                                 {m.is_owner ? <Badge tone="navy">{m.role_label}</Badge> : (
                                     <div className="flex items-center gap-2">
                                         <Select aria-label={t('Role')} value={m.role} onChange={(e) => router.put(route('team.members.update', m.id), { role: e.target.value, status: m.status }, { preserveScroll: true })} options={roles} wrapperClassName="w-44" />
