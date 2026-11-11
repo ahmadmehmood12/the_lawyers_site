@@ -44,6 +44,7 @@ class HomeController extends Controller
             'showcase' => Inertia::defer(fn () => [
                 'stats' => app(HomepageShowcase::class)->stats(),
                 'top' => app(HomepageShowcase::class)->topLawyers(),
+                ...app(HomepageShowcase::class)->content(),
             ], 'showcase'),
             'canonical' => route('home'),
         ]);

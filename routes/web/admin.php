@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\AppointmentOverviewController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\PlatformController;
 use App\Http\Controllers\Admin\ReferenceDataController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\ShowcaseController;
 use App\Http\Controllers\Admin\SupportInboxController;
+use App\Http\Controllers\Admin\TypographyController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VerificationController;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +69,22 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::put('pages/{page}', [ContentController::class, 'savePage'])->name('pages.update');
     });
 
+    // Homepage showcase: testimonials (text and video), team and designations (docs/Modules/Showcase.md).
+    Route::middleware('permission:content.moderate')->group(function () {
+        Route::get('testimonials', [ShowcaseController::class, 'testimonials'])->name('testimonials.index');
+        Route::post('testimonials', [ShowcaseController::class, 'storeTestimonial'])->name('testimonials.store');
+        Route::post('testimonials/{testimonial}', [ShowcaseController::class, 'updateTestimonial'])->name('testimonials.update');
+        Route::put('testimonials/{testimonial}/toggle', [ShowcaseController::class, 'toggleTestimonial'])->name('testimonials.toggle');
+        Route::delete('testimonials/{testimonial}', [ShowcaseController::class, 'destroyTestimonial'])->name('testimonials.destroy');
+        Route::get('team', [ShowcaseController::class, 'team'])->name('team.index');
+        Route::post('team', [ShowcaseController::class, 'storeMember'])->name('team.store');
+        Route::post('team/{member}', [ShowcaseController::class, 'updateMember'])->name('team.update');
+        Route::delete('team/{member}', [ShowcaseController::class, 'destroyMember'])->name('team.destroy');
+        Route::post('team-designations', [ShowcaseController::class, 'storeDesignation'])->name('team-designations.store');
+        Route::put('team-designations/{designation}', [ShowcaseController::class, 'updateDesignation'])->name('team-designations.update');
+        Route::delete('team-designations/{designation}', [ShowcaseController::class, 'destroyDesignation'])->name('team-designations.destroy');
+    });
+
     Route::middleware('permission:support.manage')->group(function () {
         Route::get('complaints', [ContentController::class, 'complaints'])->name('complaints.index');
         Route::put('complaints/{complaint}', [ContentController::class, 'updateComplaint'])->name('complaints.update');
@@ -89,6 +109,10 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::get('notifications', [PlatformController::class, 'notifications'])->name('notifications.index');
         Route::post('whatsapp-templates', [PlatformController::class, 'saveWhatsAppTemplate'])->name('whatsapp-templates.store');
         Route::put('whatsapp-templates/{template}', [PlatformController::class, 'saveWhatsAppTemplate'])->name('whatsapp-templates.update');
+        Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::put('email-templates/{key}', [EmailTemplateController::class, 'save'])->name('email-templates.save');
+        Route::delete('email-templates/{key}/{language}', [EmailTemplateController::class, 'reset'])->whereIn('language', ['en', 'ur'])->name('email-templates.reset');
+        Route::get('email-templates/{key}/preview', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
         Route::get('settings', [PlatformController::class, 'settings'])->name('settings.edit');
         Route::put('settings', [PlatformController::class, 'saveSettings'])->name('settings.update');
         Route::put('settings/whatsapp', [PlatformController::class, 'saveWhatsAppSettings'])->name('whatsapp-settings.update');
@@ -96,7 +120,11 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::post('settings/mail/test', [PlatformController::class, 'sendTestMail'])->middleware('throttle:6,1')->name('mail-settings.test');
         Route::post('settings/branding', [PlatformController::class, 'saveBrandingSettings'])->name('branding-settings.update');
         Route::post('settings/auth-media', [PlatformController::class, 'saveAuthMediaSettings'])->name('auth-media-settings.update');
+        Route::put('settings/fonts', [TypographyController::class, 'update'])->name('font-settings.update');
+        Route::post('settings/fonts/library', [TypographyController::class, 'store'])->middleware('throttle:20,1')->name('fonts.store');
+        Route::delete('settings/fonts/library/{font}', [TypographyController::class, 'destroy'])->name('fonts.destroy');
     });
 
+    Route::get('appointments', [AppointmentOverviewController::class, 'index'])->middleware('permission:organizations.view')->name('appointments.index');
     Route::get('audit', [PlatformController::class, 'audit'])->middleware('permission:audit.view')->name('audit.index');
 });

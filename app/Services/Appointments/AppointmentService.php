@@ -13,6 +13,7 @@ use App\Notifications\AppointmentUpdated;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -86,7 +87,9 @@ class AppointmentService
                 'status' => AppointmentStatus::Requested, 'client_message' => $message, 'fee' => $profile->consultation_fee_min,
             ]);
 
-            DB::afterCommit(fn () => $lawyer->notify(new AppointmentUpdated($appointment, 'requested', false)));
+            // Booked: the lawyer gets the request, the client gets a receipt.
+            DB::afterCommit(fn () => $this->notifyParties($appointment, 'requested', lawyer: true, client: false));
+            DB::afterCommit(fn () => $this->notifyParties($appointment, 'booked', lawyer: false, client: true));
 
             return $appointment;
         });
@@ -98,12 +101,15 @@ class AppointmentService
         $client = isset($data['client_id']) ? Client::query()->forOrganization($organization)->findOrFail($data['client_id']) : null;
         $start = Carbon::parse($data['starts_at']);
 
-        return $organization->appointments()->create([
+        $appointment = $organization->appointments()->create([
             'lawyer_id' => $lawyer->id, 'client_id' => $client?->id, 'legal_case_id' => $data['legal_case_id'] ?? null,
             'contact_name' => $client?->name ?? $data['contact_name'], 'contact_phone' => $client?->phone ?? ($data['contact_phone'] ?? null),
             'mode' => $data['mode'], 'kind' => $data['kind'] ?? 'meeting', 'starts_at' => $start, 'ends_at' => $start->copy()->addMinutes((int) ($data['duration'] ?? 30)),
             'status' => AppointmentStatus::Confirmed, 'fee' => $data['fee'] ?? null, 'lawyer_notes' => $data['lawyer_notes'] ?? null, 'meeting_link' => $data['meeting_link'] ?? null,
         ]);
+        $this->notifyParties($appointment, 'confirmed', lawyer: false, client: true);
+
+        return $appointment;
     }
 
     public function transition(Appointment $appointment, AppointmentStatus $to, ?string $reason, User $actor): Appointment
@@ -119,38 +125,79 @@ class AppointmentService
         }
 
         $appointment->update(['status' => $to, 'cancellation_reason' => in_array($to, [AppointmentStatus::Cancelled, AppointmentStatus::Declined], true) ? $reason : $appointment->cancellation_reason]);
-        $this->notifyOtherSide($appointment, $to->value, $actor);
+
+        // Accepted / declined: the client. Cancelled: both parties. Completed / missed: the other side.
+        match ($to) {
+            AppointmentStatus::Confirmed, AppointmentStatus::Declined => $this->notifyParties($appointment, $to->value, lawyer: false, client: true),
+            AppointmentStatus::Cancelled => $this->notifyParties($appointment, 'cancelled', lawyer: true, client: true),
+            default => $this->notifyParties($appointment, $to->value, lawyer: $actor->id !== $appointment->lawyer_id, client: $actor->id === $appointment->lawyer_id),
+        };
 
         return $appointment;
     }
 
-    public function reschedule(Appointment $appointment, Carbon $startsAt, User $actor): Appointment
+    /**
+     * Moves an appointment: the old row is cancelled and kept, a new row is linked through
+     * rescheduled_from_id. A lawyer's reschedule is confirmed straight away; a client's is a
+     * request (status requested) that the lawyer accepts or declines. Both parties are told.
+     */
+    public function reschedule(Appointment $appointment, Carbon $startsAt, User $actor, ?string $reason = null): Appointment
     {
         if (! in_array($appointment->status, [AppointmentStatus::Requested, AppointmentStatus::Confirmed], true)) {
             throw ValidationException::withMessages(['starts_at' => __('Only open appointments can be rescheduled.')]);
         }
 
-        return DB::transaction(function () use ($appointment, $startsAt, $actor): Appointment {
+        $byLawyer = $actor->id === $appointment->lawyer_id || ! $actor->isClient();
+        if (! $byLawyer && ! $this->availableSlots($appointment->lawyer, $startsAt->copy()->startOfDay(), 0)->contains(fn ($s) => Carbon::parse($s['starts_at'])->equalTo($startsAt))) {
+            throw ValidationException::withMessages(['starts_at' => __('This time is no longer available. Please choose another slot.')]);
+        }
+
+        return DB::transaction(function () use ($appointment, $startsAt, $actor, $byLawyer, $reason): Appointment {
             $duration = $appointment->starts_at->diffInMinutes($appointment->ends_at);
             $new = $appointment->replicate(['status', 'rescheduled_from_id']);
-            $new->fill(['starts_at' => $startsAt, 'ends_at' => $startsAt->copy()->addMinutes($duration), 'status' => AppointmentStatus::Confirmed, 'rescheduled_from_id' => $appointment->id])->save();
-            $appointment->update(['status' => AppointmentStatus::Cancelled, 'cancellation_reason' => __('Rescheduled')]);
-            $this->notifyOtherSide($new, 'rescheduled', $actor);
+            $new->fill([
+                'starts_at' => $startsAt, 'ends_at' => $startsAt->copy()->addMinutes($duration),
+                'status' => $byLawyer ? AppointmentStatus::Confirmed : AppointmentStatus::Requested,
+                'rescheduled_from_id' => $appointment->id,
+            ])->save();
+            $appointment->update(['status' => AppointmentStatus::Cancelled, 'cancellation_reason' => $reason ?: __('Rescheduled')]);
+            activity('appointments')->causedBy($actor)->performedOn($new)->withProperties(['from' => $appointment->starts_at->toIso8601String(), 'to' => $startsAt->toIso8601String(), 'reason' => $reason])->log('appointment_rescheduled');
+
+            DB::afterCommit(fn () => $this->notifyParties($new, $byLawyer ? 'rescheduled' : 'reschedule_requested', lawyer: true, client: true));
 
             return $new;
         });
     }
 
-    private function notifyOtherSide(Appointment $appointment, string $change, User $actor): void
+    /**
+     * Sends one appointment message to the lawyer and/or the client. Clients with a portal
+     * account get it like any user (preferences apply). Otherwise the client record's email is
+     * used, and WhatsApp only with recorded consent, exactly like hearing reminders.
+     */
+    public function notifyParties(Appointment $appointment, string $change, bool $lawyer, bool $client): void
     {
         $appointment->loadMissing(['lawyer', 'client.user']);
-        $clientUser = $appointment->client?->user;
 
-        if ($actor->id !== $appointment->lawyer_id) {
+        if ($lawyer && ! $appointment->lawyer->isSuspended()) {
             $appointment->lawyer->notify(new AppointmentUpdated($appointment, $change, false));
         }
-        if ($clientUser && $clientUser->id !== $actor->id) {
-            $clientUser->notify(new AppointmentUpdated($appointment, $change, true));
+
+        if (! $client) {
+            return;
         }
+
+        $record = $appointment->client;
+        if ($record?->user && ! $record->user->isSuspended()) {
+            $record->user->notify(new AppointmentUpdated($appointment, $change, true));
+
+            return;
+        }
+
+        $email = $record?->email ?? $appointment->contact_email;
+        $route = $email ? NotificationFacade::route('mail', [$email => $record?->name ?? $appointment->contact_name]) : null;
+        if ($record?->hasWhatsAppConsent() && $record->whatsAppNumber()) {
+            $route = ($route ?? NotificationFacade::route('whatsapp', $record->whatsAppNumber()))->route('whatsapp', $record->whatsAppNumber());
+        }
+        $route?->notify((new AppointmentUpdated($appointment, $change, true))->locale($record?->preferred_locale ?: 'en'));
     }
 }

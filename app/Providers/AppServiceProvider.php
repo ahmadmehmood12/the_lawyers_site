@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\LogEmailDelivery;
 use App\Models\Activity;
 use App\Models\Organization;
 use App\Services\Access\CurrentOrganization;
@@ -13,6 +14,8 @@ use App\Services\Mail\MailSettings;
 use App\Services\Messaging\MessagingService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -60,6 +63,10 @@ class AppServiceProvider extends ServiceProvider
             // Messages waiting for this user are now delivered (double grey tick).
             app(MessagingService::class)->markDelivered($event->user);
         });
+
+        // Email delivery log (sent / failed) next to WhatsApp deliveries.
+        Event::listen(NotificationSent::class, [LogEmailDelivery::class, 'sent']);
+        Event::listen(JobFailed::class, [LogEmailDelivery::class, 'failed']);
 
         // Stamp each audit entry with the organization it belongs to (firm activity feed scoping).
         Activity::creating(function (Activity $activity): void {

@@ -23,6 +23,9 @@ use App\Models\LegalCase;
 use App\Models\Organization;
 use App\Models\Setting;
 use App\Models\Specialization;
+use App\Models\TeamDesignation;
+use App\Models\TeamMember;
+use App\Models\Testimonial;
 use App\Models\User;
 use App\Notifications\HearingReminder;
 use App\Services\Cases\CaseService;
@@ -251,6 +254,23 @@ class DemoSeeder extends Seeder
                 'handled_at' => $status === 'resolved' ? now()->subDay() : null,
             ]);
             $message->forceFill(['reference' => sprintf('%s-%s-%05d', $kind === 'feedback' ? 'FB' : 'CT', now()->year, $message->id), 'created_at' => now()->subHours(30 - $i * 6)])->save();
+        }
+
+        // Sample showcase entries (local only; replace in Admin, Testimonials / Team).
+        $samples = [
+            ['Ahmed Raza', 'Sample entry (demo data)', 'The diary reminded me of my hearing a day early and my lawyer\'s notes were waiting in the portal. I always knew what was happening in my case.', 5],
+            ['Fatima Noor', 'Sample entry (demo data)', 'Booking the first consultation took two minutes, and the lawyer confirmed the same evening. Payments and receipts were all in one place.', 5],
+            ['Usman Sheikh', 'Sample entry (demo data)', 'As a junior advocate, having every order and next date in one file has made court days far calmer.', 4],
+        ];
+        foreach ($samples as $i => [$name, $designation, $body, $rating]) {
+            Testimonial::query()->firstOrCreate(['name' => $name, 'kind' => 'text'], ['designation' => $designation, 'body' => $body, 'rating' => $rating, 'is_verified_client' => $i < 2, 'is_featured' => $i === 0, 'sort_order' => $i]);
+        }
+        foreach ([['Founder', 'Sample Founder', 'LL.B., Advocate High Court', '15 years in civil and family litigation'], ['Patron', 'Sample Patron', 'LL.M., Advocate Supreme Court', '30 years at the bar'], ['Legal Advisor', 'Sample Legal Advisor', 'LL.B. (Hons)', '10 years in criminal practice']] as $i => [$designation, $name, $qualifications, $experience]) {
+            TeamMember::query()->firstOrCreate(['name' => $name], [
+                'team_designation_id' => TeamDesignation::query()->where('name', $designation)->value('id'),
+                'qualifications' => $qualifications, 'experience' => $experience, 'sort_order' => $i,
+                'bio' => 'Sample entry (demo data). Replace with the real profile in Admin, Team.',
+            ]);
         }
 
         Role::findOrCreate('content-editor', 'web')->syncPermissions(['content.moderate', 'templates.manage']);

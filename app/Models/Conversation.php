@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['organization_id', 'client_id', 'legal_case_id', 'subject', 'last_message_at'])]
+#[Fillable(['kind', 'organization_id', 'client_id', 'legal_case_id', 'subject', 'last_message_at'])]
 class Conversation extends Model
 {
     use BelongsToOrganization;

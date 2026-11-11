@@ -27,14 +27,14 @@
         body {
             margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 2rem 1.25rem;
             background: var(--paper); color: var(--ink);
-            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+            font-family: "Inter", "Inter Fallback", Arial, sans-serif;
         }
         .wrap { width: 100%; max-width: 34rem; text-align: center; }
         .brand { display: inline-flex; align-items: center; gap: .6rem; color: var(--ink); text-decoration: none; }
         .mark { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: .6rem; background: var(--ink); color: var(--accent); }
-        .name { font-family: Georgia, 'Times New Roman', serif; font-size: 1.25rem; font-weight: 600; letter-spacing: -.02em; }
+        .name { font-family: inherit; font-size: 1.25rem; font-weight: 600; letter-spacing: -.02em; }
         .code { margin: 2.75rem 0 0; font-size: clamp(4.5rem, 18vw, 7rem); line-height: 1; font-weight: 600; letter-spacing: -.05em; }
-        h1 { margin: .5rem 0 0; font-family: Georgia, 'Times New Roman', serif; font-size: 1.6rem; }
+        h1 { margin: .5rem 0 0; font-family: inherit; font-size: 1.6rem; }
         p { margin: .9rem auto 0; max-width: 26rem; color: color-mix(in srgb, var(--ink) 72%, white); line-height: 1.65; font-size: .95rem; }
         .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .7rem; margin-top: 2rem; }
         .btn { display: inline-flex; align-items: center; gap: .45rem; height: 2.5rem; padding: 0 1rem; border-radius: .55rem; border: 1px solid color-mix(in srgb, var(--ink) 18%, white); background: #fff; color: var(--ink); font-size: .875rem; font-weight: 500; text-decoration: none; cursor: pointer; }

@@ -5,6 +5,7 @@ namespace App\Services\Messaging;
 use App\Models\Client;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use App\Models\LawyerProfile;
 use App\Models\LegalCase;
 use App\Models\Message;
 use App\Models\User;
@@ -51,6 +52,46 @@ class MessagingService
         }
 
         return $this->findOrCreate($client, $lawyer, $clientUser, null, $subject);
+    }
+
+    /**
+     * Lawyer-to-lawyer (or colleague) conversation: kind=direct, no organization or client.
+     * Allowed when both are professionals and the other person either shares an organization
+     * with the starter or has a listed (public) lawyer profile. Reuses an existing thread.
+     */
+    public function startDirect(User $from, User $to): Conversation
+    {
+        if ($from->id === $to->id || ! $from->isProfessional() || ! $to->isProfessional() || $to->isSuspended()) {
+            abort(404);
+        }
+
+        $sharesOrganization = $from->organizations()->whereIn('organizations.id', $to->organizations()->select('organizations.id'))->exists();
+        $listed = LawyerProfile::query()->listed()->where('user_id', $to->id)->exists();
+        abort_unless($sharesOrganization || $listed, 404);
+
+        $existing = Conversation::query()->where('kind', 'direct')->forParticipant($from)->forParticipant($to)
+            ->withCount('participants')->having('participants_count', 2)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        return DB::transaction(function () use ($from, $to): Conversation {
+            $conversation = Conversation::create(['kind' => 'direct', 'organization_id' => null, 'client_id' => null, 'subject' => null]);
+            $conversation->users()->attach([$from->id, $to->id]);
+
+            return $conversation;
+        });
+    }
+
+    /** Unread messages across all of the user's active (not archived) conversations; one query. */
+    public function totalUnread(User $user): int
+    {
+        return (int) DB::table('messages')
+            ->join('conversation_participants as p', fn ($j) => $j->on('p.conversation_id', '=', 'messages.conversation_id')->where('p.user_id', '=', $user->id))
+            ->whereNull('p.archived_at')
+            ->where('messages.sender_id', '!=', $user->id)
+            ->where(fn ($q) => $q->whereNull('p.last_read_at')->orWhereColumn('messages.created_at', '>', 'p.last_read_at'))
+            ->count();
     }
 
     public function send(Conversation $conversation, User $sender, ?string $body, ?UploadedFile $file): Message

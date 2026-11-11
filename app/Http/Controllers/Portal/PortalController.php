@@ -24,6 +24,7 @@ use App\Services\Documents\DocumentVault;
 use App\Services\Pdf\PdfRenderer;
 use App\Support\PublicFile;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -67,7 +68,7 @@ class PortalController extends Controller
             'nextHearings' => $this->hearings($request)->where('status', HearingStatus::Scheduled->value)->whereDate('hearing_date', '>=', today())
                 ->with(['legalCase:id,title', 'court:id,name'])->orderBy('hearing_date')->orderBy('hearing_time')->limit(5)->get()->map(fn ($h) => $this->hearing($h)),
             'appointments' => Appointment::query()->where('requested_by', $user->id)->where('starts_at', '>=', now())->whereIn('status', [AppointmentStatus::Requested->value, AppointmentStatus::Confirmed->value])
-                ->with('lawyer:id,name')->orderBy('starts_at')->limit(5)->get()->map(fn ($a) => $this->appointment($a)),
+                ->with(['lawyer:id,name,avatar_path', 'rescheduledFrom:id,starts_at'])->orderBy('starts_at')->limit(5)->get()->map(fn ($a) => $this->appointment($a)),
             'lawyers' => $this->cases($request)->with('lawyers:id,name', 'lawyers.lawyerProfile:id,user_id,slug')->get()->flatMap->lawyers->unique('id')->values()
                 ->map(fn ($l) => ['name' => $l->name, 'slug' => $l->lawyerProfile?->slug]),
         ]);
@@ -192,7 +193,7 @@ class PortalController extends Controller
 
         return Inertia::render('Portal/Appointments', [
             'appointments' => Appointment::query()->where(fn ($q) => $q->where('requested_by', $user->id)->orWhereIn('client_id', Client::query()->where('user_id', $user->id)->select('id')))
-                ->with('lawyer:id,name')->latest('starts_at')->limit(100)->get()->map(fn ($a) => $this->appointment($a)),
+                ->with(['lawyer:id,name,avatar_path', 'rescheduledFrom:id,starts_at'])->latest('starts_at')->limit(100)->get()->map(fn ($a) => $this->appointment($a)),
         ]);
     }
 
@@ -228,6 +229,24 @@ class PortalController extends Controller
         $service->transition($appointment, AppointmentStatus::Cancelled, $request->validate(['reason' => ['required', 'string', 'max:255']])['reason'], $request->user());
 
         return back()->with('success', __('Appointment cancelled.'));
+    }
+
+    /** Free slots of this appointment's lawyer, for "Request a new time" (AJAX). */
+    public function appointmentSlots(Request $request, Appointment $appointment, AppointmentService $service): JsonResponse
+    {
+        $this->authorize('manageAsClient', $appointment);
+
+        return response()->json(['slots' => $service->availableSlots($appointment->lawyer, today(), 14)->values()]);
+    }
+
+    /** Client asks for a new time; the lawyer must accept it (status becomes requested). */
+    public function rescheduleAppointment(Request $request, Appointment $appointment, AppointmentService $service): RedirectResponse
+    {
+        $this->authorize('manageAsClient', $appointment);
+        $validated = $request->validate(['starts_at' => ['required', 'date', 'after:now'], 'reason' => ['nullable', 'string', 'max:255']]);
+        $service->reschedule($appointment, Carbon::parse($validated['starts_at']), $request->user(), $validated['reason'] ?? null);
+
+        return back()->with('success', __('New time requested. The lawyer will confirm it.'));
     }
 
     public function favourites(Request $request): Response
@@ -309,6 +328,12 @@ class PortalController extends Controller
             'id' => $a->id, 'starts_at' => $a->starts_at->toIso8601String(), 'status' => $a->status->value, 'status_label' => $a->status->label(),
             'mode' => $a->mode->label(), 'lawyer' => $a->lawyer->name, 'meeting_link' => $a->status === AppointmentStatus::Confirmed ? $a->meeting_link : null,
             'cancellable' => in_array($a->status, [AppointmentStatus::Requested, AppointmentStatus::Confirmed], true) && $a->starts_at->isFuture(),
+            'reschedulable' => in_array($a->status, [AppointmentStatus::Requested, AppointmentStatus::Confirmed], true) && $a->starts_at->isFuture(),
+            'mode_value' => $a->mode->value,
+            'lawyer_avatar' => PublicFile::url($a->lawyer->avatar_path),
+            'ends_at' => $a->ends_at->toIso8601String(),
+            'cancellation_reason' => $a->status === AppointmentStatus::Cancelled || $a->status === AppointmentStatus::Declined ? $a->cancellation_reason : null,
+            'rescheduled_from' => $a->rescheduled_from_id ? $a->rescheduledFrom?->starts_at?->toIso8601String() : null,
         ];
     }
 }

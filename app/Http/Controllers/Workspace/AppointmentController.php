@@ -106,8 +106,8 @@ class AppointmentController extends Controller
     public function reschedule(Request $request, Appointment $appointment, AppointmentService $service): RedirectResponse
     {
         $this->authorize('manage', $appointment);
-        $validated = $request->validate(['starts_at' => ['required', 'date', 'after:now']]);
-        $service->reschedule($appointment, Carbon::parse($validated['starts_at']), $request->user());
+        $validated = $request->validate(['starts_at' => ['required', 'date', 'after:now'], 'reason' => ['nullable', 'string', 'max:255']]);
+        $service->reschedule($appointment, Carbon::parse($validated['starts_at']), $request->user(), $validated['reason'] ?? null);
 
         return back()->with('success', __('Appointment rescheduled.'));
     }

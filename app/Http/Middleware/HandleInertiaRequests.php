@@ -98,6 +98,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'unread' => fn () => $user ? [
                 'notifications' => $user->unreadNotifications()->count(),
+                'messages' => app(MessagingService::class)->totalUnread($user),
             ] : null,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

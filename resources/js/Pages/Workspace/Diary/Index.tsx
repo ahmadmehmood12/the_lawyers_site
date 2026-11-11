@@ -5,6 +5,7 @@ import { HearingCard } from '@/Components/domain/HearingCard';
 import { HearingHistoryDialog } from '@/Components/domain/HearingHistoryDialog';
 import { OutcomeDialog, RescheduleDialog } from '@/Components/domain/HearingDialogs';
 import { TaskDialog } from '@/Components/domain/TaskDialog';
+import { Stagger, StaggerItem } from '@/Components/motion';
 import { Button, Card, CardBody, CardHeader, EmptyState, Input, Modal, MonthCalendar, PageHeader, Select, Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/cn';
@@ -137,9 +138,9 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
                     {grouped.map(([day, items]) => (
                         <section key={day}>
                             {view !== 'day' && <h2 className="mb-2 font-sans text-sm font-semibold text-navy-600 dark:text-navy-300">{formatDate(day, locale, { weekday: 'long', day: 'numeric', month: 'short' })}</h2>}
-                            <div className="space-y-2.5">
+                            <Stagger className="space-y-2.5" gap={0.04} inView={false}>
                                 {items.map((h) => (
-                                    <div key={h.id}>
+                                    <StaggerItem key={h.id}>
                                         <HearingCard hearing={h} actions={actions(h)} onHistory={setHistory} />
                                         {h.clients && h.clients.length > 0 && view === 'day' && (
                                             <p className="mt-1 ps-4 text-xs text-navy-500">
@@ -148,9 +149,9 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
                                                 ))}
                                             </p>
                                         )}
-                                    </div>
+                                    </StaggerItem>
                                 ))}
-                            </div>
+                            </Stagger>
                         </section>
                     ))}
                     {entries.length > 0 && (

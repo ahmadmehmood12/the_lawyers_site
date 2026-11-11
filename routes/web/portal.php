@@ -18,6 +18,8 @@ Route::middleware(['auth', 'verified', 'account:client'])->prefix('portal')->nam
     Route::get('receipts/{payment}', [PortalController::class, 'receipt'])->name('receipts.show');
     Route::get('appointments', [PortalController::class, 'appointments'])->name('appointments.index');
     Route::post('appointments/{appointment}/cancel', [PortalController::class, 'cancelAppointment'])->name('appointments.cancel');
+    Route::get('appointments/{appointment}/slots', [PortalController::class, 'appointmentSlots'])->name('appointments.slots');
+    Route::post('appointments/{appointment}/reschedule', [PortalController::class, 'rescheduleAppointment'])->middleware('throttle:10,1')->name('appointments.reschedule');
     Route::get('book/{lawyer:slug}', [PortalController::class, 'book'])->name('book');
     Route::post('book/{lawyer:slug}', [PortalController::class, 'storeBooking'])->middleware('throttle:10,1')->name('book.store');
     Route::post('lawyers/{lawyer:slug}/reviews', [PortalController::class, 'review'])->middleware('throttle:5,1')->name('reviews.store');

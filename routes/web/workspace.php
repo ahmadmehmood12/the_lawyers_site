@@ -88,6 +88,8 @@ Route::middleware(['auth', 'verified', 'account:lawyer', 'workspace'])->prefix('
 Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->group(function () {
     Route::get('messages', [ConversationController::class, 'index'])->name('messages.index');
     Route::post('messages', [ConversationController::class, 'store'])->name('messages.store');
+    Route::get('messages/lawyers', [ConversationController::class, 'searchLawyers'])->middleware('throttle:120,1')->name('messages.lawyers');
+    Route::post('messages/direct', [ConversationController::class, 'startDirect'])->middleware('throttle:30,1')->name('messages.direct');
     Route::post('messages/read-all', [ConversationController::class, 'markAllRead'])->name('messages.read-all');
     Route::get('messages/{conversation}', [ConversationController::class, 'show'])->name('messages.show');
     Route::post('messages/{conversation}', [ConversationController::class, 'send'])->middleware('throttle:60,1')->name('messages.send');

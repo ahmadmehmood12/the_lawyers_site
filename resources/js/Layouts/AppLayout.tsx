@@ -1,14 +1,17 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Bell, Building2, ChevronDown, LogOut, Menu, MessageSquareHeart, MoreHorizontal, User as UserIcon, X } from 'lucide-react';
+import { motion, MotionConfig } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Avatar, Dropdown, Flash } from '@/Components/ui';
 import { ActivityBell } from '@/Components/shell/ActivityBell';
 import { Logo } from '@/Components/shell/Logo';
+import { MessagesMenu } from '@/Components/shell/MessagesMenu';
 import { adminNav, portalNav, workspaceNav, type NavGroup, type NavItem } from '@/Components/shell/navigation';
 import { LanguageSwitcher, ThemeToggle } from '@/Components/shell/Preferences';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/cn';
+import { pageTransition } from '@/lib/motion';
 import { useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
 
@@ -106,6 +109,7 @@ export default function AppLayout({ title, children, area = 'workspace', wide = 
                         <div className="flex-1" />
                         <LanguageSwitcher className="text-navy-700 dark:text-navy-200" />
                         <ThemeToggle className="text-navy-700 dark:text-navy-200" />
+                        {area !== 'admin' && auth.user && <MessagesMenu />}
                         {area === 'workspace' && auth.organization && route().has('activity.recent') && <ActivityBell />}
                         {route().has('notifications.index') && (
                             <Link href={route('notifications.index')} className="relative rounded-md p-2 text-navy-700 hover:bg-navy-100 dark:text-navy-200 dark:hover:bg-navy-800" aria-label={t('Notifications')}>
@@ -134,7 +138,9 @@ export default function AppLayout({ title, children, area = 'workspace', wide = 
                         )}
                     </header>
 
-                    <main className={cn('mx-auto w-full flex-1 px-3 pt-5 pb-24 sm:px-6 lg:pb-10', wide ? 'max-w-[1600px]' : 'max-w-7xl')}>{children}</main>
+                    <MotionConfig reducedMotion="user">
+                        <motion.main initial="hidden" animate="show" variants={pageTransition} className={cn('mx-auto w-full flex-1 px-3 pt-5 pb-24 sm:px-6 lg:pb-10', wide ? 'max-w-[1600px]' : 'max-w-7xl')}>{children}</motion.main>
+                    </MotionConfig>
                 </div>
 
                 {/* Mobile bottom navigation */}

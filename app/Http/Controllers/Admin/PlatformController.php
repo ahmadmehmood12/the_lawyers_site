@@ -15,6 +15,7 @@ use App\Services\Mail\MailSettings;
 use App\Services\WhatsApp\WhatsAppClient;
 use App\Support\ActivityPresenter;
 use App\Support\PublicFile;
+use App\Support\Typography;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -72,13 +73,18 @@ class PlatformController extends Controller
             'templates' => WhatsAppTemplate::query()->orderBy('key')->orderBy('language')->get(),
             'deliveries' => NotificationDelivery::query()->where('channel', '!=', 'in_app')
                 ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
+                ->when($request->string('channel')->toString(), fn ($q, $c) => $q->where('channel', $c))
+                ->when($request->string('event')->trim()->toString(), fn ($q, $e) => $q->where('event', 'like', "%{$e}%"))
                 ->latest('id')->paginate(30)->withQueryString()
                 ->through(fn ($d) => ['id' => $d->id, 'channel' => $d->channel->value, 'event' => $d->event, 'recipient' => substr($d->recipient, 0, 5).'••••'.substr($d->recipient, -2), 'template' => $d->template, 'status' => $d->status->value, 'attempts' => $d->attempts, 'error' => $d->error, 'created_at' => $d->created_at->toIso8601String()]),
             'configured' => app(WhatsAppClient::class)->isConfigured(),
             'enabled' => app(WhatsAppClient::class)->isEnabled(),
             'displayName' => app(WhatsAppClient::class)->displayName(),
             'settingsUrl' => route('admin.settings.edit'),
-            'filters' => $request->only('status'),
+            'filters' => $request->only(['status', 'channel', 'event']),
+            // Totals per channel and status for the log header (email + WhatsApp; in-app excluded).
+            'totals' => NotificationDelivery::query()->where('channel', '!=', 'in_app')->selectRaw('channel, status, count(*) as total')->groupBy('channel', 'status')->get()
+                ->map(fn ($r) => ['channel' => $r->channel instanceof \BackedEnum ? $r->channel->value : $r->channel, 'status' => $r->status instanceof \BackedEnum ? $r->status->value : $r->status, 'total' => (int) $r->total]),
         ]);
     }
 
@@ -103,6 +109,7 @@ class PlatformController extends Controller
             'mail' => app(MailSettings::class)->values(),
             'branding' => $this->brandingSettings(),
             'authMedia' => self::authMedia(),
+            'typography' => Typography::adminPayload(),
             'env' => [
                 'ai' => app(AiProvider::class)->isEnabled(),
                 'ai_model' => config('services.ai.model'),

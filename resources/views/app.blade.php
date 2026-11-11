@@ -25,6 +25,7 @@
         @fonts
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx'])
+        {!! \App\Support\Typography::headTags($locale) !!}
         <x-inertia::head>
             <title>{{ $siteName }}</title>
         </x-inertia::head>

@@ -1,4 +1,5 @@
 import { useForm, usePage } from '@inertiajs/react';
+import { TypographySettings, type TypographyPayload } from '@/Components/domain/TypographySettings';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, DetailList, Input, PageHeader, Select, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { useT } from '@/lib/i18n';
@@ -29,7 +30,7 @@ type Branding = {
 
 const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-800 hover:file:bg-navy-200 dark:text-navy-200 dark:file:bg-navy-800 dark:file:text-navy-100';
 
-export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia }) {
+export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia, typography }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia; typography: TypographyPayload }) {
     const t = useT();
     const { auth } = usePage<SharedProps>().props;
     const brand = useForm<{ site_name: string; site_tagline: string; logo: File | null; favicon: File | null; remove_logo: boolean; remove_favicon: boolean } & Record<`social_${keyof Branding['social']}`, string>>({
@@ -172,6 +173,8 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                         <Button loading={wa.processing} onClick={() => wa.put(route('admin.whatsapp-settings.update'), { preserveScroll: true, onSuccess: () => wa.reset('token', 'app_secret', 'verify_token', 'clear_token', 'clear_app_secret', 'clear_verify_token') })}>{t('Save WhatsApp settings')}</Button>
                     </CardBody>
                 </Card>
+
+                <TypographySettings typography={typography} />
 
                 <Card className="lg:col-span-2">
                     <CardHeader title={t('Branding and social links')} description={t('The site name, logo and favicon appear in the header, footer, emails and WhatsApp alerts. Social links show in the footer only when filled.')} />

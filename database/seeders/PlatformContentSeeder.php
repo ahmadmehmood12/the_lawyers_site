@@ -6,6 +6,7 @@ use App\Enums\PlanFeature as F;
 use App\Models\Page;
 use App\Models\Plan;
 use App\Models\Setting;
+use App\Models\TeamDesignation;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Database\Seeder;
 
@@ -50,6 +51,13 @@ class PlatformContentSeeder extends Seeder
             ['hearing_scheduled', 'hearing_scheduled_v1', 'en', 'Dear {{1}}, a hearing in "{{2}}" has been fixed for {{3}}.', 3],
             ['appointment_reminder', 'appointment_reminder_v1', 'en', 'Dear {{1}}, reminder of your consultation with {{2}} on {{3}}.', 3],
             ['payment_received', 'payment_received_v1', 'en', 'Dear {{1}}, we have received your payment of {{2}}. Receipt no. {{3}}.', 3],
+            ['appointment_requested', 'appointment_requested_v1', 'en', 'Dear {{1}}, {{2}} has requested a consultation on {{3}} ({{4}}). Please accept or decline it in your appointments.', 4],
+            ['appointment_booked', 'appointment_booked_v1', 'en', 'Dear {{1}}, your consultation request with {{2}} for {{3}} ({{4}}) has been sent. You will be notified once it is accepted.', 4],
+            ['appointment_confirmed', 'appointment_confirmed_v1', 'en', 'Dear {{1}}, your consultation with {{2}} on {{3}} ({{4}}) is confirmed.', 4],
+            ['appointment_declined', 'appointment_declined_v1', 'en', 'Dear {{1}}, {{2}} could not take the consultation on {{3}} ({{4}}). You can book another time.', 4],
+            ['appointment_rescheduled', 'appointment_rescheduled_v1', 'en', 'Dear {{1}}, your consultation with {{2}} has moved to {{3}} ({{4}}).', 4],
+            ['appointment_reschedule_requested', 'appointment_reschedule_requested_v1', 'en', 'Dear {{1}}, a new time was requested for the consultation with {{2}}: {{3}} ({{4}}). It needs the lawyer\'s confirmation.', 4],
+            ['appointment_cancelled', 'appointment_cancelled_v1', 'en', 'Dear {{1}}, your consultation with {{2}} on {{3}} ({{4}}) has been cancelled.', 4],
             ['feedback_received', 'feedback_received_v1', 'en', 'Dear {{1}}, {{2}} has received your feedback (ref {{3}}). We will try to resolve it on an urgent basis.', 3],
             ['feedback_received', 'feedback_received_ur_v1', 'ur', 'محترم {{1}}، {{2}} کو آپ کی رائے موصول ہو گئی ہے (حوالہ {{3}})۔ ہم اسے جلد از جلد حل کرنے کی کوشش کریں گے۔', 3],
             ['contact_received', 'contact_received_v1', 'en', 'Dear {{1}}, thank you for contacting {{2}}. Your reference is {{3}}. We will reply soon.', 3],
@@ -69,6 +77,11 @@ class PlatformContentSeeder extends Seeder
         ];
         foreach ($pages as $slug => [$title, $ur, $body]) {
             Page::query()->firstOrCreate(['slug' => $slug], ['title' => $title, 'title_ur' => $ur, 'body' => $body, 'is_published' => true]);
+        }
+
+        // Homepage team section groups (admins add their own in Admin, Team).
+        foreach (['Founder', 'Co-Founder', 'Patron', 'Senior Legal Advisor', 'Legal Advisor', 'Managing Partner', 'Partner', 'Advocate', 'Technical Team'] as $i => $designation) {
+            TeamDesignation::query()->firstOrCreate(['name' => $designation], ['sort_order' => $i]);
         }
 
         $settings = [

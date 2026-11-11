@@ -9,7 +9,7 @@ import { formatBytes, formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
 
-type Conversation = { id: number; subject: string | null; with: string; with_avatar: string | null; organization: string; last_message_at: string | null; preview: string | null; unread: number };
+type Conversation = { id: number; kind: 'client' | 'direct'; subject: string | null; with: string; with_avatar: string | null; organization: string | null; last_message_at: string | null; preview: string | null; unread: number };
 type Status = 'sent' | 'delivered' | 'read';
 type Message = { id: number; body: string | null; mine: boolean; sender: string; sender_id: number; sender_avatar: string | null; status: Status | null; attachment: { name: string; size: number; url: string } | null; created_at: string };
 type Pending = { key: string; body: string; attachment: string | null; failed: boolean; created_at: string };
@@ -18,7 +18,7 @@ type Props = {
     routePrefix: string;
     me: { id: number; name: string; avatar: string | null };
     conversations: Conversation[];
-    active: { id: number; subject: string | null; with: string; with_avatar: string | null; case: { id: number; title: string } | null; archived: boolean; messages: Message[] } | null;
+    active: { id: number; kind: 'client' | 'direct'; subject: string | null; with: string; with_avatar: string | null; case: { id: number; title: string } | null; archived: boolean; messages: Message[] } | null;
     starters: { client_id: number; lawyer_id: number; label: string }[] | null;
     clients: SelectOption[] | null;
     filters: { archived: boolean; search: string };
@@ -53,6 +53,14 @@ export default function Messages({ area, routePrefix, me, conversations, active,
     const textarea = useRef<HTMLTextAreaElement>(null);
 
     usePoll(8000, { only: PARTIAL }, { keepAlive: false });
+
+    // Debounced server-side search over subjects and participant names (bodies are encrypted).
+    const [search, setSearch] = useState(filters.search ?? '');
+    useEffect(() => {
+        if (search === (filters.search ?? '')) return;
+        const timer = setTimeout(() => router.get(window.location.pathname, { search: search || undefined, archived: filters.archived ? 1 : undefined }, { only: ['conversations', 'filters'], preserveState: true, preserveScroll: true, replace: true }), 300);
+        return () => clearTimeout(timer);
+    }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Show a skeleton (not a blank pane) while another conversation loads.
     useEffect(() => {
@@ -115,7 +123,7 @@ export default function Messages({ area, routePrefix, me, conversations, active,
                 {/* Conversation list */}
                 <Card className={cn('flex min-h-0 flex-col', active && 'hidden lg:flex')}>
                     <div className="flex items-center gap-2 border-b border-navy-100 p-3 dark:border-navy-800">
-                        <input type="search" defaultValue={filters.search} placeholder={t('Search…')} className={controlClasses(false)} onKeyDown={(e) => e.key === 'Enter' && router.get(route(`${routePrefix}.index`), { search: (e.target as HTMLInputElement).value || undefined, archived: filters.archived ? 1 : undefined }, { preserveState: true })} aria-label={t('Search')} />
+                        <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search conversations…')} className={controlClasses(false)} aria-label={t('Search conversations')} />
                         <Button size="sm" icon={<Plus className="size-4" />} onClick={() => setStartOpen(true)} aria-label={t('New conversation')} />
                     </div>
                     <div className="flex items-center gap-1 border-b border-navy-100 px-3 py-2 text-xs dark:border-navy-800">
@@ -232,7 +240,7 @@ export default function Messages({ area, routePrefix, me, conversations, active,
                     )}
                 </Card>
             </div>
-            <StartDialog open={startOpen} onClose={() => setStartOpen(false)} routePrefix={routePrefix} starters={starters} clients={clients} />
+            <StartDialog open={startOpen} onClose={() => setStartOpen(false)} routePrefix={routePrefix} starters={starters} clients={clients} canMessageLawyers={area === 'workspace'} />
         </AppLayout>
     );
 }
@@ -271,8 +279,15 @@ function DaySeparator({ iso }: { iso: string }) {
     );
 }
 
-function StartDialog({ open, onClose, routePrefix, starters, clients }: { open: boolean; onClose: () => void; routePrefix: string; starters: Props['starters']; clients: Props['clients'] }) {
+type LawyerHit = { user_id: number; name: string; avatar: string | null; headline: string | null; city: string | null; firm: string | null; specializations: string[]; verified: boolean; colleague: boolean };
+
+/**
+ * New conversation. Clients pick a lawyer from their cases or bookings; professionals pick a
+ * client (portal account) or search lawyers (AJAX, debounced, paginated) for a direct message.
+ */
+function StartDialog({ open, onClose, routePrefix, starters, clients, canMessageLawyers }: { open: boolean; onClose: () => void; routePrefix: string; starters: Props['starters']; clients: Props['clients']; canMessageLawyers: boolean }) {
     const t = useT();
+    const [tab, setTab] = useState<'client' | 'lawyer'>('client');
     const [choice, setChoice] = useState('');
     const options = starters ? starters.map((s, i) => ({ value: String(i), label: s.label })) : (clients ?? []);
     function start() {
@@ -281,10 +296,77 @@ function StartDialog({ open, onClose, routePrefix, starters, clients }: { open: 
         router.post(route(`${routePrefix}.store`), data, { onSuccess: onClose });
     }
     return (
-        <Modal open={open} onClose={onClose} title={t('New conversation')} footer={<><Button variant="secondary" onClick={onClose}>{t('Cancel')}</Button><Button onClick={start} disabled={!choice}>{t('Start')}</Button></>}>
-            {options.length === 0 ? <p className="text-sm text-navy-500">{starters ? t('You can message lawyers on your shared cases.') : t('Only clients with a portal account can receive messages.')}</p> : (
+        <Modal open={open} onClose={onClose} title={t('New conversation')} size={tab === 'lawyer' ? 'lg' : 'md'} footer={tab === 'client' ? <><Button variant="secondary" onClick={onClose}>{t('Cancel')}</Button><Button onClick={start} disabled={!choice}>{t('Start')}</Button></> : <Button variant="secondary" onClick={onClose}>{t('Close')}</Button>}>
+            {canMessageLawyers && (
+                <div className="mb-4 flex gap-1 rounded-lg bg-navy-50 p-1 dark:bg-navy-800" role="tablist">
+                    {(['client', 'lawyer'] as const).map((key) => (
+                        <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)} className={cn('flex-1 rounded-md px-3 py-1.5 text-sm font-medium', tab === key ? 'bg-white text-navy-900 shadow-xs dark:bg-navy-900 dark:text-white' : 'text-navy-600 dark:text-navy-300')}>
+                            {key === 'client' ? t('A client') : t('Another lawyer')}
+                        </button>
+                    ))}
+                </div>
+            )}
+            {tab === 'lawyer' ? <LawyerSearch onClose={onClose} /> : options.length === 0 ? <p className="text-sm text-navy-500">{starters ? t('You can message lawyers on your shared cases or that you booked a consultation with.') : t('Only clients with a portal account can receive messages.')}</p> : (
                 <Select label={starters ? t('Lawyer') : t('Client')} value={choice} onChange={(e) => setChoice(e.target.value)} options={options} placeholder={t('Select')} />
             )}
         </Modal>
+    );
+}
+
+function LawyerSearch({ onClose }: { onClose: () => void }) {
+    const t = useT();
+    const [filters, setFilters] = useState({ q: '', city: '', specialization: '', firm: '' });
+    const [results, setResults] = useState<LawyerHit[]>([]);
+    const [page, setPage] = useState<number | null>(1);
+    const [loading, setLoading] = useState(false);
+    const [starting, setStarting] = useState<number | null>(null);
+
+    function load(reset: boolean, targetPage: number, signal?: AbortSignal) {
+        const params = new URLSearchParams({ ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)), page: String(targetPage) });
+        setLoading(true);
+        fetch(`${route('messages.lawyers')}?${params}`, { headers: { Accept: 'application/json' }, credentials: 'same-origin', signal })
+            .then((r) => (r.ok ? r.json() : Promise.reject()))
+            .then((data: { data: LawyerHit[]; next_page: number | null }) => {
+                setResults((current) => (reset ? data.data : [...current, ...data.data]));
+                setPage(data.next_page);
+            })
+            .catch(() => undefined)
+            .finally(() => setLoading(false));
+    }
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => load(true, 1, controller.signal), 300);
+        return () => { clearTimeout(timer); controller.abort(); };
+    }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const field = (key: keyof typeof filters, label: string) => (
+        <input value={filters[key]} onChange={(e) => setFilters((f) => ({ ...f, [key]: e.target.value }))} placeholder={label} aria-label={label} className={controlClasses(false)} />
+    );
+
+    return (
+        <div className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+                {field('q', t('Name'))}
+                {field('firm', t('Law firm'))}
+                {field('city', t('City'))}
+                {field('specialization', t('Practice area'))}
+            </div>
+            <ul className="max-h-80 divide-y divide-navy-100 overflow-y-auto rounded-lg border border-navy-100 dark:divide-navy-800 dark:border-navy-800" aria-busy={loading}>
+                {results.length === 0 && !loading && <li className="p-6 text-center text-sm text-navy-500">{t('No lawyers match your search.')}</li>}
+                {results.map((l) => (
+                    <li key={l.user_id} className="flex items-center gap-3 px-3 py-2.5">
+                        <Avatar name={l.name} src={l.avatar} size="sm" />
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{l.name}{l.colleague && <span className="ms-1.5 rounded bg-navy-100 px-1.5 text-[10px] text-navy-600 dark:bg-navy-800 dark:text-navy-300">{t('Colleague')}</span>}</p>
+                            <p className="truncate text-xs text-navy-500">{[l.firm, l.city, l.specializations.join(', ')].filter(Boolean).join(', ') || l.headline}</p>
+                        </div>
+                        <Button size="sm" variant="secondary" loading={starting === l.user_id} onClick={() => { setStarting(l.user_id); router.post(route('messages.direct'), { user_id: l.user_id }, { onSuccess: onClose, onFinish: () => setStarting(null) }); }}>{t('Message')}</Button>
+                    </li>
+                ))}
+                {loading && <li className="p-3 text-center text-xs text-navy-500">{t('Searching…')}</li>}
+            </ul>
+            {page && !loading && results.length > 0 && <Button size="sm" variant="ghost" onClick={() => load(false, page)}>{t('Load more')}</Button>}
+        </div>
     );
 }

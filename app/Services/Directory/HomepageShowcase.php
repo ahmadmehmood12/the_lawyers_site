@@ -4,10 +4,16 @@ namespace App\Services\Directory;
 
 use App\Enums\CaseStatus;
 use App\Enums\VerificationStatus;
+use App\Http\Controllers\Admin\ShowcaseController;
+use App\Models\Appointment;
 use App\Models\Client;
 use App\Models\Draft;
 use App\Models\LawyerProfile;
 use App\Models\LegalCase;
+use App\Models\Organization;
+use App\Models\TeamDesignation;
+use App\Models\TeamMember;
+use App\Models\Testimonial;
 use App\Support\DirectoryPresenter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -27,15 +33,40 @@ class HomepageShowcase
     /**
      * Platform totals: listed lawyers, client records, drafts and cases. Aggregates only.
      *
-     * @return array{lawyers: int, clients: int, drafts: int, cases: int}
+     * @return array{lawyers: int, firms: int, clients: int, cases: int, consultations: int, drafts: int}
      */
     public function stats(): array
     {
-        return Cache::remember('home-showcase-stats', now()->addMinutes(15), fn () => [
+        return Cache::remember('home-showcase-stats-v2', now()->addMinutes(15), fn () => [
             'lawyers' => LawyerProfile::query()->listed()->count(),
+            'firms' => Organization::query()->where('type', 'firm')->where('is_public', true)->count(),
+            'consultations' => Appointment::query()->whereIn('status', ['confirmed', 'completed'])->count(),
             'clients' => Client::query()->count(),
             'drafts' => Draft::query()->count(),
             'cases' => LegalCase::query()->count(),
+        ]);
+    }
+
+    /**
+     * Admin-managed showcase: active testimonials, video testimonials and team members grouped
+     * by designation. Cached; ShowcaseController clears the cache on every change.
+     *
+     * @return array{testimonials: list<array<string, mixed>>, videos: list<array<string, mixed>>, team: list<array{designation: string, members: list<array<string, mixed>>}>}
+     */
+    public function content(): array
+    {
+        $urdu = app()->getLocale() === 'ur';
+
+        return Cache::remember(ShowcaseController::CACHE_KEY.'-'.app()->getLocale(), now()->addMinutes(30), fn () => [
+            'testimonials' => Testimonial::query()->published('text')->limit(12)->get()->map->toPublicArray()->all(),
+            'videos' => Testimonial::query()->published('video')->whereNotNull('video_path')->limit(6)->get()->map->toPublicArray()->all(),
+            'team' => TeamDesignation::query()->orderBy('sort_order')->orderBy('name')
+                ->with(['members' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('name')])->get()
+                ->filter(fn (TeamDesignation $d) => $d->members->isNotEmpty())
+                ->map(fn (TeamDesignation $d) => [
+                    'designation' => $urdu && $d->name_ur ? $d->name_ur : $d->name,
+                    'members' => $d->members->map(fn (TeamMember $m) => $m->setRelation('designation', $d)->toPublicArray($urdu))->all(),
+                ])->values()->all(),
         ]);
     }
 

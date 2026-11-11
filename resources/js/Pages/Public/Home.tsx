@@ -9,7 +9,13 @@ import { cn } from '@/lib/cn';
 import { formatDate, formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
+import { BookingJourney } from '@/Components/home/BookingJourney';
 import { DraftingTyper } from '@/Components/home/DraftingTyper';
+import { HowItWorks } from '@/Components/home/HowItWorks';
+import { LegalReferences } from '@/Components/home/LegalReferences';
+import { type TeamGroup, TeamSection } from '@/Components/home/TeamSection';
+import { type TestimonialItem, Testimonials } from '@/Components/home/Testimonials';
+import { VideoTestimonials } from '@/Components/home/VideoTestimonials';
 import { Reveal } from '@/Components/home/Reveal';
 import { type ShowcaseStats, StatsStrip } from '@/Components/home/StatsStrip';
 import { TopLawyers, type TopLawyersData } from '@/Components/home/TopLawyers';
@@ -24,7 +30,7 @@ type Props = {
     articles: { slug: string; title: string; excerpt: string | null; author: string; published_at: string }[];
     plans: Plan[];
     /** Deferred: real platform totals and ranked lawyers (App\Services\Directory\HomepageShowcase). */
-    showcase?: { stats: ShowcaseStats; top: TopLawyersData };
+    showcase?: { stats: ShowcaseStats; top: TopLawyersData; testimonials: TestimonialItem[]; videos: TestimonialItem[]; team: TeamGroup[] };
     canonical: string;
 };
 
@@ -59,11 +65,15 @@ export default function Home({ specializations, cities, articles, plans, showcas
                 <div className="hm">
                     <Hero />
                     <StatsStrip stats={showcase?.stats} />
+                    <HowItWorks />
                     <HearingRun />
                     <CaseFile />
-                    <Desks />
                     <Paperwork />
                     <TopLawyers data={showcase?.top} />
+                    <BookingJourney />
+                    <Testimonials items={showcase?.testimonials} />
+                    <VideoTestimonials items={showcase?.videos} />
+                    <TeamSection groups={showcase?.team} />
                     <Plans plans={plans} />
                     <Questions />
 
@@ -237,51 +247,6 @@ function CaseFile() {
     );
 }
 
-function Desks() {
-    const t = useT();
-    const desks: { key: string; label: string; body: string; capture: Capture }[] = [
-        { key: 'advocate', label: t('Advocate'), body: t('Cause lists by day, week or month, printable for the bar room.'), capture: { src: '/images/screens/diary-week.webp', alt: t('Court diary, week view') } },
-        { key: 'firm', label: t('Law firm'), body: t('Reports on caseload, hearings and fees across every lawyer.'), capture: { src: '/images/screens/analytics.webp', alt: t('Practice analytics') } },
-        { key: 'client', label: t('Client'), body: t('Progress, documents and messages, without your internal notes.'), capture: { src: '/images/screens/portal-case.webp', alt: t('Client portal, case page') } },
-        { key: 'admin', label: t('Platform team'), body: t('Enrollment documents checked before anyone is shown as verified.'), capture: { src: '/images/screens/admin-verifications.webp', alt: t('Lawyer verification queue') } },
-    ];
-    const [current, setCurrent] = useState(desks[0].key);
-    const desk = desks.find((d) => d.key === current) ?? desks[0];
-
-    return (
-        <section className="border-t border-navy-100 bg-white py-20 lg:py-28 dark:border-navy-800 dark:bg-navy-900/40" aria-labelledby="hm-desks">
-            <div className="hm-wrap">
-                <h2 id="hm-desks" className="text-4xl font-semibold sm:text-5xl">{t('One record, four desks')}</h2>
-                <div role="tablist" aria-label={t('Who uses it')} className="mt-8 flex gap-6 overflow-x-auto border-b border-navy-100 dark:border-navy-800">
-                    {desks.map((d) => (
-                        <button
-                            key={d.key}
-                            type="button"
-                            role="tab"
-                            id={`hm-tab-${d.key}`}
-                            aria-selected={current === d.key}
-                            aria-controls="hm-desk-panel"
-                            onClick={() => setCurrent(d.key)}
-                            className="hm-tab shrink-0 py-3 text-base font-medium"
-                        >
-                            {d.label}
-                            {current === d.key && <motion.span layoutId="hm-tab-mark" className="hm-tab-mark" transition={{ duration: 0.3, ease }} />}
-                        </button>
-                    ))}
-                </div>
-                <div id="hm-desk-panel" role="tabpanel" aria-labelledby={`hm-tab-${desk.key}`} className="mt-8">
-                    <p className="max-w-[48ch] text-lg text-navy-600 dark:text-navy-300">{desk.body}</p>
-                    <AnimatePresence mode="wait">
-                        <motion.div key={desk.key} className="mt-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-                            <Shot capture={desk.capture} />
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-            </div>
-        </section>
-    );
-}
-
 function Paperwork() {
     const t = useT();
     const rows = [
@@ -302,6 +267,7 @@ function Paperwork() {
                             </div>
                         ))}
                     </dl>
+                    <LegalReferences />
                 </Reveal>
                 <div className="relative pb-6 lg:pb-0">
                     <Reveal><Shot capture={{ src: '/images/screens/draft-editor.webp', alt: t('A post-arrest bail application in the drafting editor') }} /></Reveal>

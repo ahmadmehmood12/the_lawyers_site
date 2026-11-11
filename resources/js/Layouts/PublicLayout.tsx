@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Menu, X } from 'lucide-react';
+import { MotionConfig } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { Flash, LinkButton } from '@/Components/ui';
@@ -114,7 +115,7 @@ export default function PublicLayout({ seo, children }: { seo: Seo; children: Re
                         </div>
                     )}
                 </header>
-                <main className="flex-1">{children}</main>
+                <MotionConfig reducedMotion="user"><main className="flex-1">{children}</main></MotionConfig>
                 <Footer />
             </div>
             <Flash />

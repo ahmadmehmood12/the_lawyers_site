@@ -150,10 +150,13 @@ function TransitionDialog({ action, onClose }: { action: { a: Appointment; statu
 
 function MoveDialog({ appointment, onClose }: { appointment: Appointment | null; onClose: () => void }) {
     const t = useT();
-    const form = useForm({ starts_at: '' });
+    const form = useForm({ starts_at: '', reason: '' });
     return (
         <Modal open={!!appointment} onClose={onClose} size="sm" title={t('Reschedule appointment')} footer={<><Button variant="secondary" onClick={onClose}>{t('Back')}</Button><Button loading={form.processing} onClick={() => appointment && form.post(route('appointments.reschedule', appointment.id), { preserveScroll: true, onSuccess: onClose })}>{t('Save')}</Button></>}>
-            <Input label={t('New date & time')} type="datetime-local" value={form.data.starts_at} onChange={(e) => form.setData('starts_at', e.target.value)} error={form.errors.starts_at} />
+            <div className="space-y-4">
+                <Input label={t('New date & time')} type="datetime-local" value={form.data.starts_at} onChange={(e) => form.setData('starts_at', e.target.value)} error={form.errors.starts_at} />
+                <Input label={t('Reason (optional)')} value={form.data.reason} onChange={(e) => form.setData('reason', e.target.value)} error={form.errors.reason} hint={t('The client is notified by email and WhatsApp (if they agreed).')} />
+            </div>
         </Modal>
     );
 }

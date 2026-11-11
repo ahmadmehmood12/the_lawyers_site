@@ -17,6 +17,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Daily reminder run (scheduled 07:00 PKT). For each organization's configured
@@ -79,6 +80,15 @@ class DispatchReminders extends Command
                         }
                         if ($offset['client'] && $appointment->client?->user) {
                             $appointment->client->user->notify(new AppointmentReminder($appointment, $days, true));
+                        } elseif ($offset['client']) {
+                            // No portal account: email the client record (or booking contact); WhatsApp only with consent.
+                            $record = $appointment->client;
+                            $email = $record?->email ?? $appointment->contact_email;
+                            $route = $email ? Notification::route('mail', [$email => $record?->name ?? $appointment->contact_name]) : null;
+                            if ($record?->hasWhatsAppConsent() && $record->whatsAppNumber()) {
+                                $route = ($route ?? Notification::route('whatsapp', $record->whatsAppNumber()))->route('whatsapp', $record->whatsAppNumber());
+                            }
+                            $route?->notify((new AppointmentReminder($appointment, $days, true))->locale($record?->preferred_locale ?: 'en'));
                         }
                         $sent++;
                     }

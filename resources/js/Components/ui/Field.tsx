@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 export const controlClasses = (invalid?: boolean, className?: string) =>
     cn(
         'block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-navy-900 shadow-xs ring-1 ring-inset placeholder:text-navy-400',
-        'focus:ring-2 focus:ring-inset focus:outline-none disabled:cursor-not-allowed disabled:bg-navy-50 disabled:text-navy-500',
+        'transition-shadow duration-150 focus:ring-2 focus:ring-inset focus:outline-none disabled:cursor-not-allowed disabled:bg-navy-50 disabled:text-navy-500',
         'dark:bg-navy-900 dark:text-navy-50 dark:placeholder:text-navy-500 dark:disabled:bg-navy-800',
         invalid ? 'ring-red-500 focus:ring-red-600' : 'ring-navy-400 focus:ring-navy-600 dark:ring-navy-400 dark:focus:ring-gold-500',
         className,
@@ -26,7 +26,7 @@ export function Field({ label, error, hint, required, className, children }: Fie
             {children(id)}
             {hint && !error && <p className="text-xs text-navy-500 dark:text-navy-400">{hint}</p>}
             {error && (
-                <p className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                <p className="animate-field-error text-xs font-medium text-red-600 dark:text-red-400" role="alert">
                     {error}
                 </p>
             )}

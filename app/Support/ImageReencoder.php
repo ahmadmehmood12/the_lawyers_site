@@ -40,6 +40,20 @@ class ImageReencoder
         return self::store($directory, 'png', fn () => imagepng($canvas, null, 6));
     }
 
+    /** Shrinks to fit a box (keeping proportions) and stores a JPEG: video thumbnails, wide photos. */
+    public static function fittedJpeg(UploadedFile $file, string $directory, int $maxSide = 1280): string
+    {
+        $image = self::load($file);
+        $scale = min(1, $maxSide / max(imagesx($image), imagesy($image)));
+        $width = max(1, (int) round(imagesx($image) * $scale));
+        $height = max(1, (int) round(imagesy($image) * $scale));
+        $canvas = imagecreatetruecolor($width, $height);
+        imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
+        imagecopyresampled($canvas, $image, 0, 0, 0, 0, $width, $height, imagesx($image), imagesy($image));
+
+        return self::store($directory, 'jpg', fn () => imagejpeg($canvas, null, 82));
+    }
+
     private static function load(UploadedFile $file): \GdImage
     {
         $image = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));

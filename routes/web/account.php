@@ -8,6 +8,7 @@ use App\Http\Controllers\Account\OnboardingController;
 use App\Http\Controllers\Account\OrganizationSwitchController;
 use App\Http\Controllers\Account\PreferenceController;
 use App\Http\Controllers\Shared\CalendarController;
+use App\Http\Controllers\Shared\ConversationController;
 use App\Http\Controllers\Workspace\InvitationController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,10 @@ Route::middleware('auth')->group(function () {
     Route::post('calendar/events/{event}/cancel', [CalendarController::class, 'cancel'])->name('calendar.cancel');
     Route::post('calendar/events/{event}/complete', [CalendarController::class, 'complete'])->name('calendar.complete');
     Route::get('calendar/history/{source}/{id}', [CalendarController::class, 'history'])->whereIn('source', ['event', 'hearing', 'appointment'])->whereNumber('id')->name('calendar.history');
+
+    // Header messages menu (workspace and portal).
+    Route::get('inbox/recent', [ConversationController::class, 'recent'])->middleware('throttle:120,1')->name('inbox.recent');
+    Route::post('inbox/{conversation}/read', [ConversationController::class, 'markReadJson'])->name('inbox.read');
 
     Route::get('feedback', [FeedbackController::class, 'create'])->name('feedback.create');
     Route::post('feedback', [FeedbackController::class, 'store'])->middleware('throttle:6,1')->name('feedback.store');

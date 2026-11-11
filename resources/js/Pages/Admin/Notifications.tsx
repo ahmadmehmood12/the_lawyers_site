@@ -9,7 +9,7 @@ import type { Paginated } from '@/types';
 
 type Template = { id: number; key: string; name: string; language: string; body_preview: string; variable_count: number; status: string };
 
-export default function Notifications({ templates, deliveries, configured, enabled, displayName, settingsUrl, filters }: { templates: Template[]; deliveries: Paginated<any>; configured: boolean; enabled: boolean; displayName: string; settingsUrl: string; filters: Record<string, string> }) {
+export default function Notifications({ templates, deliveries, configured, enabled, displayName, settingsUrl, filters, totals }: { totals: { channel: string; status: string; total: number }[]; templates: Template[]; deliveries: Paginated<any>; configured: boolean; enabled: boolean; displayName: string; settingsUrl: string; filters: Record<string, string> }) {
     const t = useT();
     const { locale } = useLocale();
     const [editing, setEditing] = useState<Template | null | undefined>(undefined);
@@ -24,7 +24,18 @@ export default function Notifications({ templates, deliveries, configured, enabl
                     <ul className="divide-y divide-navy-100 dark:divide-navy-800">{templates.map((tp) => <li key={tp.id}><button type="button" onClick={() => setEditing(tp)} className="w-full space-y-1 px-5 py-3 text-start text-sm hover:bg-navy-50 dark:hover:bg-navy-800"><p className="flex items-center justify-between gap-2"><span className="font-medium">{tp.key} <Badge>{tp.language}</Badge></span><StatusBadge value={tp.status === 'approved' ? 'approved' : tp.status} label={tp.status} /></p><p className="ltr-nums text-xs text-navy-500">{tp.name}</p><p className="text-xs" dir={tp.language === 'ur' ? 'rtl' : undefined}>{tp.body_preview}</p></button></li>)}</ul>
                 </Card>
                 <Card>
-                    <CardHeader title={t('Delivery log')} actions={<Select aria-label={t('Status')} wrapperClassName="w-36" value={filters.status ?? ''} onChange={(e) => router.get(route('admin.notifications.index'), { status: e.target.value || undefined }, { preserveState: true })} options={['queued', 'sent', 'delivered', 'read', 'failed', 'skipped'].map((s) => ({ value: s, label: s }))} placeholder={t('All')} />} />
+                    <CardHeader
+                        title={t('Delivery log')}
+                        description={t('Email and WhatsApp. Sent, failed and skipped deliveries are kept here; duplicates are prevented per message and recipient.')}
+                    />
+                    <div className="flex flex-wrap gap-2 border-b border-navy-100 px-5 py-3 dark:border-navy-800">
+                        <Select aria-label={t('Channel')} wrapperClassName="w-32" value={filters.channel ?? ''} onChange={(e) => router.get(route('admin.notifications.index'), { ...filters, channel: e.target.value || undefined }, { preserveState: true, preserveScroll: true })} options={[{ value: 'email', label: t('Email') }, { value: 'whatsapp', label: 'WhatsApp' }]} placeholder={t('All channels')} />
+                        <Select aria-label={t('Status')} wrapperClassName="w-32" value={filters.status ?? ''} onChange={(e) => router.get(route('admin.notifications.index'), { ...filters, status: e.target.value || undefined }, { preserveState: true, preserveScroll: true })} options={['queued', 'sent', 'delivered', 'read', 'failed', 'skipped'].map((s) => ({ value: s, label: t(s.charAt(0).toUpperCase() + s.slice(1)) }))} placeholder={t('All statuses')} />
+                        <input defaultValue={filters.event ?? ''} placeholder={t('Event, e.g. appointment')} aria-label={t('Event')} onKeyDown={(e) => e.key === 'Enter' && router.get(route('admin.notifications.index'), { ...filters, event: (e.target as HTMLInputElement).value || undefined }, { preserveState: true })} className="h-10 rounded-lg border-0 px-3 text-sm ring-1 ring-navy-400 dark:bg-navy-900" />
+                        <span className="ms-auto flex flex-wrap items-center gap-2 text-xs text-navy-500">
+                            {totals.filter((x) => ['sent', 'failed', 'skipped'].includes(x.status)).map((x) => <span key={x.channel + x.status} className="tabular-nums">{x.channel === 'email' ? t('Email') : 'WhatsApp'} {t(x.status.charAt(0).toUpperCase() + x.status.slice(1)).toLowerCase()}: <strong>{x.total}</strong></span>)}
+                        </span>
+                    </div>
                     <div className="overflow-x-auto"><table className="min-w-full text-xs"><tbody className="divide-y divide-navy-100 dark:divide-navy-800">{deliveries.data.map((d) => <tr key={d.id} className="align-top"><td className="px-4 py-2 whitespace-nowrap">{formatDateTime(d.created_at, locale)}</td><td className="px-2 py-2">{d.channel}<br />{d.event}</td><td className="ltr-nums px-2 py-2">{d.recipient}</td><td className="px-2 py-2"><StatusBadge value={d.status} label={d.status} />{d.error && <p className="mt-1 text-red-600">{d.error}</p>}</td><td className="px-4 py-2">{d.attempts}</td></tr>)}</tbody></table></div>
                     <Pagination meta={deliveries} />
                 </Card>

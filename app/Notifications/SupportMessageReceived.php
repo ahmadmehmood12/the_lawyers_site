@@ -4,10 +4,8 @@ namespace App\Notifications;
 
 use App\Enums\SupportMessageKind;
 use App\Models\ContactMessage;
-use App\Models\Setting;
 use App\Notifications\Channels\WhatsAppChannel;
 use Illuminate\Notifications\AnonymousNotifiable;
-use Illuminate\Notifications\Messages\MailMessage;
 
 /**
  * Acknowledges a contact or feedback message to whoever sent it. Sent on demand to
@@ -39,15 +37,10 @@ class SupportMessageReceived extends PlatformNotification
         return $channels;
     }
 
-    private function siteName(): string
-    {
-        return Setting::get('site_name') ?: (string) config('app.name');
-    }
-
     /** @return array{title: string, body: string, url?: string|null} */
     public function content(object $notifiable): array
     {
-        $replace = ['site' => $this->siteName(), 'reference' => $this->message->reference];
+        $replace = ['site' => self::siteName(), 'reference' => $this->message->reference];
 
         return $this->message->kind === SupportMessageKind::Feedback
             ? [
@@ -60,17 +53,26 @@ class SupportMessageReceived extends PlatformNotification
             ];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function mailData(object $notifiable): array
     {
         $content = $this->content($notifiable);
 
-        return (new MailMessage)
-            ->subject($content['title'])
-            ->greeting(__('Dear :name,', ['name' => $this->message->name]))
-            ->line($content['body'])
-            ->line(__('Your message: “:subject”', ['subject' => $this->message->subject]))
-            ->line(__('Please do not share passwords or confidential case documents by email.'))
-            ->salutation(__('Regards,').' '.$this->siteName());
+        return [
+            'subject' => $content['title'],
+            'heading' => $content['title'],
+            'greeting' => __('Dear :name,', ['name' => $this->message->name]),
+            'intro' => [$content['body']],
+            'details' => [
+                __('Reference') => $this->message->reference,
+                __('Subject') => $this->message->subject,
+            ],
+            'notice' => __('Please do not share passwords or confidential case documents by email.'),
+        ];
+    }
+
+    public function mailReplacements(object $notifiable): array
+    {
+        return ['reference' => $this->message->reference, 'subject' => $this->message->subject];
     }
 
     public function whatsAppTemplate(object $notifiable): ?array
@@ -78,7 +80,7 @@ class SupportMessageReceived extends PlatformNotification
         return [
             'key' => $this->event(),
             'locale' => $this->message->locale,
-            'variables' => [$this->message->name, $this->siteName(), (string) $this->message->reference],
+            'variables' => [$this->message->name, self::siteName(), (string) $this->message->reference],
             'subject' => $this->message,
             'dedupe' => 'wa:'.$this->event().':'.$this->message->id,
         ];

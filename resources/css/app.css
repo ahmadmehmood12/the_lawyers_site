@@ -10,10 +10,35 @@
  * navy: authority, primary surfaces · green: confirmation/legal ink · gold: sparing accent
  * ivory: warm paper background for public pages.
  */
+/* Arial resized to Inter's metrics, so text doesn't jump while Inter loads. */
+@font-face {
+    font-family: 'Inter Fallback';
+    src: local('Arial');
+    ascent-override: 90.44%;
+    descent-override: 22.52%;
+    line-gap-override: 0%;
+    size-adjust: 107.12%;
+}
+
+/* Defaults; the <style id="site-fonts"> block in app.blade.php overrides them with the admin's choice. */
+:root {
+    --primaryFont: "Inter", "Inter Fallback", Arial, sans-serif;
+    --headingFont: var(--primaryFont);
+    --urduFont: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif;
+    --urduHeadingFont: var(--urduFont);
+}
+
 @theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-    --font-urdu: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
+    --animate-field-error: field-error 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    @keyframes field-error {
+        from { opacity: 0; transform: translateY(-3px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    /* Site fonts come from Admin, Settings, Typography (App\Support\Typography prints the variables). */
+    --font-sans: var(--primaryFont);
+    --font-serif: var(--headingFont);
+    --font-urdu: var(--urduFont);
+    --font-urdu-heading: var(--urduHeadingFont);
 
     --color-navy-50: #f2f5fa;
     --color-navy-100: #e1e8f2;
@@ -106,7 +131,7 @@ html[data-site-theme='white-green'] {
     html[lang='ur'] h1,
     html[lang='ur'] h2,
     html[lang='ur'] h3 {
-        font-family: var(--font-urdu), var(--font-serif);
+        font-family: var(--font-urdu-heading), var(--font-serif);
         line-height: 1.9;
     }
 

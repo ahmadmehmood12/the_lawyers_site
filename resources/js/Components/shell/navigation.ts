@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-    Activity, BadgeCheck, CalendarRange, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
+    Activity, BadgeCheck, CalendarRange, Mail, Quote, UsersRound, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
     LayoutDashboard, Landmark, MapPinned, MessageSquare, Newspaper, Receipt, ScrollText, Search, Settings, ShieldCheck, Sparkles, Star, Tags, UserCog, Users, Wallet, AlertOctagon, Globe, Inbox, KeyRound,
 } from 'lucide-react';
 
@@ -65,6 +65,7 @@ export const adminNav: NavGroup[] = [
             { label: 'Users', route: 'admin.users.index', icon: Users, match: 'admin.users.*', platform: 'users.view', mobile: true },
             { label: 'Verification', route: 'admin.verifications.index', icon: ShieldCheck, match: 'admin.verifications.*', platform: 'verification.review', mobile: true },
             { label: 'Organizations', route: 'admin.organizations.index', icon: Building2, match: 'admin.organizations.*', platform: 'organizations.view' },
+            { label: 'Appointments', route: 'admin.appointments.index', icon: CalendarClock, match: 'admin.appointments.*', platform: 'organizations.view' },
         ],
     },
     {
@@ -82,6 +83,8 @@ export const adminNav: NavGroup[] = [
             { label: 'Templates', route: 'admin.templates.index', icon: ScrollText, match: 'admin.templates.*', platform: 'templates.manage' },
             { label: 'Articles', route: 'admin.articles.index', icon: Newspaper, match: 'admin.articles.*', platform: 'content.moderate' },
             { label: 'Reviews', route: 'admin.reviews.index', icon: Star, match: 'admin.reviews.*', platform: 'content.moderate' },
+            { label: 'Testimonials', route: 'admin.testimonials.index', icon: Quote, match: 'admin.testimonials.*', platform: 'content.moderate' },
+            { label: 'Team & Founders', route: 'admin.team.index', icon: UsersRound, match: 'admin.team.*', platform: 'content.moderate' },
             { label: 'Feedback & Messages', route: 'admin.feedback.index', icon: Inbox, match: 'admin.feedback.*', platform: 'support.manage' },
             { label: 'Complaints', route: 'admin.complaints.index', icon: AlertOctagon, match: 'admin.complaints.*', platform: 'support.manage' },
             { label: 'Website Pages', route: 'admin.pages.index', icon: Globe, match: 'admin.pages.*', platform: 'content.moderate' },
@@ -92,6 +95,7 @@ export const adminNav: NavGroup[] = [
         items: [
             { label: 'Plans & Subscriptions', route: 'admin.plans.index', icon: CreditCard, match: 'admin.plans.*', platform: 'billing.manage' },
             { label: 'Notifications', route: 'admin.notifications.index', icon: Bell, match: 'admin.notifications.*', platform: 'settings.manage' },
+            { label: 'Email Templates', route: 'admin.email-templates.index', icon: Mail, match: 'admin.email-templates.*', platform: 'settings.manage' },
             { label: 'Roles & Permissions', route: 'admin.roles.index', icon: KeyRound, match: 'admin.roles.*', platform: 'roles.manage' },
             { label: 'Audit Log', route: 'admin.audit.index', icon: BookOpen, match: 'admin.audit.*', platform: 'audit.view' },
             { label: 'Settings', route: 'admin.settings.edit', icon: Settings, match: 'admin.settings.*', platform: 'settings.manage' },

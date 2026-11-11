@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { MotionConfig, motion, useAnimationControls, useReducedMotion } from 'framer-motion';
 import { BadgeCheck, BellRing, CalendarDays, LockKeyhole } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
@@ -7,6 +7,7 @@ import { Flash } from '@/Components/ui';
 import { Logo } from '@/Components/shell/Logo';
 import { LanguageSwitcher, ThemeToggle } from '@/Components/shell/Preferences';
 import { cn } from '@/lib/cn';
+import { ease, shake } from '@/lib/motion';
 import { useLocale, useT } from '@/lib/i18n';
 import type { AuthMedia, SharedProps } from '@/types';
 
@@ -18,12 +19,20 @@ import type { AuthMedia, SharedProps } from '@/types';
  */
 export default function AuthLayout({ title, description, children, wide }: { title: string; description?: string; children: ReactNode; wide?: boolean }) {
     const t = useT();
-    const { authMedia } = usePage<SharedProps>().props;
+    const { authMedia, errors } = usePage<SharedProps & { errors?: Record<string, string> }>().props;
     const media = authMedia ?? null;
     const showPanel = media?.enabled ?? true;
+    const card = useAnimationControls();
+
+    /** Each failed submit (a fresh errors bag from the server) shakes the card once. */
+    useEffect(() => {
+        if (errors && Object.keys(errors).length > 0) {
+            card.start(shake);
+        }
+    }, [errors, card]);
 
     return (
-        <>
+        <MotionConfig reducedMotion="user">
             <Head title={title}>
                 <meta name="robots" content="noindex" />
             </Head>
@@ -40,19 +49,19 @@ export default function AuthLayout({ title, description, children, wide }: { tit
                         </div>
                     </header>
                     <main className="flex flex-1 items-start justify-center px-4 pt-4 pb-12 sm:items-center sm:px-8 sm:pt-0">
-                        <div className={cn('w-full', wide ? 'max-w-2xl' : 'max-w-md')}>
+                        <motion.div key={title} className={cn('w-full', wide ? 'max-w-2xl' : 'max-w-md')} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease }}>
                             <div className="mb-6">
                                 <h1 className="text-2xl font-semibold text-navy-900 sm:text-3xl dark:text-white">{title}</h1>
                                 {description && <p className="mt-2 text-sm text-navy-600 dark:text-navy-400">{description}</p>}
                             </div>
-                            <div className="rounded-2xl border border-navy-100 bg-white p-6 shadow-card sm:p-8 dark:border-navy-800 dark:bg-navy-900">{children}</div>
+                            <motion.div animate={card} className="rounded-2xl border border-navy-100 bg-white p-6 shadow-card transition-shadow focus-within:shadow-lg sm:p-8 dark:border-navy-800 dark:bg-navy-900">{children}</motion.div>
                             <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-navy-500"><LockKeyhole className="size-3.5" aria-hidden />{t('Your information is encrypted and kept confidential.')}</p>
-                        </div>
+                        </motion.div>
                     </main>
                 </div>
             </div>
             <Flash />
-        </>
+        </MotionConfig>
     );
 }
 

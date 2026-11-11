@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Shared;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Conversation;
+use App\Models\LawyerProfile;
 use App\Models\LegalCase;
 use App\Models\Message;
 use App\Models\User;
 use App\Services\Messaging\MessagingService;
 use App\Support\PublicFile;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -54,7 +56,7 @@ class ConversationController extends Controller
         $search = $request->string('search')->trim()->toString();
 
         $conversations = Conversation::query()->forParticipant($user)
-            ->when(! $this->portal($request), fn ($q) => $q->forOrganization($this->organization()))
+            ->when(! $this->portal($request), fn ($q) => $q->where(fn ($w) => $w->where('organization_id', $this->organization()->id)->orWhere('kind', 'direct')))
             ->whereHas('participants', fn ($q) => $q->where('user_id', $user->id)->when($archived, fn ($w) => $w->whereNotNull('archived_at'), fn ($w) => $w->whereNull('archived_at')))
             ->when($search, fn ($q) => $q->where(fn ($w) => $w->where('subject', 'like', "%{$search}%")->orWhereHas('users', fn ($u) => $u->where('name', 'like', "%{$search}%"))))
             ->with(['users:id,name,avatar_path', 'participants', 'organization:id,name', 'latestMessage'])
@@ -68,7 +70,8 @@ class ConversationController extends Controller
                 'subject' => $c->subject,
                 'with' => $c->users->where('id', '!=', $user->id)->pluck('name')->implode(', '),
                 'with_avatar' => PublicFile::url($c->users->firstWhere('id', '!=', $user->id)?->avatar_path),
-                'organization' => $c->organization->name,
+                'organization' => $c->organization?->name,
+                'kind' => $c->kind,
                 'last_message_at' => $c->last_message_at?->toIso8601String(),
                 'preview' => $c->latestMessage ? ($c->latestMessage->body ? str($c->latestMessage->body)->limit(60)->toString() : '📎 '.$c->latestMessage->attachment_name) : null,
                 'unread' => $messaging->unreadCount($c, $user),
@@ -79,6 +82,7 @@ class ConversationController extends Controller
                 'subject' => $active->subject,
                 'with' => $active->users()->where('users.id', '!=', $user->id)->pluck('name')->implode(', '),
                 'with_avatar' => PublicFile::url($active->users()->where('users.id', '!=', $user->id)->value('avatar_path')),
+                'kind' => $active->kind,
                 'case' => ! $this->portal($request) && $active->legalCase ? ['id' => $active->legalCase->id, 'title' => $active->legalCase->title] : null,
                 'archived' => (bool) $active->participants()->where('user_id', $user->id)->value('archived_at'),
                 'messages' => $active->messages()->with('sender:id,name,avatar_path')->latest('id')->limit(100)->get()->reverse()->values()->map(fn (Message $m) => [
@@ -144,10 +148,106 @@ class ConversationController extends Controller
     {
         $user = $request->user();
         Conversation::query()->forParticipant($user)
-            ->when(! $this->portal($request), fn ($q) => $q->forOrganization($this->organization()))
+            ->when(! $this->portal($request), fn ($q) => $q->where(fn ($w) => $w->where('organization_id', $this->organization()->id)->orWhere('kind', 'direct')))
             ->get()->each(fn (Conversation $c) => $messaging->markRead($c, $user));
 
         return back()->with('success', __('All conversations marked as read.'));
+    }
+
+    /**
+     * Header messages menu (JSON): latest conversations across every organization the user is
+     * in, with the other person's photo, preview, time and unread count.
+     */
+    public function recent(Request $request, MessagingService $messaging): JsonResponse
+    {
+        $user = $request->user();
+        $conversations = Conversation::query()->forParticipant($user)
+            ->whereHas('participants', fn ($q) => $q->where('user_id', $user->id)->whereNull('archived_at'))
+            ->whereNotNull('last_message_at')
+            ->with(['users:id,name,avatar_path', 'participants', 'latestMessage', 'organization:id,name'])
+            ->orderByDesc('last_message_at')->limit(8)->get();
+        $prefix = $user->isClient() ? 'portal.messages' : 'messages';
+
+        return response()->json([
+            'unread' => $messaging->totalUnread($user),
+            'inbox_url' => route($prefix.'.index'),
+            'items' => $conversations->map(function (Conversation $c) use ($user, $messaging, $prefix) {
+                $other = $c->users->firstWhere('id', '!=', $user->id);
+
+                return [
+                    'id' => $c->id,
+                    'name' => $other?->name ?? __('Conversation'),
+                    'avatar' => PublicFile::url($other?->avatar_path),
+                    'preview' => $c->latestMessage ? ($c->latestMessage->body ? str($c->latestMessage->body)->limit(70)->toString() : __('Attachment: :name', ['name' => $c->latestMessage->attachment_name])) : null,
+                    'mine' => $c->latestMessage?->sender_id === $user->id,
+                    'at' => $c->last_message_at?->toIso8601String(),
+                    'unread' => $messaging->unreadCount($c, $user),
+                    'context' => $c->kind === 'direct' ? __('Direct message') : ($c->subject ?? $c->organization?->name),
+                    'url' => route($prefix.'.show', $c->id),
+                ];
+            }),
+        ]);
+    }
+
+    /** Mark one conversation read from the header menu (any area). */
+    public function markReadJson(Request $request, Conversation $conversation, MessagingService $messaging): JsonResponse
+    {
+        $this->authorize('participate', $conversation);
+        $messaging->markRead($conversation, $request->user());
+
+        return response()->json(['unread' => $messaging->totalUnread($request->user())]);
+    }
+
+    /**
+     * AJAX lawyer search for lawyer-to-lawyer messaging: listed advocates (and colleagues in the
+     * current organization), by name, firm, city or specialization. Debounced client-side,
+     * paginated server-side; returns only public directory fields.
+     */
+    public function searchLawyers(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:80'],
+            'city' => ['nullable', 'string', 'max:80'],
+            'specialization' => ['nullable', 'string', 'max:80'],
+            'firm' => ['nullable', 'string', 'max:120'],
+        ]);
+        $colleagueIds = $this->organization()->activeMembers()->pluck('user_id');
+
+        $profiles = LawyerProfile::query()
+            ->where(fn ($q) => $q->listed()->orWhereIn('user_id', $colleagueIds))
+            ->where('user_id', '!=', $user->id)
+            ->with(['user:id,name,avatar_path', 'city:id,name', 'specializations:id,name', 'user.memberships' => fn ($q) => $q->where('status', 'active')->whereHas('organization', fn ($o) => $o->where('type', 'firm')), 'user.memberships.organization:id,name'])
+            ->when($filters['q'] ?? null, fn ($q, $term) => $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$term}%")))
+            ->when($filters['city'] ?? null, fn ($q, $city) => $q->whereHas('city', fn ($c) => $c->where('name', 'like', "%{$city}%")))
+            ->when($filters['specialization'] ?? null, fn ($q, $spec) => $q->whereHas('specializations', fn ($s) => $s->where('name', 'like', "%{$spec}%")))
+            ->when($filters['firm'] ?? null, fn ($q, $firm) => $q->whereHas('user.organizations', fn ($o) => $o->where('type', 'firm')->where('name', 'like', "%{$firm}%")))
+            ->orderBy(User::select('name')->whereColumn('users.id', 'lawyer_profiles.user_id'))
+            ->paginate(12)->withQueryString();
+
+        return response()->json([
+            'data' => collect($profiles->items())->map(fn (LawyerProfile $p) => [
+                'user_id' => $p->user_id,
+                'name' => $p->user->name,
+                'avatar' => PublicFile::url($p->photo_path) ?? PublicFile::url($p->user->avatar_path),
+                'headline' => $p->headline,
+                'city' => $p->city?->name,
+                'firm' => $p->user->memberships->first()?->organization?->name,
+                'specializations' => $p->specializations->pluck('name')->take(3)->values(),
+                'verified' => $p->isVerified(),
+                'colleague' => $colleagueIds->contains($p->user_id),
+            ]),
+            'next_page' => $profiles->hasMorePages() ? $profiles->currentPage() + 1 : null,
+        ]);
+    }
+
+    /** Opens (or reuses) a direct conversation with another lawyer. */
+    public function startDirect(Request $request, MessagingService $messaging): RedirectResponse
+    {
+        $validated = $request->validate(['user_id' => ['required', 'integer', 'exists:users,id']]);
+        $conversation = $messaging->startDirect($request->user(), User::findOrFail($validated['user_id']));
+
+        return redirect()->route('messages.show', $conversation);
     }
 
     public function archive(Request $request, Conversation $conversation): RedirectResponse
@@ -168,14 +268,15 @@ class ConversationController extends Controller
     }
 
     /**
-     * Lawyers a client can start a conversation with: those on their shared cases.
+     * Lawyers a client can start a conversation with: on their shared cases or from their bookings.
      *
      * @return list<array<string, mixed>>
      */
     private function clientStarters(User $user): array
     {
-        return Client::query()->where('user_id', $user->id)->with(['organization:id,name', 'cases' => fn ($q) => $q->where('share_with_client', true)->with('lawyers:id,name')])->get()
-            ->flatMap(fn (Client $c) => $c->cases->flatMap->lawyers->unique('id')->map(fn ($l) => ['client_id' => $c->id, 'lawyer_id' => $l->id, 'label' => $l->name.', '.$c->organization->name]))
+        // Lawyers on the client's shared cases plus lawyers they have booked a consultation with.
+        return Client::query()->where('user_id', $user->id)->with(['organization:id,name', 'cases' => fn ($q) => $q->where('share_with_client', true)->with('lawyers:id,name'), 'appointments.lawyer:id,name'])->get()
+            ->flatMap(fn (Client $c) => $c->cases->flatMap->lawyers->concat($c->appointments->pluck('lawyer')->filter())->unique('id')->map(fn ($l) => ['client_id' => $c->id, 'lawyer_id' => $l->id, 'label' => $l->name.', '.$c->organization->name]))
             ->unique(fn ($s) => $s['client_id'].'-'.$s['lawyer_id'])->values()->all();
     }
 }

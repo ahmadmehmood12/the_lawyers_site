@@ -42,7 +42,7 @@ export type SharedProps = {
         organization: CurrentOrganization | null;
         organizations: { id: number; name: string }[];
     };
-    unread: { notifications: number } | null;
+    unread: { notifications: number; messages: number } | null;
     flash: { success: string | null; error: string | null };
     /** Only on sign-in / sign-up pages (Admin, Settings, Sign-in page media). */
     authMedia?: AuthMedia | null;
