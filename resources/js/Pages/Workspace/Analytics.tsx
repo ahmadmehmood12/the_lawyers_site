@@ -1,18 +1,20 @@
-import { Alert, BarList, Card, CardBody, CardHeader, ColumnChart, PageHeader, Stat } from '@/Components/ui';
+import { Alert, BarList, Button, Card, CardBody, CardHeader, ColumnChart, PageHeader, Stat } from '@/Components/ui';
+import { Crown } from 'lucide-react';
+import { openUpgrade, type UpgradeOffer } from '@/Components/domain/UpgradeModal';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 type Series = { label: string; value: number }[];
-type Props = { planAllows: boolean; totals: Record<string, number>; registrations: Series; hearingsHeld: Series; byCourt: Series; byStatus: Series; workload: Series; finance: { revenue: Series; expenses: Series; outstanding: number; outstandingCount: number } | null };
+type Props = { planAllows: boolean; upgrade: UpgradeOffer | null; totals: Record<string, number>; registrations: Series; hearingsHeld: Series; byCourt: Series; byStatus: Series; workload: Series; finance: { revenue: Series; expenses: Series; outstanding: number; outstandingCount: number } | null };
 
-export default function Analytics({ planAllows, totals, registrations, hearingsHeld, byCourt, byStatus, workload, finance }: Props) {
+export default function Analytics({ planAllows, upgrade, totals, registrations, hearingsHeld, byCourt, byStatus, workload, finance }: Props) {
     const t = useT();
     const { locale } = useLocale();
     return (
         <AppLayout title={t('Analytics')} wide>
             <PageHeader title={t('Practice analytics')} description={t('Workload and finances for your organization. Case outcomes are not a measure of competence and are not ranked.')} />
-            {!planAllows && <Alert tone="info" className="mb-5">{t('Detailed analytics are included in paid plans. Basic totals are shown below.')}</Alert>}
+            {!planAllows && <Alert tone="info" className="mb-5" action={upgrade && <Button size="sm" icon={<Crown className="size-4" />} onClick={() => openUpgrade(upgrade)}>{t('Upgrade')}</Button>}>{t('Detailed analytics are included in paid plans. Basic totals are shown below.')}</Alert>}
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                 <Stat label={t('Active cases')} value={totals.active} />
                 <Stat label={t('Closed cases')} value={totals.closed} />

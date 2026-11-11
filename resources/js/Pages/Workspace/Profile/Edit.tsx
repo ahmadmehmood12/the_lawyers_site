@@ -1,11 +1,11 @@
-import { Link, router, useForm } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { BadgeCheck, Camera, Check, ExternalLink, Newspaper, Plus, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Alert, Avatar, Button, Card, CardBody, CardHeader, Checkbox, Input, LinkButton, PageHeader, Select, StatusBadge, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n';
-import type { Option } from '@/types';
+import type { Option, SharedProps } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
 type Profile = Record<string, any>;
@@ -71,6 +71,7 @@ function StepForm({ step, form, children, title, description }: { step: string; 
 }
 
 function Identity({ profile }: { profile: Profile }) {
+    const { auth } = usePage<SharedProps>().props;
     const t = useT();
     const form = useForm({ title: profile.title ?? '', cnic: profile.cnic ?? '', headline: profile.headline ?? '', bio: profile.bio ?? '', bio_ur: profile.bio_ur ?? '' });
     const photo = useForm({ photo: null as File | null });
@@ -78,7 +79,7 @@ function Identity({ profile }: { profile: Profile }) {
         <div className="space-y-6">
             <Card>
                 <CardBody className="flex items-center gap-4">
-                    <Avatar name={profile.slug} src={profile.photo_url} size="xl" />
+                    <Avatar name={auth.user?.name ?? profile.slug} src={profile.photo_url} size="xl" />
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-navy-200 hover:bg-navy-50 dark:ring-navy-700">
                         <Camera className="size-4" />{t('Upload photograph')}
                         <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) { photo.setData('photo', f); router.post(route('lawyer.profile.photo'), { photo: f }, { forceFormData: true, preserveScroll: true }); } }} />

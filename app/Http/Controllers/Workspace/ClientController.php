@@ -56,9 +56,7 @@ class ClientController extends Controller
         $this->authorize('create', Client::class);
         $organization = $this->organization();
 
-        if (! $subscriptions->canAdd($organization, PlanFeature::MaxClients)) {
-            return back()->with('error', __('Your plan’s client limit has been reached. Upgrade to add more clients.'));
-        }
+        $subscriptions->ensureCanAdd($organization, PlanFeature::MaxClients);
 
         $client = $organization->clients()->create([...$request->clientData(), 'created_by' => $request->user()->id]);
         $this->applyConsent($client, $request->boolean('whatsapp_consent'));

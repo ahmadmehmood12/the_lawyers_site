@@ -6,6 +6,7 @@ use App\Enums\CaseStatus;
 use App\Enums\MembershipStatus;
 use App\Enums\PlanFeature;
 use App\Enums\SubscriptionStatus;
+use App\Exceptions\PlanLimitReached;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\Setting;
@@ -87,5 +88,60 @@ class SubscriptionService
         };
 
         return $used < $limit;
+    }
+
+    /** Stops the action with the Upgrade modal when one more record would pass the plan. */
+    public function ensureCanAdd(Organization $organization, PlanFeature $feature): void
+    {
+        if (! $this->canAdd($organization, $feature)) {
+            throw new PlanLimitReached($this->upgradeOffer($organization, $feature));
+        }
+    }
+
+    /**
+     * What the Upgrade modal shows: the limit hit, the current plan and the cheapest active plan that
+     * raises this limit (same audience first), with a side by side comparison and its price.
+     *
+     * @return array<string, mixed>
+     */
+    public function upgradeOffer(Organization $organization, PlanFeature $feature, ?int $used = null): array
+    {
+        $current = $this->planFor($organization);
+        $limit = $current?->limitFor($feature);
+        $audience = $organization->type?->value === 'firm' ? 'firm' : 'lawyer';
+        $raises = fn (Plan $plan) => ($next = $plan->limitFor($feature)) === null || ($limit !== null && $next > $limit);
+
+        $candidates = Plan::query()->where('is_active', true)->where('price_monthly', '>', (float) ($current?->price_monthly ?? 0))
+            ->with('features')->orderBy('price_monthly')->get()->filter($raises);
+        $next = $candidates->firstWhere('audience', $audience) ?? $candidates->first();
+
+        $compare = [PlanFeature::MaxActiveCases, PlanFeature::MaxClients, PlanFeature::MaxTeamMembers, PlanFeature::StorageMb, PlanFeature::WhatsAppReminders, PlanFeature::AiAssistant, PlanFeature::Analytics];
+        $ur = app()->getLocale() === 'ur';
+
+        return [
+            'feature' => $feature->value,
+            'feature_label' => $feature->label(),
+            'limit' => $limit,
+            'used' => $used ?? $limit,
+            'message' => __('You have reached your plan’s limit for :feature.', ['feature' => mb_strtolower($feature->label())]),
+            'current' => $current ? ['slug' => $current->slug, 'name' => $ur && $current->name_ur ? $current->name_ur : $current->name] : null,
+            'next' => $next ? [
+                'slug' => $next->slug,
+                'name' => $ur && $next->name_ur ? $next->name_ur : $next->name,
+                'description' => $next->description,
+                'price_monthly' => (float) $next->price_monthly,
+                'price_yearly' => (float) $next->price_yearly,
+                'trial_days' => (int) $next->trial_days,
+                'url' => route('billing.index', ['plan' => $next->slug]),
+            ] : null,
+            'rows' => collect($compare)->map(fn (PlanFeature $f) => [
+                'key' => $f->value,
+                'label' => $f->label(),
+                'current' => $current?->limitFor($f),
+                'next' => $next?->limitFor($f),
+                'highlight' => $f === $feature,
+            ])->all(),
+            'plans_url' => route('billing.index'),
+        ];
     }
 }

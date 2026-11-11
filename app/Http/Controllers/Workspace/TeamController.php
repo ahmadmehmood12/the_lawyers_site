@@ -57,9 +57,7 @@ class TeamController extends Controller
             'role' => ['required', Rule::enum(OrgRole::class), Rule::notIn([OrgRole::Owner->value])],
         ]);
 
-        if (! $subscriptions->canAdd($organization, PlanFeature::MaxTeamMembers)) {
-            return back()->with('error', __('Your plan’s team member limit has been reached.'));
-        }
+        $subscriptions->ensureCanAdd($organization, PlanFeature::MaxTeamMembers);
 
         $email = strtolower($validated['email']);
         if ($organization->members()->whereHas('user', fn ($q) => $q->where('email', $email))->where('status', MembershipStatus::Active->value)->exists()) {

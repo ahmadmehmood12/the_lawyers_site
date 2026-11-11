@@ -15,6 +15,7 @@ import { CaseDemo } from '@/Components/home/CaseDemo';
 import { DraftDemo } from '@/Components/home/DraftDemo';
 import { HearingPhone, PHONE_STAGES, stageProgress, useProgressState } from '@/Components/home/HearingPhone';
 import { HeroDemo } from '@/Components/home/HeroDemo';
+import { ScalesOfJustice } from '@/Components/home/ScalesOfJustice';
 import { CitationStream } from '@/Components/home/CitationStream';
 import { DraftingTyper } from '@/Components/home/DraftingTyper';
 import { HowItWorks } from '@/Components/home/HowItWorks';
@@ -80,6 +81,7 @@ export default function Home({ specializations, cities, articles, plans, showcas
                             <div>
                                 <h2 id="hm-find" className="text-4xl font-semibold sm:text-5xl">{t('Looking for a lawyer?')}</h2>
                                 <p className="mt-4 text-lg text-navy-600 dark:text-navy-300">{t('Search by city and practice area.')}</p>
+                                <ScalesOfJustice className="mx-auto mt-10 hidden max-w-md lg:sticky lg:top-28 lg:block" />
                             </div>
                             <div>
                                 <form

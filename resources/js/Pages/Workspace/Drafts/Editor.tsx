@@ -5,6 +5,7 @@ import { RichTextEditor } from '@/Components/domain/RichTextEditor';
 import { Alert, Button, Card, CardBody, CardHeader, Input, Modal, PageHeader, Select, StatusBadge, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDateTime } from '@/lib/format';
+import { openUpgrade, type UpgradeOffer } from '@/Components/domain/UpgradeModal';
 import { postJson } from '@/lib/http';
 import { useLocale, useT } from '@/lib/i18n';
 
@@ -87,7 +88,8 @@ export function AiPanel({ open, onClose, caseId, onInsert }: { open: boolean; on
 
     async function run() {
         setLoading(true); setError(null); setResult(null);
-        const response = await postJson<{ text?: string; notice?: string; message?: string }>(route('ai.run'), { feature, input, legal_case_id: caseId ?? null });
+        const response = await postJson<{ text?: string; notice?: string; message?: string; upgrade?: UpgradeOffer }>(route('ai.run'), { feature, input, legal_case_id: caseId ?? null });
+        if (response.status === 402 && response.data.upgrade) openUpgrade(response.data.upgrade);
         setLoading(false);
         if (response.ok && response.data.text) setResult({ text: response.data.text, notice: response.data.notice ?? '' });
         else setError(response.data.message ?? t('The AI request failed.'));

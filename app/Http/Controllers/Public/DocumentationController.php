@@ -7,16 +7,15 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Bilingual (English/Urdu) product documentation for advocates and law firms.
- * The copy lives in the page component so both languages ship together and the
- * global language switcher changes the reading direction and text.
+ * User Guide (renamed from Documentation): step by step help with themed screenshots.
+ * Copy lives in resources/js/Pages/Public/guide/content.ts; screenshots in public/images/guide/{theme}.
  */
 class DocumentationController extends Controller
 {
     public function __invoke(): Response
     {
-        return Inertia::render('Public/Documentation', [
-            'canonical' => route('documentation'),
+        return Inertia::render('Public/UserGuide', [
+            'canonical' => route('guide'),
         ]);
     }
 }

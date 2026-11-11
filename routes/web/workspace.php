@@ -153,6 +153,8 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
 
 Route::middleware(['auth', 'verified', 'account:lawyer', 'workspace'])->group(function () {
     Route::get('my-articles', [ArticleController::class, 'index'])->name('lawyer.articles.index');
+    Route::get('my-articles/create', [ArticleController::class, 'create'])->name('lawyer.articles.create');
+    Route::get('my-articles/{article}/edit', [ArticleController::class, 'edit'])->name('lawyer.articles.edit');
     Route::post('my-articles', [ArticleController::class, 'save'])->name('lawyer.articles.store');
     Route::put('my-articles/{article}', [ArticleController::class, 'save'])->name('lawyer.articles.update');
     Route::post('reviews/{review}/respond', [ArticleController::class, 'respond'])->name('lawyer.reviews.respond');

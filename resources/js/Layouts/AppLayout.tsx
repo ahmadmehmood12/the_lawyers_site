@@ -3,6 +3,7 @@ import { Bell, Building2, ChevronDown, LogOut, Menu, MessageSquareHeart, MoreHor
 import { motion, MotionConfig } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { UpgradeModal } from '@/Components/domain/UpgradeModal';
 import { Avatar, Dropdown, Flash } from '@/Components/ui';
 import { ActivityBell } from '@/Components/shell/ActivityBell';
 import { Logo } from '@/Components/shell/Logo';
@@ -164,6 +165,7 @@ export default function AppLayout({ title, children, area = 'workspace', wide = 
                 </nav>
             </div>
             <Flash />
+            <UpgradeModal />
         </>
     );
 }

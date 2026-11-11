@@ -32,7 +32,8 @@ class AiController extends Controller
 
         return Inertia::render('Workspace/Ai/Index', [
             'available' => $assistant->available(),
-            'planAllows' => $subscriptions->enabled($organization, PlanFeature::AiAssistant),
+            'planAllows' => $planAllows = $subscriptions->enabled($organization, PlanFeature::AiAssistant),
+            'upgrade' => $planAllows ? null : $subscriptions->upgradeOffer($organization, PlanFeature::AiAssistant, 0),
             'usage' => ['used' => $this->usedThisMonth($organization->id), 'limit' => $limit],
             'features' => LegalAssistant::FEATURES,
             'cases' => LegalCase::query()->visibleTo($request->user(), $organization)->orderBy('title')->limit(500)->get(['id', 'title', 'reference'])->map(fn ($c) => ['value' => $c->id, 'label' => $c->reference.', '.$c->title]),
@@ -54,8 +55,10 @@ class AiController extends Controller
         }
 
         $limit = $subscriptions->limit($organization, PlanFeature::AiAssistant);
-        if ($limit !== null && $this->usedThisMonth($organization->id) >= $limit) {
-            return response()->json(['message' => __('Your plan’s monthly AI limit has been reached.')], 402);
+        if ($limit !== null && ($used = $this->usedThisMonth($organization->id)) >= $limit) {
+            $offer = $subscriptions->upgradeOffer($organization, PlanFeature::AiAssistant, $used);
+
+            return response()->json(['message' => __('Your plan’s monthly AI limit has been reached.'), 'upgrade' => $offer], 402);
         }
 
         $case = null;

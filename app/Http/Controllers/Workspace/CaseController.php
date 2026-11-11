@@ -94,9 +94,7 @@ class CaseController extends Controller
         $this->authorize('create', LegalCase::class);
         $organization = $this->organization();
 
-        if (! $subscriptions->canAdd($organization, PlanFeature::MaxActiveCases)) {
-            return back()->with('error', __('Your plan’s active case limit has been reached. Close cases or upgrade your plan.'));
-        }
+        $subscriptions->ensureCanAdd($organization, PlanFeature::MaxActiveCases);
 
         $data = $request->validated();
         if (! $request->user()->can('assign', new LegalCase(['organization_id' => $organization->id]))) {

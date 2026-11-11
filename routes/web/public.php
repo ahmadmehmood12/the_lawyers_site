@@ -30,7 +30,8 @@ Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name(
 Route::post('articles/{article:slug}/comments', [ArticleController::class, 'comment'])->middleware(['auth', 'throttle:10,1'])->name('articles.comments.store');
 Route::post('articles/{article:slug}/like', [ArticleController::class, 'like'])->middleware(['auth', 'throttle:30,1'])->name('articles.like');
 
-Route::get('documentation', DocumentationController::class)->name('documentation');
+Route::get('user-guide', DocumentationController::class)->name('guide');
+Route::redirect('documentation', 'user-guide', 301)->name('documentation');
 // FAQs are managed in Admin, FAQs (no longer a CMS page).
 Route::get('faqs', FaqPageController::class)->name('faqs');
 

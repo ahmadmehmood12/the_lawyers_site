@@ -43,7 +43,8 @@ class AnalyticsController extends Controller
         $finance = $access->allows($request->user(), $organization, 'finance.view');
 
         return Inertia::render('Workspace/Analytics', [
-            'planAllows' => $subscriptions->enabled($organization, PlanFeature::Analytics),
+            'planAllows' => $planAllows = $subscriptions->enabled($organization, PlanFeature::Analytics),
+            'upgrade' => $planAllows ? null : $subscriptions->upgradeOffer($organization, PlanFeature::Analytics, 0),
             'totals' => [
                 'active' => LegalCase::query()->forOrganization($organization)->whereIn('status', CaseStatus::openValues())->count(),
                 'closed' => LegalCase::query()->forOrganization($organization)->whereNotIn('status', CaseStatus::openValues())->count(),

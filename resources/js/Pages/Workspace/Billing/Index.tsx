@@ -57,8 +57,9 @@ export default function BillingIndex({ canManage, stripeConfigured, subscription
     const t = useT();
     const { locale } = useLocale();
     const paidPlans = plans.filter((plan) => plan.price_monthly > 0 || plan.price_yearly > 0);
-    const [planSlug, setPlanSlug] = useState(paidPlans.find((plan) => plan.slug === currentPlan)?.slug ?? paidPlans[0]?.slug ?? '');
-    const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const requestedPlan = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('plan') : null;
+    const [planSlug, setPlanSlug] = useState(paidPlans.find((plan) => plan.slug === requestedPlan)?.slug ?? paidPlans.find((plan) => plan.slug === currentPlan)?.slug ?? paidPlans[0]?.slug ?? '');
+    const [cycle, setCycle] = useState<'monthly' | 'yearly'>(typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('cycle') === 'yearly' ? 'yearly' : 'monthly');
     const [methodId, setMethodId] = useState<number | null>(methods[0]?.id ?? null);
     const selectedPlan = paidPlans.find((plan) => plan.slug === planSlug) ?? null;
     const selectedMethod = methods.find((method) => method.id === methodId) ?? null;

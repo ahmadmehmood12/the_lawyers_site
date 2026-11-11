@@ -44,7 +44,7 @@ export type SharedProps = {
         organizations: { id: number; name: string }[];
     };
     unread: { notifications: number; messages: number } | null;
-    flash: { success: string | null; error: string | null };
+    flash: { success: string | null; error: string | null; upgrade?: import('@/Components/domain/UpgradeModal').UpgradeOffer | null };
     /** Only on sign-in / sign-up pages (Admin, Settings, Sign-in page media). */
     authMedia?: AuthMedia | null;
     demoPersona?: DemoPersona | null;

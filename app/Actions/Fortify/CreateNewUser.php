@@ -111,6 +111,8 @@ class CreateNewUser implements CreatesNewUsers
                         'registration_number' => $input['firm_registration_number'] ?? null,
                     ]);
                 } elseif ($firm = $this->firmForInviteCode($input['firm_invite_code'] ?? null)) {
+                    // Every advocate keeps their own chambers, so leaving the firm never stops their work.
+                    $this->organizations->createSoloPractice($user);
                     $this->organizations->addMember($firm, $user, OrgRole::AssociateAdvocate);
                     $user->forceFill(['current_organization_id' => $firm->id])->save();
                     $organization = $firm;

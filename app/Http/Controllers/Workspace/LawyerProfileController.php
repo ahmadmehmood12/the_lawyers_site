@@ -48,7 +48,7 @@ class LawyerProfileController extends Controller
                 'cnic' => $profile->cnic,
                 'advocate_category' => $profile->advocate_category?->value,
                 'enrollment_date' => $profile->enrollment_date?->toDateString(),
-                'photo_url' => PublicFile::url($profile->photo_path),
+                'photo_url' => PublicFile::url($profile->photo_path) ?? PublicFile::url($request->user()->avatar_path),
                 'verification_status' => $profile->verification_status->value,
                 'verification_label' => $profile->verification_status->label(),
                 'specialization_ids' => $profile->specializations->pluck('id'),
