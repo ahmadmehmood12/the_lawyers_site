@@ -92,7 +92,7 @@ abstract class PlatformNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $data = [
-            'greeting' => null, 'intro' => [], 'details' => [], 'action_label' => __('Open'), 'action_url' => null, 'notice' => null, 'outro' => [],
+            'greeting' => null, 'code' => null, 'intro' => [], 'details' => [], 'action_label' => __('Open'), 'action_url' => null, 'notice' => null, 'outro' => [],
             ...$this->mailData($notifiable),
         ];
         $replace = [':name' => $this->recipientName($notifiable), ':site' => self::siteName(), ...collect($this->mailReplacements($notifiable))->mapWithKeys(fn ($v, $k) => [':'.$k => (string) $v])->all()];

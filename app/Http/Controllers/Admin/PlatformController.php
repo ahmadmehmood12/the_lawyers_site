@@ -191,10 +191,15 @@ class PlatformController extends Controller
                 'x' => Setting::get('social_x') ?: '',
                 'whatsapp' => Setting::get('social_whatsapp') ?: '',
             ],
+            'contact' => [
+                'email' => Setting::get('contact_email') ?: '',
+                'phone' => Setting::get('contact_phone') ?: '',
+                'address' => Setting::get('contact_address') ?: '',
+            ],
         ];
     }
 
-    /** Saves the public brand name, logo/favicon and social profile links. */
+    /** Saves the public brand name, logo/favicon, social profile links and footer contact details. */
     public function saveBrandingSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -210,6 +215,9 @@ class PlatformController extends Controller
             'social_linkedin' => ['nullable', 'url:https,http', 'max:255'],
             'social_x' => ['nullable', 'url:https,http', 'max:255'],
             'social_whatsapp' => ['nullable', 'url:https,http', 'max:255'],
+            'contact_email' => ['nullable', 'email', 'max:120'],
+            'contact_phone' => ['nullable', 'string', 'max:40', 'regex:/^[0-9+()\-\s]+$/'],
+            'contact_address' => ['nullable', 'string', 'max:255'],
         ]);
 
         Setting::put('site_name', trim($validated['site_name']));
@@ -217,6 +225,10 @@ class PlatformController extends Controller
 
         foreach (['facebook', 'instagram', 'youtube', 'linkedin', 'x', 'whatsapp'] as $network) {
             Setting::put('social_'.$network, filled($validated['social_'.$network] ?? null) ? trim($validated['social_'.$network]) : null);
+        }
+
+        foreach (['contact_email', 'contact_phone', 'contact_address'] as $key) {
+            Setting::put($key, filled($validated[$key] ?? null) ? trim($validated[$key]) : null);
         }
 
         foreach (['logo' => 'site_logo_path', 'favicon' => 'site_favicon_path'] as $field => $key) {

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Public\ArticleController;
 use App\Http\Controllers\Public\DocumentationController;
+use App\Http\Controllers\Public\FaqPageController;
 use App\Http\Controllers\Public\FirmDirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LawyerDirectoryController;
@@ -27,13 +28,16 @@ Route::get('practice-areas/{specialization:slug}', [SpecializationController::cl
 Route::get('articles', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
 Route::post('articles/{article:slug}/comments', [ArticleController::class, 'comment'])->middleware(['auth', 'throttle:10,1'])->name('articles.comments.store');
+Route::post('articles/{article:slug}/like', [ArticleController::class, 'like'])->middleware(['auth', 'throttle:30,1'])->name('articles.like');
 
 Route::get('documentation', DocumentationController::class)->name('documentation');
+// FAQs are managed in Admin, FAQs (no longer a CMS page).
+Route::get('faqs', FaqPageController::class)->name('faqs');
 
 Route::get('pricing', [PageController::class, 'pricing'])->name('pricing');
 Route::get('contact', [PageController::class, 'contact'])->name('contact');
 Route::post('contact', [PageController::class, 'submitContact'])->middleware('throttle:5,1')->name('contact.submit');
 
-foreach (['about' => 'about', 'faqs' => 'faqs', 'terms' => 'terms', 'privacy' => 'privacy', 'legal-resources' => 'resources'] as $slug => $name) {
+foreach (['about' => 'about', 'terms' => 'terms', 'privacy' => 'privacy', 'legal-resources' => 'resources'] as $slug => $name) {
     Route::get($slug, [PageController::class, 'show'])->defaults('slug', $slug)->name($name);
 }

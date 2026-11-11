@@ -18,10 +18,34 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
+use Laravel\Fortify\Contracts\EmailVerificationNotificationSentResponse;
+use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        // Codes instead of links: after "send code", show who it went to and open the code form.
+        $this->app->bind(EmailVerificationNotificationSentResponse::class, fn () => new class implements EmailVerificationNotificationSentResponse
+        {
+            public function toResponse($request)
+            {
+                return back()->with('success', __('Email sent to :email', ['email' => $request->user()->email]));
+            }
+        });
+
+        $this->app->bind(SuccessfulPasswordResetLinkRequestResponse::class, fn () => new class implements SuccessfulPasswordResetLinkRequestResponse
+        {
+            public function toResponse($request)
+            {
+                $email = strtolower((string) $request->input('email'));
+
+                return redirect()->route('password.code', ['email' => $email])->with('success', __('Email sent to :email', ['email' => $email]));
+            }
+        });
+    }
+
     public function boot(): void
     {
         Fortify::createUsersUsing(CreateNewUser::class);
@@ -56,7 +80,7 @@ class FortifyServiceProvider extends ServiceProvider
             'email' => $request->query('email'),
             'token' => $request->route('token'),
         ]));
-        Fortify::verifyEmailView(fn () => Inertia::render('Auth/VerifyEmail'));
+        Fortify::verifyEmailView(fn (Request $request) => Inertia::render('Auth/VerifyEmail', ['email' => $request->user()->email]));
         Fortify::confirmPasswordView(fn () => Inertia::render('Auth/ConfirmPassword'));
         Fortify::twoFactorChallengeView(fn () => Inertia::render('Auth/TwoFactorChallenge'));
 

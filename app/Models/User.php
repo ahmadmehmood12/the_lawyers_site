@@ -6,6 +6,7 @@ use App\Enums\AccountType;
 use App\Enums\MembershipStatus;
 use App\Enums\PlatformRole;
 use App\Enums\UserStatus;
+use App\Services\Auth\OneTimeCodeService;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -137,5 +138,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function routeNotificationForWhatsApp(): ?string
     {
         return $this->phone;
+    }
+
+    /** Sends a six-digit code instead of a signed link (OneTimeCodeService). */
+    public function sendEmailVerificationNotification(): void
+    {
+        app(OneTimeCodeService::class)->send($this, OneTimeCodeService::VerifyEmail);
+    }
+
+    /** Sends a six-digit reset code; the broker token is issued only after the code is checked. */
+    public function sendPasswordResetNotification($token): void
+    {
+        app(OneTimeCodeService::class)->send($this, OneTimeCodeService::ResetPassword);
     }
 }

@@ -13,3 +13,4 @@ export * from './Misc';
 export * from './Modal';
 export * from './Tabs';
 export * from './UserCell';
+export * from './CodeInput';

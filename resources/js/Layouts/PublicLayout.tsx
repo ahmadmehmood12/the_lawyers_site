@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Menu, X } from 'lucide-react';
+import { Mail, MapPin, Menu, Phone, X } from 'lucide-react';
 import { MotionConfig } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -140,6 +140,13 @@ function Footer() {
                         <Logo inverted />
                         <p className="mt-4 text-sm leading-relaxed text-navy-300">{app.tagline || t('Practice management, court diary and lawyer directory built for Pakistan’s legal profession.')}</p>
                         <SocialLinks links={app.social ?? {}} className="mt-6" />
+                        {(app.contact?.email || app.contact?.phone || app.contact?.address) && (
+                            <ul className="mt-5 space-y-2 text-sm">
+                                {app.contact.email && <li><a href={`mailto:${app.contact.email}`} className="inline-flex items-center gap-2 transition-colors hover:text-gold-300"><Mail className="size-4 shrink-0 text-gold-400" aria-hidden /><span dir="ltr" className="break-all">{app.contact.email}</span></a></li>}
+                                {app.contact.phone && <li><a href={`tel:${app.contact.phone.replace(/[^\d+]/g, '')}`} className="inline-flex items-center gap-2 transition-colors hover:text-gold-300"><Phone className="size-4 shrink-0 text-gold-400" aria-hidden /><span dir="ltr">{app.contact.phone}</span></a></li>}
+                                {app.contact.address && <li className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0 text-gold-400" aria-hidden /><span>{app.contact.address}</span></li>}
+                            </ul>
+                        )}
                     </div>
                     {columns.map((column) => (
                         <nav key={column.title} aria-label={t(column.title)}>

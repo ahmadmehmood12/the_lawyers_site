@@ -18,10 +18,10 @@ export default function EmailTemplates({ templates }: { templates: Template[] })
     const groups = Array.from(new Set(templates.map((x) => x.group)));
 
     return (
-        <AppLayout title={t('Email templates')} area="admin">
+        <AppLayout title={t('Email templates')} area="admin" wide>
             <PageHeader title={t('Email templates')} description={t('Every notification email uses the branded layout with your logo. Reword the text here; dates, court, people and links are always filled in automatically.')} />
             <Alert tone="info" className="mb-5">{t('Without a custom version, the built-in wording is used in the reader’s language.')}</Alert>
-            <div className="space-y-6">
+            <div className="grid items-start gap-6 xl:grid-cols-2">
                 {groups.map((group) => (
                     <Card key={group}>
                         <CardHeader title={group} />

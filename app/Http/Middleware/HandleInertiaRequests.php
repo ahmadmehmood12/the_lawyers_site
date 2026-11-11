@@ -58,6 +58,11 @@ class HandleInertiaRequests extends Middleware
                     'x' => Setting::get('social_x') ?: null,
                     'whatsapp' => Setting::get('social_whatsapp') ?: null,
                 ],
+                'contact' => [
+                    'email' => Setting::get('contact_email') ?: null,
+                    'phone' => Setting::get('contact_phone') ?: null,
+                    'address' => Setting::get('contact_address') ?: null,
+                ],
                 'locale' => $locale,
                 'dir' => $locale === 'ur' ? 'rtl' : 'ltr',
                 'locales' => ['en' => 'English', 'ur' => 'اردو'],

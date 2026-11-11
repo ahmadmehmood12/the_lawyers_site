@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useState } from 'react';
-import { LawyerCard, type LawyerCardData } from '@/Components/domain/LawyerCard';
+import { LawyerTile, type TopLawyer } from '@/Components/home/TopLawyers';
 import { Button, Checkbox, EmptyState, Input, Pagination, Select } from '@/Components/ui';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { cn } from '@/lib/cn';
@@ -9,7 +9,7 @@ import { useT } from '@/lib/i18n';
 import type { Option, Paginated } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
-type Props = { lawyers: Paginated<LawyerCardData>; filters: Record<string, string>; options: { cities: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; courts: SelectOption[]; specializations: SelectOption[]; barCouncils: SelectOption[]; categories: Option[]; languages: string[] }; canonical: string };
+type Props = { lawyers: Paginated<TopLawyer>; filters: Record<string, string>; options: { cities: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; courts: SelectOption[]; specializations: SelectOption[]; barCouncils: SelectOption[]; categories: Option[]; languages: string[] }; canonical: string };
 
 export default function LawyersIndex({ lawyers, filters, options, canonical }: Props) {
     const t = useT();
@@ -53,7 +53,7 @@ export default function LawyersIndex({ lawyers, filters, options, canonical }: P
                     <aside className="hidden lg:block">{panel}</aside>
                     <div>
                         {lawyers.data.length === 0 ? <EmptyState title={t('No lawyers match these filters')} description={t('Try widening your search.')} /> : (
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{lawyers.data.map((l) => <LawyerCard key={l.slug} lawyer={l} />)}</div>
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{lawyers.data.map((l) => <LawyerTile key={l.slug} lawyer={l} rank={null} />)}</div>
                         )}
                         <div className="mt-6"><Pagination meta={lawyers} /></div>
                         <p className="mt-6 text-xs text-navy-500">{t('Listing order is not a ranking of competence. “Verified” means Bar enrollment evidence was reviewed by our team; other details are reported by the lawyer.')}</p>

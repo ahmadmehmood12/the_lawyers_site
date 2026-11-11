@@ -7,6 +7,7 @@ use App\Http\Controllers\Account\NotificationController;
 use App\Http\Controllers\Account\OnboardingController;
 use App\Http\Controllers\Account\OrganizationSwitchController;
 use App\Http\Controllers\Account\PreferenceController;
+use App\Http\Controllers\Auth\OneTimeCodeController;
 use App\Http\Controllers\Shared\CalendarController;
 use App\Http\Controllers\Shared\ConversationController;
 use App\Http\Controllers\Workspace\InvitationController;
@@ -15,7 +16,14 @@ use Illuminate\Support\Facades\Route;
 Route::post('locale', [PreferenceController::class, 'locale'])->middleware('throttle:30,1')->name('locale.update');
 Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 
+Route::middleware('guest')->group(function () {
+    // Password reset by six-digit code (docs/Modules/Authentication.md).
+    Route::get('forgot-password/code', [OneTimeCodeController::class, 'showReset'])->name('password.code');
+    Route::post('forgot-password/code', [OneTimeCodeController::class, 'verifyReset'])->middleware('throttle:10,1')->name('password.code.verify');
+});
+
 Route::middleware('auth')->group(function () {
+    Route::post('email/verify-code', [OneTimeCodeController::class, 'verifyEmail'])->middleware('throttle:10,1')->name('verification.code');
     Route::get('home', HomeRedirectController::class)->name('home.redirect');
     Route::post('theme', [PreferenceController::class, 'theme'])->name('theme.update');
     Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');

@@ -29,6 +29,12 @@
 }
 
 @theme {
+    --animate-code-shake: code-shake 0.35s ease-in-out;
+    @keyframes code-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
+    }
     --animate-field-error: field-error 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     @keyframes field-error {
         from { opacity: 0; transform: translateY(-3px); }

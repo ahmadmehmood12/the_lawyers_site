@@ -26,6 +26,7 @@ type Branding = {
     logo_url: string | null;
     favicon_url: string | null;
     social: Record<'facebook' | 'instagram' | 'youtube' | 'linkedin' | 'x' | 'whatsapp', string>;
+    contact: { email: string; phone: string; address: string };
 };
 
 const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-800 hover:file:bg-navy-200 dark:text-navy-200 dark:file:bg-navy-800 dark:file:text-navy-100';
@@ -33,7 +34,7 @@ const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-m
 export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia, typography }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia; typography: TypographyPayload }) {
     const t = useT();
     const { auth } = usePage<SharedProps>().props;
-    const brand = useForm<{ site_name: string; site_tagline: string; logo: File | null; favicon: File | null; remove_logo: boolean; remove_favicon: boolean } & Record<`social_${keyof Branding['social']}`, string>>({
+    const brand = useForm<{ site_name: string; site_tagline: string; logo: File | null; favicon: File | null; remove_logo: boolean; remove_favicon: boolean; contact_email: string; contact_phone: string; contact_address: string } & Record<`social_${keyof Branding['social']}`, string>>({
         site_name: branding.site_name,
         site_tagline: branding.site_tagline,
         logo: null,
@@ -46,6 +47,9 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
         social_linkedin: branding.social.linkedin,
         social_x: branding.social.x,
         social_whatsapp: branding.social.whatsapp,
+        contact_email: branding.contact.email,
+        contact_phone: branding.contact.phone,
+        contact_address: branding.contact.address,
     });
     const smtp = useForm({
         mail_mailer: mail.mailer ?? 'log',
@@ -101,9 +105,9 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
     ];
     const savedSecret = (has: boolean) => (has ? t('A secret is saved. Leave blank to keep it.') : t('No secret saved yet.'));
     return (
-        <AppLayout title={t('Settings')} area="admin">
+        <AppLayout title={t('Settings')} area="admin" wide>
             <PageHeader title={t('Platform settings')} />
-            <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
                     <CardHeader title={t('General')} />
                     <CardBody className="space-y-4">
@@ -203,6 +207,15 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                             {socialFields.map((field) => (
                                 <Input key={field.key} label={field.label} type="url" placeholder={field.placeholder} value={brand.data[`social_${field.key}`]} onChange={(e) => brand.setData(`social_${field.key}`, e.target.value)} error={brand.errors[`social_${field.key}`]} />
                             ))}
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium">{t('Footer contact details')}</p>
+                            <p className="text-xs text-navy-500">{t('Shown in the website footer under the social icons, one per line. Leave empty to hide.')}</p>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <Input label={t('Email')} type="email" placeholder="info@example.pk" value={brand.data.contact_email} onChange={(e) => brand.setData('contact_email', e.target.value)} error={brand.errors.contact_email} />
+                                <Input label={t('Phone')} type="tel" placeholder="+92 300 1234567" value={brand.data.contact_phone} onChange={(e) => brand.setData('contact_phone', e.target.value)} error={brand.errors.contact_phone} />
+                                <Input label={t('Address')} placeholder={t('Office, street, city')} value={brand.data.contact_address} onChange={(e) => brand.setData('contact_address', e.target.value)} error={brand.errors.contact_address} />
+                            </div>
                         </div>
                         <Button loading={brand.processing} onClick={() => brand.post(route('admin.branding-settings.update'), { preserveScroll: true, forceFormData: true, onSuccess: () => brand.reset('logo', 'favicon', 'remove_logo', 'remove_favicon') })}>{t('Save branding')}</Button>
                     </CardBody>

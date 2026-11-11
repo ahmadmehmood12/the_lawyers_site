@@ -14,13 +14,13 @@ export default function Roles({ roles, permissions }: { roles: Role[]; permissio
     const labelFor = (name: string) => permissions.find((p) => p.value === name)?.label ?? name;
 
     return (
-        <AppLayout title={t('Roles & Permissions')} area="admin">
+        <AppLayout title={t('Roles & Permissions')} area="admin" wide>
             <PageHeader
                 title={t('Roles and permissions')}
                 description={t('Roles for the platform team. Firm roles (senior advocate, clerk and so on) are set per firm.')}
                 actions={<Button icon={<Plus className="size-4" />} onClick={() => setEditing('new')}>{t('New role')}</Button>}
             />
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                 {roles.map((role) => (
                     <Card key={role.id}>
                         <CardHeader

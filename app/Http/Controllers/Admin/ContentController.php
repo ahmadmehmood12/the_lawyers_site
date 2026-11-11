@@ -57,19 +57,40 @@ class ContentController extends Controller
         return back()->with('success', __('Template saved.'));
     }
 
+    /**
+     * Moderation queue per tab, filtered by state (pending first by default) with counts per state
+     * so the admin sees what still needs a decision. Approved article state is "published".
+     */
     public function moderation(Request $request): Response
     {
         $tab = in_array($request->query('tab'), ['articles', 'reviews', 'comments'], true) ? $request->query('tab') : 'articles';
+        $approved = $tab === 'articles' ? ArticleStatus::Published->value : ReviewStatus::Approved->value;
+        $states = ['pending' => 'pending', 'approved' => $approved, 'rejected' => 'rejected'];
+        $state = array_key_exists((string) $request->query('state'), $states) || $request->query('state') === 'all' ? (string) $request->query('state') : 'pending';
+
+        $base = match ($tab) {
+            'articles' => fn () => Article::query()->whereIn('status', array_values($states)),
+            'reviews' => fn () => Review::query(),
+            default => fn () => ArticleComment::query(),
+        };
+        $counts = $base()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
+        $filtered = fn () => $base()->when($state !== 'all', fn ($q) => $q->where('status', $states[$state]))->orderByRaw("status = 'pending' DESC")->latest('updated_at');
 
         return Inertia::render('Admin/Moderation', [
             'tab' => $tab,
-            'articles' => $tab === 'articles' ? Article::query()->with(['author:id,name', 'category:id,name'])->whereIn('status', [ArticleStatus::Pending->value, ArticleStatus::Published->value, ArticleStatus::Rejected->value])
-                ->orderByRaw("status = 'pending' DESC")->latest('updated_at')->paginate(20)->withQueryString()
-                ->through(fn ($a) => ['id' => $a->id, 'title' => $a->title, 'slug' => $a->slug, 'author' => $a->author->name, 'category' => $a->category?->name, 'status' => $a->status->value, 'status_label' => $a->status->label(), 'excerpt' => $a->excerpt, 'body' => HtmlSanitizer::clean($a->body), 'updated_at' => $a->updated_at->toIso8601String()]) : null,
-            'reviews' => $tab === 'reviews' ? Review::query()->with(['author:id,name', 'lawyerProfile.user:id,name'])->orderByRaw("status = 'pending' DESC")->latest()->paginate(20)->withQueryString()
-                ->through(fn ($r) => ['id' => $r->id, 'lawyer' => $r->lawyerProfile->user->name, 'author' => $r->author->name, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'status' => $r->status->value, 'status_label' => $r->status->label(), 'created_at' => $r->created_at->toIso8601String()]) : null,
-            'comments' => $tab === 'comments' ? ArticleComment::query()->with(['user:id,name', 'article:id,title'])->orderByRaw("status = 'pending' DESC")->latest()->paginate(30)->withQueryString()
-                ->through(fn ($c) => ['id' => $c->id, 'article' => $c->article->title, 'author' => $c->user->name, 'body' => $c->body, 'status' => $c->status->value, 'status_label' => $c->status->label(), 'created_at' => $c->created_at->toIso8601String()]) : null,
+            'state' => $state,
+            'counts' => [
+                'pending' => (int) ($counts['pending'] ?? 0),
+                'approved' => (int) ($counts[$approved] ?? 0),
+                'rejected' => (int) ($counts['rejected'] ?? 0),
+                'all' => (int) $counts->sum(),
+            ],
+            'articles' => $tab === 'articles' ? $filtered()->with(['author:id,name', 'category:id,name', 'approver:id,name'])->paginate(20)->withQueryString()
+                ->through(fn ($a) => ['id' => $a->id, 'title' => $a->title, 'slug' => $a->slug, 'author' => $a->author->name, 'category' => $a->category?->name, 'status' => $a->status->value, 'status_label' => $a->status->label(), 'excerpt' => $a->excerpt, 'body' => HtmlSanitizer::clean($a->body), 'reason' => $a->rejection_reason, 'moderator' => $a->approver?->name, 'views' => (int) $a->views, 'likes' => (int) $a->likes_count, 'updated_at' => $a->updated_at->toIso8601String()]) : null,
+            'reviews' => $tab === 'reviews' ? $filtered()->with(['author:id,name', 'lawyerProfile.user:id,name', 'moderator:id,name'])->paginate(20)->withQueryString()
+                ->through(fn ($r) => ['id' => $r->id, 'lawyer' => $r->lawyerProfile->user->name, 'author' => $r->author->name, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'status' => $r->status->value, 'status_label' => $r->status->label(), 'moderator' => $r->moderator?->name, 'moderated_at' => $r->moderated_at?->toIso8601String(), 'created_at' => $r->created_at->toIso8601String()]) : null,
+            'comments' => $tab === 'comments' ? $filtered()->with(['user:id,name', 'article:id,title,slug'])->paginate(30)->withQueryString()
+                ->through(fn ($c) => ['id' => $c->id, 'article' => $c->article->title, 'article_slug' => $c->article->slug, 'author' => $c->user->name, 'body' => $c->body, 'status' => $c->status->value, 'status_label' => $c->status->label(), 'created_at' => $c->created_at->toIso8601String(), 'updated_at' => $c->updated_at->toIso8601String()]) : null,
         ]);
     }
 
@@ -100,7 +121,7 @@ class ContentController extends Controller
     {
         $comment->update(['status' => $request->validate(['status' => ['required', Rule::in(['approved', 'rejected'])]])['status']]);
 
-        return back();
+        return back()->with('success', __('Comment updated.'));
     }
 
     public function complaints(Request $request): Response

@@ -30,6 +30,8 @@ class EmailTemplateRegistry
             'case_update' => ['label' => __('Account and verification updates'), 'group' => __('Account'), 'placeholders' => ['name', 'site']],
             'feedback_received' => ['label' => __('Feedback received'), 'group' => __('Support'), 'placeholders' => ['name', 'site', 'reference', 'subject']],
             'contact_received' => ['label' => __('Contact message received'), 'group' => __('Support'), 'placeholders' => ['name', 'site', 'reference', 'subject']],
+            'email_verification_code' => ['label' => __('Email verification code'), 'group' => __('Account'), 'placeholders' => ['name', 'site', 'code', 'minutes']],
+            'password_reset_code' => ['label' => __('Password reset code'), 'group' => __('Account'), 'placeholders' => ['name', 'site', 'code', 'minutes']],
         ];
     }
 }

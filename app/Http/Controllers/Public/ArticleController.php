@@ -9,9 +9,11 @@ use App\Models\ArticleCategory;
 use App\Support\HtmlSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/** Public articles (docs/Features/Articles.md): most liked first, views and likes on every card. */
 class ArticleController extends Controller
 {
     public function index(Request $request): Response
@@ -20,8 +22,8 @@ class ArticleController extends Controller
             ->when($request->string('category')->toString(), fn ($q, $slug) => $q->whereHas('category', fn ($c) => $c->where('slug', $slug)))
             ->when($request->string('tag')->toString(), fn ($q, $slug) => $q->whereHas('tags', fn ($t) => $t->where('slug', $slug)))
             ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('title', 'like', "%{$s}%"))
-            ->latest('published_at')->paginate(12)->withQueryString()
-            ->through(fn (Article $a) => ['slug' => $a->slug, 'title' => $a->title, 'excerpt' => $a->excerpt, 'author' => $a->author->name, 'category' => $a->category?->name, 'published_at' => $a->published_at->toDateString(), 'language' => $a->language]);
+            ->orderByDesc('likes_count')->latest('published_at')->paginate(12)->withQueryString()
+            ->through(fn (Article $a) => $a->toCard());
 
         return Inertia::render('Public/Articles/Index', [
             'articles' => $articles,
@@ -31,11 +33,16 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function show(Article $article): Response
+    public function show(Request $request, Article $article): Response
     {
         abort_unless(Article::query()->published()->whereKey($article->id)->exists(), 404);
         $article->increment('views');
         $article->load(['author:id,name', 'author.lawyerProfile:id,user_id,slug', 'category:id,name,slug', 'tags:id,name,slug']);
+        $user = $request->user();
+
+        $related = Article::query()->published()->whereKeyNot($article->id)->with(['author:id,name', 'category:id,name'])
+            ->when($article->article_category_id, fn ($q, $id) => $q->orderByRaw('article_category_id = ? DESC', [$id]))
+            ->orderByDesc('likes_count')->latest('published_at')->limit(4)->get();
 
         return Inertia::render('Public/Articles/Show', [
             'article' => [
@@ -44,11 +51,39 @@ class ArticleController extends Controller
                 'author' => $article->author->name, 'author_slug' => $article->author->lawyerProfile?->slug,
                 'category' => $article->category?->only(['name', 'slug']), 'tags' => $article->tags->map->only(['name', 'slug']),
                 'published_at' => $article->published_at->toIso8601String(), 'updated_at' => $article->updated_at->toIso8601String(),
+                'views' => (int) $article->views, 'likes' => (int) $article->likes_count,
+                'liked' => $user ? $article->likes()->where('user_id', $user->id)->exists() : false,
             ],
+            'related' => $related->map(fn (Article $a) => $a->toCard()),
+            'categories' => ArticleCategory::query()
+                ->withCount(['articles' => fn ($q) => $q->published()])
+                ->orderByDesc('articles_count')->orderBy('name')->get(['id', 'name', 'slug'])
+                ->filter(fn ($c) => $c->articles_count > 0)->values()
+                ->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug, 'count' => $c->articles_count]),
             'comments' => $article->comments()->where('status', ReviewStatus::Approved->value)->with('user:id,name')->latest()->limit(50)->get()
                 ->map(fn ($c) => ['id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'created_at' => $c->created_at->toDateString()]),
             'canonical' => route('articles.show', $article),
         ]);
+    }
+
+    /** Like or unlike; one like per user, the total is kept on articles.likes_count. */
+    public function like(Request $request, Article $article): RedirectResponse
+    {
+        abort_unless(Article::query()->published()->whereKey($article->id)->exists(), 404);
+        $userId = $request->user()->id;
+
+        DB::transaction(function () use ($article, $userId) {
+            $deleted = $article->likes()->where('user_id', $userId)->delete();
+
+            if ($deleted) {
+                $article->newQuery()->whereKey($article->id)->where('likes_count', '>', 0)->decrement('likes_count');
+            } else {
+                $article->likes()->create(['user_id' => $userId]);
+                $article->newQuery()->whereKey($article->id)->increment('likes_count');
+            }
+        });
+
+        return back();
     }
 
     public function comment(Request $request, Article $article): RedirectResponse

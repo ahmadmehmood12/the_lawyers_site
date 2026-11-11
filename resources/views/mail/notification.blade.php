@@ -34,6 +34,13 @@
                     @endforeach
                 </td>
             </tr>
+            @if (! empty($code))
+            <tr>
+                <td style="padding:4px 28px 16px;text-align:center;">
+                    <div style="display:inline-block;padding:14px 26px;background:#faf8f3;border:1px solid #e1e8f2;border-radius:10px;font-family:Menlo,Consolas,monospace;font-size:32px;font-weight:700;letter-spacing:10px;color:#0f1e36;">{{ $code }}</div>
+                </td>
+            </tr>
+            @endif
             @if (! empty($details))
             <tr>
                 <td style="padding:8px 28px 8px;">

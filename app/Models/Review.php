@@ -36,4 +36,9 @@ class Review extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function moderator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'moderated_by');
+    }
 }

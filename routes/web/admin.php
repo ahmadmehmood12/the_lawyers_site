@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AppointmentOverviewController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
+use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PlatformController;
@@ -87,6 +88,11 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::post('team-designations', [ShowcaseController::class, 'storeDesignation'])->name('team-designations.store');
         Route::put('team-designations/{designation}', [ShowcaseController::class, 'updateDesignation'])->name('team-designations.update');
         Route::delete('team-designations/{designation}', [ShowcaseController::class, 'destroyDesignation'])->name('team-designations.destroy');
+        Route::get('faqs', [FaqController::class, 'index'])->name('faqs.index');
+        Route::post('faqs', [FaqController::class, 'store'])->name('faqs.store');
+        Route::put('faqs/{faq}', [FaqController::class, 'update'])->name('faqs.update');
+        Route::put('faqs/{faq}/toggle', [FaqController::class, 'toggle'])->name('faqs.toggle');
+        Route::delete('faqs/{faq}', [FaqController::class, 'destroy'])->name('faqs.destroy');
     });
 
     Route::middleware('permission:support.manage')->group(function () {

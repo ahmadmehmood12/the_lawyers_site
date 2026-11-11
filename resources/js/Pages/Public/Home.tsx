@@ -11,8 +11,8 @@ import { formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
 import { BookingJourney } from '@/Components/home/BookingJourney';
+import { CaseDemo } from '@/Components/home/CaseDemo';
 import { CitationStream } from '@/Components/home/CitationStream';
-import { Parallax } from '@/Components/home/Parallax';
 import { DraftingTyper } from '@/Components/home/DraftingTyper';
 import { HowItWorks } from '@/Components/home/HowItWorks';
 import { LegalReferences } from '@/Components/home/LegalReferences';
@@ -34,6 +34,7 @@ type Props = {
     plans: Plan[];
     /** Deferred: real platform totals and ranked lawyers (App\Services\Directory\HomepageShowcase). */
     showcase?: { stats: ShowcaseStats; top: TopLawyersData; testimonials: TestimonialItem[]; videos: TestimonialItem[]; team: TeamGroup[] };
+    faqs: { id: number; question: string; answer: string }[];
     canonical: string;
 };
 
@@ -50,7 +51,7 @@ function Shot({ capture, eager = false, className }: { capture: Capture; eager?:
     );
 }
 
-export default function Home({ specializations, cities, articles, plans, showcase, canonical }: Props) {
+export default function Home({ specializations, cities, articles, plans, showcase, faqs, canonical }: Props) {
     const t = useT();
     const { locale } = useLocale();
     const [query, setQuery] = useState({ search: '', city: '', specialization: '' });
@@ -79,7 +80,7 @@ export default function Home({ specializations, cities, articles, plans, showcas
                     <VideoTestimonials items={showcase?.videos} />
                     <TeamSection groups={showcase?.team} />
                     <Plans plans={plans} />
-                    <Questions />
+                    <Questions faqs={faqs} />
 
                     <section className="border-t border-navy-100 py-20 lg:py-40 dark:border-navy-800" aria-labelledby="hm-find">
                         <div className="hm-wrap grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -247,7 +248,7 @@ function CaseFile() {
     return (
         <section className="py-20 lg:py-28" aria-labelledby="hm-file">
             <div className="hm-wrap grid items-center gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-                <Reveal><Parallax speed={50} scale><Shot capture={{ src: '/images/screens/case-overview.webp', alt: t('A bail case file with parties, court and next hearing') }} /></Parallax></Reveal>
+                <Reveal><CaseDemo /></Reveal>
                 <Reveal delay={0.1}>
                     <h2 id="hm-file" className="text-4xl font-semibold sm:text-5xl">{t('The file holds the whole matter')}</h2>
                     <dl className="mt-8 divide-y divide-navy-100 border-y border-navy-100 dark:divide-navy-800 dark:border-navy-800">
@@ -361,27 +362,25 @@ function Plans({ plans }: { plans: Plan[] }) {
     );
 }
 
-function Questions() {
+function Questions({ faqs }: { faqs: { id: number; question: string; answer: string }[] }) {
     const t = useT();
-    const [open, setOpen] = useState<Record<string, boolean>>({});
-    const items = [
-        [t('What does verified mean?'), t('Our team checked their bar enrollment. It is not a rating.')],
-        [t('Do clients get WhatsApp messages unasked?'), t('No. Reminders go only to clients who consented.')],
-        [t('Who can read my case notes?'), t('Your chambers only. Clients never see internal notes.')],
-        [t('Does it file anything in court?'), t('Never. You check, sign and file every draft yourself.')],
-    ];
+    const [open, setOpen] = useState<Record<number, boolean>>({});
+    if (faqs.length === 0) return null;
     return (
         <section className="py-20 lg:py-40" aria-labelledby="hm-faq">
             <div className="hm-wrap grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-                <h2 id="hm-faq" className="text-4xl font-semibold sm:text-5xl">{t('Questions advocates ask')}</h2>
+                <div>
+                    <h2 id="hm-faq" className="text-4xl font-semibold sm:text-5xl">{t('Questions advocates ask')}</h2>
+                    <Link href={route('faqs')} className="mt-6 inline-block text-sm font-medium text-navy-800 underline underline-offset-4 hover:text-gold-700 dark:text-navy-100 dark:hover:text-gold-300">{t('See all questions')}</Link>
+                </div>
                 <div className="divide-y divide-navy-100 border-y border-navy-100 dark:divide-navy-800 dark:border-navy-800">
-                    {items.map(([question, answer]) => (
-                        <details key={question} className="hm-faq group" onToggle={(e) => setOpen((current) => ({ ...current, [question]: e.currentTarget.open }))}>
+                    {faqs.map((faq) => (
+                        <details key={faq.id} className="hm-faq group" onToggle={(e) => setOpen((current) => ({ ...current, [faq.id]: e.currentTarget.open }))}>
                             <summary className="flex items-center justify-between gap-6 py-5 text-lg font-medium hover:text-gold-700 dark:hover:text-gold-300">
-                                {question}
+                                {faq.question}
                                 <Plus className="hm-plus size-5 shrink-0 text-navy-400" aria-hidden />
                             </summary>
-                            {open[question] && <p className="max-w-[60ch] pb-5 text-navy-600 dark:text-navy-300">{answer}</p>}
+                            {open[faq.id] && <p className="max-w-[60ch] whitespace-pre-line pb-5 text-navy-600 dark:text-navy-300">{faq.answer}</p>}
                         </details>
                     ))}
                 </div>

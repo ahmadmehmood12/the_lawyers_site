@@ -31,6 +31,7 @@ export type SharedProps = {
         logo_url: string | null;
         favicon_url: string | null;
         social: Record<'facebook' | 'instagram' | 'youtube' | 'linkedin' | 'x' | 'whatsapp', string | null>;
+        contact?: { email: string | null; phone: string | null; address: string | null };
         locale: 'en' | 'ur';
         dir: 'ltr' | 'rtl';
         locales: Record<string, string>;

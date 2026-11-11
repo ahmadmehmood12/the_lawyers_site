@@ -5,6 +5,11 @@
 @endif
 @foreach ((array) $intro as $line){{ $line }}
 @endforeach
+@if (! empty($code))
+
+{{ $code }}
+
+@endif
 
 @foreach ($details as $label => $value)@if (filled($value)){{ $label }}: {{ $value }}
 @endif

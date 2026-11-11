@@ -15,6 +15,7 @@ use App\Support\ReferenceOptions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,7 +33,14 @@ class LawyerDirectoryController extends Controller
     {
         $filters = $request->only(['search', 'city', 'province', 'district', 'court', 'specialization', 'experience', 'bar_council', 'category', 'language', 'online', 'fee_max', 'verified', 'sort']);
 
-        $lawyers = LawyerProfile::query()->listed()
+        $closed = array_map(fn (CaseStatus $s) => $s->value, array_filter(CaseStatus::cases(), fn (CaseStatus $s) => $s->isClosed()));
+
+        $lawyers = LawyerProfile::query()->select('lawyer_profiles.*')->listed()
+            ->addSelect([
+                'cases_handled' => DB::table('case_lawyer')->selectRaw('COUNT(DISTINCT case_lawyer.legal_case_id)')->whereColumn('case_lawyer.user_id', 'lawyer_profiles.user_id'),
+                'cases_completed' => DB::table('case_lawyer')->join('legal_cases', 'legal_cases.id', '=', 'case_lawyer.legal_case_id')
+                    ->selectRaw('COUNT(DISTINCT legal_cases.id)')->whereColumn('case_lawyer.user_id', 'lawyer_profiles.user_id')->whereIn('legal_cases.status', $closed),
+            ])
             ->with([
                 'user:id,name,avatar_path',
                 'user.memberships' => fn ($q) => $q->where('status', 'active')
@@ -58,7 +66,11 @@ class LawyerDirectoryController extends Controller
             ->when(($filters['sort'] ?? null) === 'rating', fn (Builder $q) => $q->orderByDesc('rating_average'))
             ->orderByRaw("verification_status = 'approved' DESC")->orderByDesc('rating_count')->orderBy('id')
             ->paginate(12)->withQueryString()
-            ->through(fn (LawyerProfile $p) => DirectoryPresenter::lawyer($p));
+            ->through(fn (LawyerProfile $p) => [
+                ...DirectoryPresenter::lawyer($p),
+                'cases_handled' => (int) $p->cases_handled,
+                'cases_completed' => (int) $p->cases_completed,
+            ]);
 
         return Inertia::render('Public/Lawyers/Index', [
             'lawyers' => $lawyers,
@@ -124,7 +136,7 @@ class LawyerDirectoryController extends Controller
                 'reviews' => $lawyer->approvedReviews->map(fn ($r) => ['id' => $r->id, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'author' => $this->initials($r->author->name), 'response' => $r->response, 'created_at' => $r->created_at->toDateString()]),
             ],
             'articles' => Article::query()->published()->where('author_id', $lawyer->user_id)->with('category:id,name')->latest('published_at')->limit(6)->get()
-                ->map(fn (Article $a) => ['slug' => $a->slug, 'title' => $a->title, 'excerpt' => $a->excerpt, 'author' => $lawyer->user->name, 'category' => $a->category?->name, 'published_at' => $a->published_at->toDateString(), 'language' => $a->language]),
+                ->map(fn (Article $a) => $a->toCard($lawyer->user->name)),
             'stats' => $stats,
             'isFavourite' => $user ? $user->favouriteLawyers()->whereKey($lawyer->id)->exists() : false,
             'canBook' => $lawyer->accepting_clients,

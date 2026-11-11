@@ -29,8 +29,8 @@ class HomeController extends Controller
                 'verified' => LawyerProfile::query()->listed()->where('verification_status', 'approved')->count(),
                 'firms' => Organization::query()->where('type', 'firm')->where('is_public', true)->count(),
             ]),
-            'articles' => Article::query()->published()->with(['author:id,name', 'category:id,name'])->latest('published_at')->limit(3)->get()
-                ->map(fn ($a) => ['slug' => $a->slug, 'title' => $a->title, 'excerpt' => $a->excerpt, 'author' => $a->author->name, 'category' => $a->category?->name, 'published_at' => $a->published_at->toDateString(), 'language' => $a->language]),
+            'articles' => Article::query()->published()->with(['author:id,name', 'category:id,name'])->orderByDesc('likes_count')->latest('published_at')->limit(3)->get()
+                ->map(fn ($a) => $a->toCard()),
             'plans' => Plan::query()->where('is_active', true)->orderBy('sort_order')->get()->map(fn (Plan $p) => [
                 'slug' => $p->slug,
                 'name' => $ur && $p->name_ur ? $p->name_ur : $p->name,
@@ -46,6 +46,7 @@ class HomeController extends Controller
                 'top' => app(HomepageShowcase::class)->topLawyers(),
                 ...app(HomepageShowcase::class)->content(),
             ], 'showcase'),
+            'faqs' => collect(FaqPageController::all())->where('show_on_home', true)->take(8)->values(),
             'canonical' => route('home'),
         ]);
     }

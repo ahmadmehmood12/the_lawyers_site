@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             PlatformContentSeeder::class,
             PaymentMethodSeeder::class,
             DocumentTemplateSeeder::class,
+            FaqSeeder::class,
         ]);
 
         if (app()->environment('local')) {

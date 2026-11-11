@@ -43,7 +43,8 @@ export function TopLawyers({ data }: { data: TopLawyersData | undefined }) {
     );
 }
 
-function LawyerTile({ lawyer: l, rank }: { lawyer: TopLawyer; rank: number | null }) {
+/** Lawyer card shared by the homepage and the /lawyers directory. */
+export function LawyerTile({ lawyer: l, rank }: { lawyer: TopLawyer; rank: number | null }) {
     const t = useT();
     const { locale } = useLocale();
     const { auth } = usePage<SharedProps>().props;
