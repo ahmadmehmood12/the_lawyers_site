@@ -13,6 +13,7 @@ use App\Support\ActivityPresenter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,13 +27,39 @@ class ActivityController extends Controller
     public function index(Request $request): Response
     {
         $organization = $this->organization();
-        $activities = ActivityPresenter::eagerLoad($this->visible($request->user(), $organization))
-            ->latest('id')->paginate(30)->withQueryString()
+        $user = $request->user();
+        $filters = $request->validate([
+            'member' => ['nullable', 'integer'],
+            'log' => ['nullable', 'string', 'max:40'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+        $base = $this->visible($user, $organization);
+
+        $activities = ActivityPresenter::eagerLoad((clone $base)
+            ->when($filters['member'] ?? null, fn (Builder $q, $id) => $q->where('causer_type', $user->getMorphClass())->where('causer_id', $id))
+            ->when($filters['log'] ?? null, fn (Builder $q, $log) => $q->where('log_name', $log))
+            ->when($filters['from'] ?? null, fn (Builder $q, $from) => $q->where('created_at', '>=', Carbon::parse($from)->startOfDay()))
+            ->when($filters['to'] ?? null, fn (Builder $q, $to) => $q->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
+            ->when($filters['search'] ?? null, fn (Builder $q, $s) => $q->where(fn (Builder $w) => $w->where('ip_address', 'like', "{$s}%")->orWhereHasMorph('subject', [LegalCase::class], fn (Builder $c) => $c->where('title', 'like', "%{$s}%")->orWhere('reference', 'like', "%{$s}%")))))
+            ->latest()->latest('id')->paginate(40)->withQueryString()
             ->through(fn (Activity $a) => ActivityPresenter::present($a));
+
+        $weekStart = now()->subDays(7);
 
         return Inertia::render('Workspace/Activity', [
             'activities' => $activities,
-            'scope' => $this->viewsAll($request->user(), $organization) ? 'firm' : 'mine',
+            'scope' => $this->viewsAll($user, $organization) ? 'firm' : 'mine',
+            'filters' => $filters,
+            'members' => $organization->members()->with('user:id,name')->get()->map(fn ($m) => ['value' => (string) $m->user_id, 'label' => $m->user?->name])->filter(fn ($o) => $o['label'])->values(),
+            'logs' => (clone $base)->distinct()->orderBy('log_name')->pluck('log_name')->filter()->values(),
+            'summary' => [
+                'week' => (clone $base)->where('created_at', '>=', $weekStart)->count(),
+                'members' => (clone $base)->where('created_at', '>=', $weekStart)->distinct()->count('causer_id'),
+                'sign_ins' => (clone $base)->where('log_name', 'auth')->where('description', 'login')->whereDate('created_at', today())->count(),
+                'ips' => (clone $base)->where('created_at', '>=', $weekStart)->whereNotNull('ip_address')->distinct()->count('ip_address'),
+            ],
         ]);
     }
 
@@ -40,7 +67,7 @@ class ActivityController extends Controller
     public function recent(Request $request): JsonResponse
     {
         $items = ActivityPresenter::eagerLoad($this->visible($request->user(), $this->organization()))
-            ->latest('id')->limit(12)->get()
+            ->latest()->latest('id')->limit(12)->get()
             ->map(fn (Activity $a) => ActivityPresenter::present($a));
 
         return response()->json(['items' => $items]);

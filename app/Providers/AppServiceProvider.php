@@ -13,6 +13,7 @@ use App\Services\Ai\DisabledProvider;
 use App\Services\Mail\MailSettings;
 use App\Services\Messaging\MessagingService;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Queue\Events\JobFailed;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
@@ -62,6 +64,13 @@ class AppServiceProvider extends ServiceProvider
             $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
             // Messages waiting for this user are now delivered (double grey tick).
             app(MessagingService::class)->markDelivered($event->user);
+            activity('auth')->causedBy($event->user)->event('login')->tap(fn (Activity $a) => $a->setAttribute('organization_id', $event->user->current_organization_id))->log('login');
+        });
+
+        Event::listen(Logout::class, function (Logout $event): void {
+            if ($event->user) {
+                activity('auth')->causedBy($event->user)->event('logout')->tap(fn (Activity $a) => $a->setAttribute('organization_id', $event->user->current_organization_id))->log('logout');
+            }
         });
 
         // Email delivery log (sent / failed) next to WhatsApp deliveries.
@@ -70,6 +79,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Stamp each audit entry with the organization it belongs to (firm activity feed scoping).
         Activity::creating(function (Activity $activity): void {
+            // Where the action came from. Console runs (queue, scheduler, seeders) have no client.
+            if (! app()->runningInConsole() && $activity->getAttribute('ip_address') === null) {
+                $activity->setAttribute('ip_address', request()->ip());
+                $activity->setAttribute('user_agent', Str::limit((string) request()->userAgent(), 250, ''));
+            }
+
             if ($activity->getAttribute('organization_id') !== null || ! $activity->subject_type) {
                 return;
             }

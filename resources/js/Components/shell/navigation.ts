@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-    Activity, BadgeCheck, CalendarRange, Mail, Quote, UsersRound, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
+    Activity, BadgeCheck, CalendarRange, Clapperboard, Mail, Quote, UsersRound, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
     LayoutDashboard, Landmark, MapPinned, MessageSquare, Newspaper, Receipt, ScrollText, Search, Settings, ShieldCheck, Sparkles, Star, Tags, UserCog, Users, Wallet, AlertOctagon, Globe, Inbox, KeyRound,
 } from 'lucide-react';
 
@@ -84,6 +84,7 @@ export const adminNav: NavGroup[] = [
             { label: 'Articles', route: 'admin.articles.index', icon: Newspaper, match: 'admin.articles.*', platform: 'content.moderate' },
             { label: 'Reviews', route: 'admin.reviews.index', icon: Star, match: 'admin.reviews.*', platform: 'content.moderate' },
             { label: 'Testimonials', route: 'admin.testimonials.index', icon: Quote, match: 'admin.testimonials.*', platform: 'content.moderate' },
+            { label: 'Video Reviews', route: 'admin.video-reviews.index', icon: Clapperboard, match: 'admin.video-reviews.*', platform: 'content.moderate' },
             { label: 'Team & Founders', route: 'admin.team.index', icon: UsersRound, match: 'admin.team.*', platform: 'content.moderate' },
             { label: 'Feedback & Messages', route: 'admin.feedback.index', icon: Inbox, match: 'admin.feedback.*', platform: 'support.manage' },
             { label: 'Complaints', route: 'admin.complaints.index', icon: AlertOctagon, match: 'admin.complaints.*', platform: 'support.manage' },

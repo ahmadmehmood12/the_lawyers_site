@@ -11,6 +11,7 @@ use App\Models\District;
 use App\Models\Judge;
 use App\Models\Province;
 use App\Models\Specialization;
+use App\Models\Tehsil;
 use App\Support\ReferenceOptions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -74,6 +75,11 @@ class ReferenceDataController extends Controller
                 ['name' => 'province_id', 'label' => 'Province', ...$select(ReferenceOptions::provinces()), 'rules' => ['required', 'exists:provinces,id'], 'display' => 'province.name'],
             ]],
             'cities' => ['model' => City::class, 'label' => 'Cities', 'search' => ['name'], 'with' => ['district:id,name'], 'fields' => [
+                ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                ['name' => 'name_ur', 'label' => 'Name (Urdu)', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                ['name' => 'district_id', 'label' => 'District', ...$select(ReferenceOptions::districts()), 'rules' => ['required', 'exists:districts,id'], 'display' => 'district.name'],
+            ]],
+            'tehsils' => ['model' => Tehsil::class, 'label' => 'Tehsils', 'search' => ['name', 'name_ur'], 'with' => ['district:id,name'], 'fields' => [
                 ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
                 ['name' => 'name_ur', 'label' => 'Name (Urdu)', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
                 ['name' => 'district_id', 'label' => 'District', ...$select(ReferenceOptions::districts()), 'rules' => ['required', 'exists:districts,id'], 'display' => 'district.name'],

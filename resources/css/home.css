@@ -200,3 +200,53 @@ html[lang='ur'] .hm td,
 html[lang='ur'] .hm th {
     line-height: 2.1;
 }
+
+
+/* Citation stream (CitationStream.tsx): two copies of each row slide by half their width. */
+.hm-marquee {
+    display: flex;
+    width: max-content;
+    animation: hm-marquee var(--hm-marquee-duration, 60s) linear infinite;
+}
+
+.hm-marquee-reverse {
+    animation-direction: reverse;
+}
+
+.hm-marquee:hover {
+    animation-play-state: paused;
+}
+
+.hm-marquee-track {
+    display: flex;
+    gap: 0.75rem;
+    padding-inline-end: 0.75rem;
+}
+
+@keyframes hm-marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+[dir='rtl'] .hm-marquee {
+    animation-name: hm-marquee-rtl;
+}
+
+@keyframes hm-marquee-rtl {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hm-marquee {
+        animation: none;
+    }
+}

@@ -18,6 +18,7 @@ export default function Audit({ activities, logs, filters }: { activities: Pagin
                         { key: 'created_at', label: t('When'), render: (r) => <span className="whitespace-nowrap">{formatDateTime(r.created_at, locale)}</span> },
                         { key: 'causer', label: t('Who'), render: (r) => <UserCell name={r.actor} avatar={r.actor_avatar} subtitle={r.organization} /> },
                         { key: 'description', label: t('What happened'), render: (r) => (<div className="max-w-xl"><p className="text-sm">{r.sentence}</p><p className="text-xs text-navy-500">{[r.log, r.subject].filter(Boolean).join(', ')}</p></div>) },
+                        { key: 'ip_address', label: t('IP address'), hideOnMobile: true, render: (r) => r.ip_address ? <span className="whitespace-nowrap font-mono text-xs">{r.ip_address}{r.device && <span className="block font-sans text-navy-500">{r.device}</span>}</span> : <span className="text-xs text-navy-400">{r.causer ? t('Not recorded') : t('System')}</span> },
                         { key: 'properties', label: t('Details'), hideOnMobile: true, render: (r) => <code className="text-[11px] break-all">{JSON.stringify(r.properties)}</code> },
                     ]} />
             </Card>

@@ -380,7 +380,7 @@ class PlatformController extends Controller
             'activities' => ActivityPresenter::eagerLoad(Activity::query())
                 ->with('organization:id,name')
                 ->when($request->string('log')->toString(), fn ($q, $l) => $q->where('log_name', $l))
-                ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('description', 'like', "%{$s}%"))
+                ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where(fn ($w) => $w->where('description', 'like', "%{$s}%")->orWhere('ip_address', 'like', "{$s}%")))
                 ->latest('id')->paginate(50)->withQueryString()
                 ->through(fn ($a) => [
                     ...ActivityPresenter::present($a, 'platform'),

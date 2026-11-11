@@ -25,6 +25,14 @@ class ShowcaseController extends Controller
 {
     public const CACHE_KEY = 'home-showcase-content';
 
+    /** Admin, Video reviews: the testimonials manager opened on its video tab. */
+    public function videoReviews(Request $request): Response
+    {
+        $request->query->set('kind', 'video');
+
+        return $this->testimonials($request);
+    }
+
     public function testimonials(Request $request): Response
     {
         $kind = $request->query('kind') === 'video' ? 'video' : 'text';

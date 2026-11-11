@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { AnimatePresence, motion, MotionConfig, useInView } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { LinkButton } from '@/Components/ui';
@@ -10,6 +10,8 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
 import { BookingJourney } from '@/Components/home/BookingJourney';
+import { CitationStream } from '@/Components/home/CitationStream';
+import { Parallax } from '@/Components/home/Parallax';
 import { DraftingTyper } from '@/Components/home/DraftingTyper';
 import { HowItWorks } from '@/Components/home/HowItWorks';
 import { LegalReferences } from '@/Components/home/LegalReferences';
@@ -68,6 +70,7 @@ export default function Home({ specializations, cities, articles, plans, showcas
                     <HowItWorks />
                     <HearingRun />
                     <CaseFile />
+                    <CitationStream />
                     <Paperwork />
                     <TopLawyers data={showcase?.top} />
                     <BookingJourney />
@@ -143,20 +146,40 @@ export default function Home({ specializations, cities, articles, plans, showcas
 function Hero() {
     const t = useT();
     const { app } = usePage<SharedProps>().props;
+    const ref = useRef<HTMLElement>(null);
+    const reduce = useReducedMotion();
+    const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+    const textY = useTransform(scrollYProgress, [0, 1], [0, -90]);
+    const textOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.25]);
+    const shotY = useTransform(scrollYProgress, [0, 1], [0, 140]);
+    const alertY = useTransform(scrollYProgress, [0, 1], [0, -70]);
+    const farY = useTransform(scrollYProgress, [0, 1], [0, 220]);
+    const nearY = useTransform(scrollYProgress, [0, 1], [0, -160]);
+    const depth = (style: Record<string, unknown>) => (reduce ? undefined : style);
+
     return (
-        <section className="flex items-center overflow-hidden py-12 lg:min-h-[calc(100svh-4rem)] lg:py-16" aria-labelledby="hm-hero">
-            <div className="hm-wrap grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-                <div className="relative z-10">
+        <section ref={ref} className="relative flex items-center overflow-hidden py-12 lg:min-h-[calc(100svh-4rem)] lg:py-16" aria-labelledby="hm-hero">
+            <div className="pointer-events-none absolute inset-0 select-none" aria-hidden>
+                <motion.span style={depth({ y: farY })} className="ltr-nums absolute -top-6 end-[4%] font-serif text-[clamp(8rem,18vw,16rem)] leading-none font-semibold text-navy-900/[0.04] dark:text-white/[0.04]">302</motion.span>
+                <motion.span style={depth({ y: nearY })} className="ltr-nums absolute bottom-[3%] start-[36%] hidden font-serif text-[clamp(6rem,12vw,11rem)] leading-none font-semibold text-gold-500/[0.07] lg:block">§ 497</motion.span>
+                <motion.span style={depth({ y: farY })} className="ltr-nums absolute top-[38%] start-[44%] hidden font-serif text-[clamp(5rem,9vw,8rem)] leading-none font-semibold text-navy-900/[0.035] lg:block dark:text-white/[0.035]">324</motion.span>
+            </div>
+            <div className="hm-wrap relative grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+                <motion.div className="relative z-10" style={depth({ y: textY, opacity: textOpacity })}>
                     <h1 id="hm-hero" className="text-[clamp(2.5rem,4.6vw+0.5rem,4.75rem)] leading-[1.04] font-semibold">{t('Every hearing on record. Every date kept.')}</h1>
                     <p className="mt-6 max-w-[34ch] text-lg text-navy-600 sm:text-xl dark:text-navy-300">{t('Court diary and case files for Pakistan’s advocates, in Urdu and English.')}</p>
                     <div className="mt-8 flex flex-wrap gap-3">
                         <LinkButton href={route('register', { type: 'lawyer' })} size="lg">{t('Start your diary')}</LinkButton>
                         <LinkButton href={route('lawyers.index')} variant="secondary" size="lg">{t('Find a lawyer')}</LinkButton>
                     </div>
-                </div>
+                </motion.div>
                 <motion.div className="relative lg:w-[118%]" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
-                    <Shot eager capture={{ src: '/images/screens/dashboard.webp', alt: t('An advocate’s dashboard with three hearings in court today') }} />
-                    <WhatsAppAlert siteName={app.name} />
+                    <motion.div style={depth({ y: shotY })}>
+                        <Shot eager capture={{ src: '/images/screens/dashboard.webp', alt: t('An advocate’s dashboard with three hearings in court today') }} />
+                    </motion.div>
+                    <motion.div style={depth({ y: alertY })} className="pointer-events-none absolute inset-0 [&>*]:pointer-events-auto">
+                        <WhatsAppAlert siteName={app.name} />
+                    </motion.div>
                 </motion.div>
             </div>
         </section>
@@ -230,7 +253,7 @@ function CaseFile() {
     return (
         <section className="py-20 lg:py-28" aria-labelledby="hm-file">
             <div className="hm-wrap grid items-center gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-                <Reveal><Shot capture={{ src: '/images/screens/case-overview.webp', alt: t('A bail case file with parties, court and next hearing') }} /></Reveal>
+                <Reveal><Parallax speed={50} scale><Shot capture={{ src: '/images/screens/case-overview.webp', alt: t('A bail case file with parties, court and next hearing') }} /></Parallax></Reveal>
                 <Reveal delay={0.1}>
                     <h2 id="hm-file" className="text-4xl font-semibold sm:text-5xl">{t('The file holds the whole matter')}</h2>
                     <dl className="mt-8 divide-y divide-navy-100 border-y border-navy-100 dark:divide-navy-800 dark:border-navy-800">

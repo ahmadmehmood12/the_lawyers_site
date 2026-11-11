@@ -72,6 +72,7 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
     // Homepage showcase: testimonials (text and video), team and designations (docs/Modules/Showcase.md).
     Route::middleware('permission:content.moderate')->group(function () {
         Route::get('testimonials', [ShowcaseController::class, 'testimonials'])->name('testimonials.index');
+        Route::get('video-reviews', [ShowcaseController::class, 'videoReviews'])->name('video-reviews.index');
         Route::post('testimonials', [ShowcaseController::class, 'storeTestimonial'])->name('testimonials.store');
         Route::post('testimonials/{testimonial}', [ShowcaseController::class, 'updateTestimonial'])->name('testimonials.update');
         Route::put('testimonials/{testimonial}/toggle', [ShowcaseController::class, 'toggleTestimonial'])->name('testimonials.toggle');

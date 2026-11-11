@@ -1,5 +1,5 @@
 import { Link, router, useForm } from '@inertiajs/react';
-import { Building, Gavel, Landmark, Layers, Map as MapIcon, MapPinned, Pencil, Plus, Scale, Tags, Trash2 } from 'lucide-react';
+import { Building, Gavel, Landmark, Layers, Map as MapIcon, MapPin, MapPinned, Pencil, Plus, Scale, Tags, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Card, Checkbox, ConfirmAction, DataTable, Input, Modal, PageHeader, Select, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
@@ -11,7 +11,7 @@ type Field = { name: string; label: string; type: 'text' | 'textarea' | 'number'
 type Row = Record<string, any> & { id: number; _display: Record<string, string> };
 type Kpi = { key: string; label: string; total: number; active: number | null };
 
-const kpiIcons: Record<string, typeof Landmark> = { courts: Landmark, judges: Gavel, specializations: Tags, provinces: MapIcon, districts: MapPinned, cities: Building, 'court-types': Layers, 'bar-councils': Scale };
+const kpiIcons: Record<string, typeof Landmark> = { courts: Landmark, judges: Gavel, specializations: Tags, provinces: MapIcon, districts: MapPinned, cities: Building, tehsils: MapPin, 'court-types': Layers, 'bar-councils': Scale };
 
 export default function Reference({ resource, resources, kpis, label, fields, rows, filters }: { resource: string; resources: { key: string; label: string }[]; kpis: Kpi[]; label: string; fields: Field[]; rows: Paginated<Row>; filters: Record<string, string> }) {
     const t = useT();

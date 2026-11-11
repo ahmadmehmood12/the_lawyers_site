@@ -71,8 +71,37 @@ class ActivityPresenter
             'icon' => self::icon($activity),
             'url' => $audience === 'organization' ? self::url($activity) : null,
             'log' => (string) $activity->log_name,
+            'event' => (string) $activity->description,
+            'ip_address' => $activity->getAttribute('ip_address'),
+            'device' => self::device($activity->getAttribute('user_agent')),
             'created_at' => $activity->created_at->toIso8601String(),
         ];
+    }
+
+    /** A short, readable device label from a user agent ("Chrome on Windows"); null when unknown. */
+    public static function device(?string $userAgent): ?string
+    {
+        if (blank($userAgent)) {
+            return null;
+        }
+        $browser = match (true) {
+            str_contains($userAgent, 'Edg/') => 'Edge',
+            str_contains($userAgent, 'OPR/') => 'Opera',
+            str_contains($userAgent, 'Chrome/') => 'Chrome',
+            str_contains($userAgent, 'Firefox/') => 'Firefox',
+            str_contains($userAgent, 'Safari/') => 'Safari',
+            default => __('Browser'),
+        };
+        $os = match (true) {
+            str_contains($userAgent, 'Android') => 'Android',
+            str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad') => 'iOS',
+            str_contains($userAgent, 'Windows') => 'Windows',
+            str_contains($userAgent, 'Mac OS') => 'macOS',
+            str_contains($userAgent, 'Linux') => 'Linux',
+            default => null,
+        };
+
+        return $os ? __(':browser on :os', ['browser' => $browser, 'os' => $os]) : $browser;
     }
 
     /**
@@ -85,6 +114,8 @@ class ActivityPresenter
         $event = $activity->description;
 
         return match (true) {
+            $event === 'login' && $type === null => ':actor signed in',
+            $event === 'logout' && $type === null => ':actor signed out',
             $type === 'LegalCase' && $event === 'created' => ':actor opened a new case: :subject',
             $type === 'LegalCase' && $event === 'deleted' => ':actor deleted the case :subject',
             $type === 'LegalCase' && array_key_exists('archived_at', $changes) => $changes['archived_at'] ? ':actor archived the case :subject' : ':actor restored the case :subject',
@@ -205,6 +236,7 @@ class ActivityPresenter
             'documents', 'exports' => 'file',
             'drafts' => 'pen',
             'verification' => 'shield',
+            'auth' => 'key',
             default => 'activity',
         };
     }

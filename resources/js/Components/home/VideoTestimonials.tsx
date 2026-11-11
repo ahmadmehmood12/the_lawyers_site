@@ -19,8 +19,8 @@ export function VideoTestimonials({ items }: { items: TestimonialItem[] | undefi
         <section className="py-20 lg:py-28" aria-labelledby="hm-videos">
             <div className="hm-wrap">
                 <Reveal>
-                    <h2 id="hm-videos" className="text-4xl font-semibold sm:text-5xl">{t('Hear it from them')}</h2>
-                    <p className="mt-3 max-w-xl text-lg text-navy-600 dark:text-navy-300">{t('Short videos from clients and advocates who use the platform.')}</p>
+                    <h2 id="hm-videos" className="text-4xl font-semibold sm:text-5xl">{t('Video reviews')}</h2>
+                    <p className="mt-3 max-w-xl text-lg text-navy-600 dark:text-navy-300">{t('Short videos from clients and advocates who use the platform. Hover to preview, click to play with sound.')}</p>
                 </Reveal>
                 <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {items.map((item, i) => (
