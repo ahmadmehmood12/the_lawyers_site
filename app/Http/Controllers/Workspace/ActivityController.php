@@ -42,9 +42,10 @@ class ActivityController extends Controller
             ->when($filters['log'] ?? null, fn (Builder $q, $log) => $q->where('log_name', $log))
             ->when($filters['from'] ?? null, fn (Builder $q, $from) => $q->where('created_at', '>=', Carbon::parse($from)->startOfDay()))
             ->when($filters['to'] ?? null, fn (Builder $q, $to) => $q->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
-            ->when($filters['search'] ?? null, fn (Builder $q, $s) => $q->where(fn (Builder $w) => $w->where('ip_address', 'like', "{$s}%")->orWhereHasMorph('subject', [LegalCase::class], fn (Builder $c) => $c->where('title', 'like', "%{$s}%")->orWhere('reference', 'like', "%{$s}%")))))
+            ->when($filters['search'] ?? null, fn (Builder $q, $s) => $q->where(fn (Builder $w) => $w
+                ->orWhereHasMorph('subject', [LegalCase::class], fn (Builder $c) => $c->where('title', 'like', "%{$s}%")->orWhere('reference', 'like', "%{$s}%")))))
             ->latest()->latest('id')->paginate(40)->withQueryString()
-            ->through(fn (Activity $a) => ActivityPresenter::present($a));
+            ->through(fn (Activity $a) => ActivityPresenter::present($a, 'organization', false));
 
         $weekStart = now()->subDays(7);
 
@@ -58,7 +59,6 @@ class ActivityController extends Controller
                 'week' => (clone $base)->where('created_at', '>=', $weekStart)->count(),
                 'members' => (clone $base)->where('created_at', '>=', $weekStart)->distinct()->count('causer_id'),
                 'sign_ins' => (clone $base)->where('log_name', 'auth')->where('description', 'login')->whereDate('created_at', today())->count(),
-                'ips' => (clone $base)->where('created_at', '>=', $weekStart)->whereNotNull('ip_address')->distinct()->count('ip_address'),
             ],
         ]);
     }
@@ -66,9 +66,10 @@ class ActivityController extends Controller
     /** Latest entries for the header bell. */
     public function recent(Request $request): JsonResponse
     {
-        $items = ActivityPresenter::eagerLoad($this->visible($request->user(), $this->organization()))
+        $organization = $this->organization();
+        $items = ActivityPresenter::eagerLoad($this->visible($request->user(), $organization))
             ->latest()->latest('id')->limit(12)->get()
-            ->map(fn (Activity $a) => ActivityPresenter::present($a));
+            ->map(fn (Activity $a) => ActivityPresenter::present($a, 'organization', false));
 
         return response()->json(['items' => $items]);
     }

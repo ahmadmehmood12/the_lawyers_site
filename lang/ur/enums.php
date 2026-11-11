@@ -271,4 +271,16 @@ return [
         'weekly' => 'ہفتہ وار',
         'monthly' => 'ماہانہ',
     ],
+    'payment_method_kind' => [
+        'stripe' => 'کارڈ (Stripe)',
+        'manual' => 'دستی منتقلی',
+    ],
+    'plan_payment_status' => [
+        'pending' => 'زیر التوا',
+        'awaiting_verification' => 'تصدیق کا انتظار',
+        'paid' => 'ادا شدہ',
+        'rejected' => 'مسترد',
+        'cancelled' => 'منسوخ',
+        'failed' => 'ناکام',
+    ],
 ];

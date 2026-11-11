@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { BadgeCheck, Building2, CalendarClock, GraduationCap, Heart, Mail, MapPin, Phone, Share2, Star, Video } from 'lucide-react';
 import { useState } from 'react';
+import { ArticleCard, type ArticleCardData } from '@/Components/domain/ArticleCard';
 import { Alert, Avatar, Badge, Button, Card, CardBody, CardHeader, LinkButton, Provenance } from '@/Components/ui';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -10,7 +11,7 @@ import type { LawyerCardData } from '@/Components/domain/LawyerCard';
 
 type Lawyer = LawyerCardData & { bio: string | null; enrollment_number: string | null; enrollment_date: string | null; chamber_address: string | null; public_phone: string | null; public_email: string | null; bar_council: string | null; district: string | null; province: string | null; courts: string[]; languages: string[]; offers_in_person: boolean; fee_max: number | null; educations: { degree: string; institution: string; year: number | null }[]; experiences: { position: string; organization: string; start_year: number | null; end_year: number | null; description: string | null }[]; credentials: { type: string; title: string; issuer: string | null; year: number | null; url: string | null }[]; verified_at: string | null; firms: { name: string; slug: string }[]; reviews: { id: number; rating: number; title: string | null; comment: string | null; author: string; response: string | null; created_at: string }[] };
 
-export default function LawyerShow({ lawyer: l, stats, isFavourite, canBook, canonical }: { lawyer: Lawyer; stats: { cases_recorded: number; active_cases: number; courts_represented: number }; isFavourite: boolean; canBook: boolean; canonical: string }) {
+export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, canBook, canonical }: { lawyer: Lawyer; articles: ArticleCardData[]; stats: { cases_recorded: number; active_cases: number; courts_represented: number }; isFavourite: boolean; canBook: boolean; canonical: string }) {
     const t = useT();
     const { locale } = useLocale();
     const { auth } = usePage<SharedProps>().props;
@@ -125,6 +126,21 @@ export default function LawyerShow({ lawyer: l, stats, isFavourite, canBook, can
                         <p className="text-xs text-navy-500">{t('Information here is provided for finding a lawyer and is not legal advice.')}</p>
                     </aside>
                 </div>
+
+                {articles.length > 0 && (
+                    <section className="mt-10" aria-labelledby="lawyer-articles">
+                        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+                            <div>
+                                <h2 id="lawyer-articles" className="text-2xl font-semibold">{t('Articles by :name', { name: l.name })}</h2>
+                                <p className="mt-1 text-sm text-navy-600 dark:text-navy-300">{t('General legal information written by this advocate.')}</p>
+                            </div>
+                            <Link href={route('articles.index')} className="text-sm font-medium text-gold-700 underline-offset-4 hover:underline dark:text-gold-300">{t('All legal articles')}</Link>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {articles.map((a) => <ArticleCard key={a.slug} article={a} />)}
+                        </div>
+                    </section>
+                )}
             </div>
         </PublicLayout>
     );

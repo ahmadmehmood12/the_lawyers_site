@@ -1,5 +1,5 @@
 import { Link, router, useForm } from '@inertiajs/react';
-import { BadgeCheck, Camera, Check, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { BadgeCheck, Camera, Check, ExternalLink, Newspaper, Plus, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Alert, Avatar, Button, Card, CardBody, CardHeader, Checkbox, Input, LinkButton, PageHeader, Select, StatusBadge, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
@@ -18,13 +18,14 @@ export default function ProfileEdit({ step, steps, profile, options }: { step: s
     const reached = profile.onboarding_step as number;
 
     return (
-        <AppLayout title={t('Public Profile')}>
+        <AppLayout title={t('Public Profile')} wide>
             <PageHeader
                 title={t('Public Profile')}
                 description={t('This is what clients see in the lawyer directory.')}
                 actions={
                     <>
                         <StatusBadge value={profile.verification_status} label={profile.verification_label} />
+                        <LinkButton href={route('lawyer.articles.index')} variant="secondary" icon={<Newspaper className="size-4" />}>{t('My articles')}</LinkButton>
                         <LinkButton href={route('lawyer.verification.show')} variant="secondary" icon={<BadgeCheck className="size-4" />}>{t('Verification')}</LinkButton>
                         {profile.is_public && <LinkButton href={route('lawyers.show', profile.slug)} variant="ghost" icon={<ExternalLink className="size-4" />} target="_blank">{t('View')}</LinkButton>}
                     </>

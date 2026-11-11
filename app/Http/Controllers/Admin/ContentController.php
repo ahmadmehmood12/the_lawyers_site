@@ -129,6 +129,22 @@ class ContentController extends Controller
         return Inertia::render('Admin/Pages', ['pages' => Page::query()->orderBy('slug')->get()->map(fn ($p) => [...$p->only(['id', 'slug', 'title', 'title_ur', 'body', 'body_ur', 'meta_description', 'is_published']), 'updated_at' => $p->updated_at->toDateString()])]);
     }
 
+    public function storePage(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'slug' => ['required', 'string', 'max:60', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', Rule::unique('pages', 'slug')],
+            'title' => ['required', 'string', 'max:255'], 'title_ur' => ['nullable', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:500000'], 'body_ur' => ['nullable', 'string', 'max:500000'],
+            'meta_description' => ['nullable', 'string', 'max:255'], 'is_published' => ['boolean'],
+        ]);
+        $validated['body'] = HtmlSanitizer::clean($validated['body']);
+        $validated['body_ur'] = HtmlSanitizer::clean($validated['body_ur'] ?? '');
+        Page::query()->create($validated);
+        cache()->forget('sitemap.xml');
+
+        return back()->with('success', __('Page created.'));
+    }
+
     public function savePage(Request $request, Page $page): RedirectResponse
     {
         $validated = $request->validate([
@@ -142,5 +158,13 @@ class ContentController extends Controller
         cache()->forget('sitemap.xml');
 
         return back()->with('success', __('Page saved.'));
+    }
+
+    public function destroyPage(Page $page): RedirectResponse
+    {
+        $page->delete();
+        cache()->forget('sitemap.xml');
+
+        return back()->with('success', __('Page deleted.'));
     }
 }

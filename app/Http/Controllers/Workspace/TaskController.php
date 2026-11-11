@@ -14,6 +14,7 @@ use App\Services\Access\OrganizationAccess;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,20 +27,29 @@ class TaskController extends Controller
         $user = $request->user();
         $manager = $access->allows($user, $organization, 'tasks.manage');
         $scope = $request->query('scope', 'mine');
+        $view = $request->query('view') === 'board' ? 'board' : 'list';
+        $status = $request->string('status')->toString() ?: ($view === 'board' ? 'all' : 'active');
 
-        $tasks = Task::query()->forOrganization($organization)
+        $query = Task::query()->forOrganization($organization)
             ->with(['assignee:id,name', 'legalCase:id,title,reference'])
             ->when($scope === 'mine' || ! $manager, fn ($q) => $q->where(fn ($w) => $w->where('assigned_to', $user->id)->orWhere('created_by', $user->id)))
-            ->when($request->string('status')->toString() ?: 'active', function ($q, string $status): void {
+            ->when($status, function ($q, string $status): void {
                 $status === 'active' ? $q->whereIn('status', [TaskStatus::Open->value, TaskStatus::InProgress->value]) : ($status === 'all' ? null : $q->where('status', $status));
             })
-            ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('title', 'like', "%{$s}%"))
-            ->orderByRaw('due_date IS NULL, due_date')->orderByDesc('id')
+            ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('title', 'like', "%{$s}%"));
+
+        $tasks = (clone $query)->orderByRaw('due_date IS NULL, due_date')->orderByDesc('id')
             ->paginate(30)->withQueryString()->through(fn (Task $t) => self::present($t));
+
+        $boardTasks = $view === 'board'
+            ? (clone $query)->orderByRaw('due_date IS NULL, due_date')->orderByDesc('id')->limit(500)->get()->map(fn (Task $t) => self::present($t))
+            : [];
 
         return Inertia::render('Workspace/Tasks/Index', [
             'tasks' => $tasks,
-            'filters' => ['scope' => $scope, ...$request->only(['status', 'search'])],
+            'boardTasks' => $boardTasks,
+            'view' => $view,
+            'filters' => ['scope' => $scope, 'view' => $view, 'status' => $status, ...$request->only(['search'])],
             'options' => [
                 'members' => ReferenceOptions::members($organization),
                 'priorities' => Priority::options(),
@@ -80,6 +90,38 @@ class TaskController extends Controller
         $this->authorize('manage', $task);
         $done = $task->status !== TaskStatus::Done;
         $task->update(['status' => $done ? TaskStatus::Done : TaskStatus::Open, 'completed_at' => $done ? now() : null]);
+
+        return back();
+    }
+
+    /** Quick edit from the calendar: due date and status without the full task form. */
+    public function updateCalendar(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('manage', $task);
+        $data = $request->validate([
+            'due_date' => ['required', 'date'],
+            'status' => ['required', Rule::enum(TaskStatus::class)],
+        ]);
+
+        $task->update([
+            'due_date' => $data['due_date'],
+            'status' => $data['status'],
+            'completed_at' => $data['status'] === TaskStatus::Done->value ? ($task->completed_at ?? now()) : null,
+        ]);
+
+        return back()->with('success', __('Task updated.'));
+    }
+
+    /** Kanban drag-and-drop: move a task to another column. */
+    public function status(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('manage', $task);
+        $data = $request->validate(['status' => ['required', Rule::enum(TaskStatus::class)]]);
+
+        $task->update([
+            'status' => $data['status'],
+            'completed_at' => $data['status'] === TaskStatus::Done->value ? ($task->completed_at ?? now()) : null,
+        ]);
 
         return back();
     }

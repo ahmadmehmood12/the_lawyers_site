@@ -2,11 +2,12 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, MotionConfig, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ArticleCard, type ArticleCardData } from '@/Components/domain/ArticleCard';
 import { LinkButton } from '@/Components/ui';
 import { controlClasses } from '@/Components/ui/Field';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { cn } from '@/lib/cn';
-import { formatDate, formatMoney } from '@/lib/format';
+import { formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
 import { BookingJourney } from '@/Components/home/BookingJourney';
@@ -29,7 +30,7 @@ type Plan = { slug: string; name: string; audience: string; description: string 
 type Props = {
     specializations: { slug: string; name: string; count: number }[];
     cities: SelectOption[];
-    articles: { slug: string; title: string; excerpt: string | null; author: string; published_at: string }[];
+    articles: ArticleCardData[];
     plans: Plan[];
     /** Deferred: real platform totals and ranked lawyers (App\Services\Directory\HomepageShowcase). */
     showcase?: { stats: ShowcaseStats; top: TopLawyersData; testimonials: TestimonialItem[]; videos: TestimonialItem[]; team: TeamGroup[] };
@@ -122,16 +123,9 @@ export default function Home({ specializations, cities, articles, plans, showcas
                                 {articles.length > 0 && (
                                     <div className="mt-10 border-t border-navy-100 pt-6 dark:border-navy-800">
                                         <h3 className="text-lg font-semibold">{t('From the legal library')}</h3>
-                                        <ul className="mt-3 divide-y divide-navy-100 dark:divide-navy-800">
-                                            {articles.map((a) => (
-                                                <li key={a.slug}>
-                                                    <Link href={route('articles.show', a.slug)} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 hover:text-gold-700 dark:hover:text-gold-300">
-                                                        <span className="font-medium">{a.title}</span>
-                                                        <span className="text-sm text-navy-500">{formatDate(a.published_at, locale)}</span>
-                                                    </Link>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <div className="mt-3 grid gap-3">
+                                            {articles.map((a) => <ArticleCard key={a.slug} article={a} />)}
+                                        </div>
                                     </div>
                                 )}
                             </div>

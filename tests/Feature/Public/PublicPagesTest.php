@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Public;
 
+use App\Enums\ArticleStatus;
+use App\Models\Article;
 use App\Models\LawyerProfile;
 use App\Models\Plan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,6 +49,35 @@ class PublicPagesTest extends TestCase
 
         $this->get(route('lawyers.show', $listed->slug))->assertOk();
         $this->get(route('lawyers.show', $hidden->slug))->assertNotFound();
+    }
+
+    public function test_lawyer_profile_lists_only_published_articles(): void
+    {
+        $lawyer = LawyerProfile::factory()->create(['is_public' => true]);
+        $published = Article::query()->create([
+            'author_id' => $lawyer->user_id, 'title' => 'How bail is decided', 'slug' => 'how-bail-is-decided',
+            'body' => '<p>General information.</p>', 'language' => 'en', 'status' => ArticleStatus::Published, 'published_at' => now()->subDay(),
+        ]);
+        Article::query()->create([
+            'author_id' => $lawyer->user_id, 'title' => 'Pending article', 'slug' => 'pending-article',
+            'body' => '<p>Not approved.</p>', 'language' => 'en', 'status' => ArticleStatus::Pending,
+        ]);
+
+        $this->get(route('lawyers.show', $lawyer->slug))->assertInertia(fn (Assert $page) => $page
+            ->has('articles', 1)
+            ->where('articles.0.slug', $published->slug));
+    }
+
+    public function test_unapproved_articles_are_not_public(): void
+    {
+        $lawyer = LawyerProfile::factory()->create(['is_public' => true]);
+        $pending = Article::query()->create([
+            'author_id' => $lawyer->user_id, 'title' => 'Pending article', 'slug' => 'pending-article',
+            'body' => '<p>Not approved.</p>', 'language' => 'en', 'status' => ArticleStatus::Pending,
+        ]);
+
+        $this->get(route('articles.index'))->assertInertia(fn (Assert $page) => $page->has('articles.data', 0));
+        $this->get(route('articles.show', $pending->slug))->assertNotFound();
     }
 
     public function test_sitemap_and_robots_exclude_private_areas(): void

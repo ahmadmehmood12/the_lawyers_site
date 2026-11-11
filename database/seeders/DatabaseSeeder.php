@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             PakistanGeographySeeder::class,
             PunjabJudiciarySeeder::class,
             PlatformContentSeeder::class,
+            PaymentMethodSeeder::class,
             DocumentTemplateSeeder::class,
         ]);
 

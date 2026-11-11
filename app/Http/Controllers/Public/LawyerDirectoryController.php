@@ -6,6 +6,7 @@ use App\Enums\AdvocateCategory;
 use App\Enums\CaseStatus;
 use App\Enums\VerificationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Article;
 use App\Models\LawyerProfile;
 use App\Models\LegalCase;
 use App\Models\OrganizationMember;
@@ -122,6 +123,8 @@ class LawyerDirectoryController extends Controller
                 'firms' => $firms,
                 'reviews' => $lawyer->approvedReviews->map(fn ($r) => ['id' => $r->id, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'author' => $this->initials($r->author->name), 'response' => $r->response, 'created_at' => $r->created_at->toDateString()]),
             ],
+            'articles' => Article::query()->published()->where('author_id', $lawyer->user_id)->with('category:id,name')->latest('published_at')->limit(6)->get()
+                ->map(fn (Article $a) => ['slug' => $a->slug, 'title' => $a->title, 'excerpt' => $a->excerpt, 'author' => $lawyer->user->name, 'category' => $a->category?->name, 'published_at' => $a->published_at->toDateString(), 'language' => $a->language]),
             'stats' => $stats,
             'isFavourite' => $user ? $user->favouriteLawyers()->whereKey($lawyer->id)->exists() : false,
             'canBook' => $lawyer->accepting_clients,

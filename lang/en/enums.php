@@ -271,4 +271,16 @@ return [
         'weekly' => 'Weekly',
         'monthly' => 'Monthly',
     ],
+    'payment_method_kind' => [
+        'stripe' => 'Card (Stripe)',
+        'manual' => 'Manual transfer',
+    ],
+    'plan_payment_status' => [
+        'pending' => 'Pending',
+        'awaiting_verification' => 'Awaiting verification',
+        'paid' => 'Paid',
+        'rejected' => 'Rejected',
+        'cancelled' => 'Cancelled',
+        'failed' => 'Failed',
+    ],
 ];

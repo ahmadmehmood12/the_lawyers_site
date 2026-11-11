@@ -90,23 +90,24 @@ export function RescheduleEventDialog({ item, onClose, onSaved }: { item: Calend
     const t = useT();
     const form = useForm({ starts_at: '', ends_at: '', reason: '' });
     useEffect(() => {
-        if (item) form.setData({ starts_at: item.editable?.starts_at ?? item.start, ends_at: item.editable?.ends_at ?? '', reason: '' });
+        if (item) form.setData({ starts_at: item.editable?.starts_at ?? item.appointment?.starts_at ?? item.start, ends_at: item.editable?.ends_at ?? '', reason: '' });
     }, [item?.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (!item) return null;
     const allDay = item.all_day;
+    const isAppointment = item.source === 'appointment';
 
     return (
         <Modal
             open
             onClose={onClose}
-            title={t('Reschedule event')}
-            description={item.recurrence !== 'none' ? t('This moves the whole series. The original time stays in the history.') : t('The original time stays in the history and is shown struck through.')}
-            footer={<><Button variant="secondary" onClick={onClose}>{t('Back')}</Button><Button loading={form.processing} onClick={() => { form.transform((d) => ({ ...d, ends_at: allDay ? null : d.ends_at || null })); form.post(route('calendar.reschedule', item.id), { preserveScroll: true, onSuccess: () => { onSaved(); onClose(); } }); }}>{t('Reschedule')}</Button></>}
+            title={isAppointment ? t('Reschedule consultation') : t('Reschedule event')}
+            description={isAppointment ? t('The original time stays in the history and the new time is confirmed.') : item.recurrence !== 'none' ? t('This moves the whole series. The original time stays in the history.') : t('The original time stays in the history and is shown struck through.')}
+            footer={<><Button variant="secondary" onClick={onClose}>{t('Back')}</Button><Button loading={form.processing} onClick={() => { if (isAppointment) { form.transform((d) => ({ starts_at: d.starts_at, reason: d.reason })); form.post(route('appointments.reschedule', item.id), { preserveScroll: true, onSuccess: () => { onSaved(); onClose(); } }); return; } form.transform((d) => ({ ...d, ends_at: allDay ? null : d.ends_at || null })); form.post(route('calendar.reschedule', item.id), { preserveScroll: true, onSuccess: () => { onSaved(); onClose(); } }); }}>{t('Reschedule')}</Button></>}
         >
             <div className="grid gap-4 sm:grid-cols-2">
                 <Input label={allDay ? t('New date') : t('New start')} type={allDay ? 'date' : 'datetime-local'} value={allDay ? form.data.starts_at.slice(0, 10) : form.data.starts_at} onChange={(e) => form.setData('starts_at', allDay ? `${e.target.value}T00:00` : e.target.value)} error={form.errors.starts_at} required />
-                {!allDay && <Input label={t('New end')} type="datetime-local" value={form.data.ends_at} onChange={(e) => form.setData('ends_at', e.target.value)} error={form.errors.ends_at} />}
+                {!allDay && !isAppointment && <Input label={t('New end')} type="datetime-local" value={form.data.ends_at} onChange={(e) => form.setData('ends_at', e.target.value)} error={form.errors.ends_at} />}
                 <Input wrapperClassName="sm:col-span-2" label={t('Reason (optional)')} value={form.data.reason} onChange={(e) => form.setData('reason', e.target.value)} error={form.errors.reason} />
                 {(form.errors as Record<string, string>).status && <Alert tone="danger" className="sm:col-span-2">{(form.errors as Record<string, string>).status}</Alert>}
             </div>
@@ -118,14 +119,24 @@ export function CancelEventDialog({ item, onClose, onSaved }: { item: CalendarIt
     const t = useT();
     const form = useForm({ reason: '' });
     if (!item) return null;
+    const isAppointment = item.source === 'appointment';
+    const itemId = item.id;
+    function submit() {
+        if (isAppointment) {
+            form.transform((d) => ({ status: 'cancelled', reason: d.reason }));
+            form.post(route('appointments.transition', itemId), { preserveScroll: true, onSuccess: () => { onSaved(); onClose(); } });
+            return;
+        }
+        form.post(route('calendar.cancel', itemId), { preserveScroll: true, onSuccess: () => { onSaved(); onClose(); } });
+    }
     return (
         <Modal
             open
             onClose={onClose}
-            title={t('Cancel event')}
-            description={t('The event stays on the calendar, marked as cancelled.')}
+            title={isAppointment ? t('Cancel consultation') : t('Cancel event')}
+            description={isAppointment ? t('The consultation stays on the calendar, marked as cancelled.') : t('The event stays on the calendar, marked as cancelled.')}
             size="sm"
-            footer={<><Button variant="secondary" onClick={onClose}>{t('Back')}</Button><Button variant="danger" loading={form.processing} onClick={() => form.post(route('calendar.cancel', item.id), { preserveScroll: true, onSuccess: () => { onSaved(); onClose(); } })}>{t('Cancel event')}</Button></>}
+            footer={<><Button variant="secondary" onClick={onClose}>{t('Back')}</Button><Button variant="danger" loading={form.processing} onClick={submit}>{isAppointment ? t('Cancel consultation') : t('Cancel event')}</Button></>}
         >
             <Input label={t('Reason')} value={form.data.reason} onChange={(e) => form.setData('reason', e.target.value)} error={form.errors.reason} required />
         </Modal>

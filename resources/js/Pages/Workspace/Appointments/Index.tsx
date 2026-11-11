@@ -19,7 +19,7 @@ export default function AppointmentsIndex({ appointments, filters, availability,
     const [move, setMove] = useState<Appointment | null>(null);
 
     return (
-        <AppLayout title={t('Appointments')}>
+        <AppLayout title={t('Appointments')} wide>
             <PageHeader title={t('Appointments & consultations')} actions={<Button icon={<Plus className="size-4" />} onClick={() => setCreate(true)}>{t('New appointment')}</Button>} />
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2">

@@ -41,7 +41,7 @@ class ImageReencoder
     }
 
     /** Shrinks to fit a box (keeping proportions) and stores a JPEG: video thumbnails, wide photos. */
-    public static function fittedJpeg(UploadedFile $file, string $directory, int $maxSide = 1280): string
+    public static function fittedJpeg(UploadedFile $file, string $directory, int $maxSide = 1280, string $disk = 'public'): string
     {
         $image = self::load($file);
         $scale = min(1, $maxSide / max(imagesx($image), imagesy($image)));
@@ -51,7 +51,7 @@ class ImageReencoder
         imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
         imagecopyresampled($canvas, $image, 0, 0, 0, 0, $width, $height, imagesx($image), imagesy($image));
 
-        return self::store($directory, 'jpg', fn () => imagejpeg($canvas, null, 82));
+        return self::store($directory, 'jpg', fn () => imagejpeg($canvas, null, 82), $disk);
     }
 
     private static function load(UploadedFile $file): \GdImage
@@ -62,12 +62,12 @@ class ImageReencoder
         return $image;
     }
 
-    private static function store(string $directory, string $extension, callable $encode): string
+    private static function store(string $directory, string $extension, callable $encode, string $disk = 'public'): string
     {
         ob_start();
         $encode();
         $path = trim($directory, '/').'/'.Str::random(40).'.'.$extension;
-        Storage::disk('public')->put($path, (string) ob_get_clean());
+        Storage::disk($disk)->put($path, (string) ob_get_clean());
 
         return $path;
     }

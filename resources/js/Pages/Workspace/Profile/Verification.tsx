@@ -13,7 +13,7 @@ export default function VerificationPage({ verification: v, profileComplete, doc
     const upload = useForm({ type: 'cnic_front', file: null as File | null });
 
     return (
-        <AppLayout title={t('Verification')}>
+        <AppLayout title={t('Verification')} wide>
             <PageHeader title={t('Lawyer verification')} description={t('Our verification team checks your Bar enrollment evidence before your profile shows the Verified badge.')} breadcrumbs={[{ label: t('Public Profile'), href: route('lawyer.profile.edit') }, { label: t('Verification') }]} actions={<StatusBadge value={v.status} label={v.status_label} />} />
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">

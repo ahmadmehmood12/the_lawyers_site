@@ -197,6 +197,6 @@ class OrganizationSettingsController extends Controller
 
         activity('billing')->causedBy($request->user())->performedOn($this->organization())->withProperties(['plan' => $plan->slug])->log('plan_change_requested');
 
-        return back()->with('success', __('Upgrade request recorded. Our team will contact you to complete payment for :plan.', ['plan' => $plan->name]));
+        return redirect()->route('billing.index')->with('success', __('Choose a payment method to complete the upgrade to :plan.', ['plan' => $plan->name]));
     }
 }

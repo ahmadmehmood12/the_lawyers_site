@@ -22,7 +22,7 @@ type Props = {
     area: 'workspace' | 'portal' | 'admin';
     initial: { view: View; date: string };
     types: Option[];
-    options: FormOptions & { statuses: Option[]; lawyers: Option[] };
+    options: FormOptions & { statuses: Option[]; taskStatuses: Option[]; lawyers: Option[] };
     can: { create: boolean; link: boolean; manageAppointments: boolean };
     upcoming?: CalendarItem[];
 };
@@ -198,7 +198,7 @@ export default function CalendarIndex({ area, initial, types, options, can, upco
                 </Card>
             </div>
 
-            <EventDetails item={open} onClose={() => setOpen(null)} onEdit={(item) => { setOpen(null); setForm({ open: true, item, date: dayOf(item.start) }); }} onReschedule={startReschedule} onCancel={startCancel} onChanged={refresh} />
+            <EventDetails item={open} taskStatuses={options.taskStatuses} onClose={() => setOpen(null)} onEdit={(item) => { setOpen(null); setForm({ open: true, item, date: dayOf(item.start) }); }} onReschedule={startReschedule} onCancel={startCancel} onChanged={refresh} />
             <EventFormDialog open={form.open} item={form.item} defaults={{ date: form.date, time: form.time }} options={options} canLink={can.link} onClose={() => setForm((f) => ({ ...f, open: false }))} onSaved={refresh} />
             <RescheduleEventDialog item={rescheduling} onClose={() => setRescheduling(null)} onSaved={refresh} />
             <CancelEventDialog item={cancelling} onClose={() => setCancelling(null)} onSaved={refresh} />

@@ -12,7 +12,7 @@ export default function ClientsIndex({ clients, filters }: { clients: Paginated<
     const t = useT();
     const { can } = usePermissions();
     return (
-        <AppLayout title={t('Clients')}>
+        <AppLayout title={t('Clients')} wide>
             <PageHeader title={t('Clients')} description={t('Everyone you represent, with their cases and contact details.')} actions={can('clients.create') && <LinkButton href={route('clients.create')} icon={<Plus className="size-4" />}>{t('New client')}</LinkButton>} />
             <Card>
                 <DataTable

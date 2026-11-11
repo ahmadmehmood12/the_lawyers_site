@@ -1,12 +1,14 @@
 import { router } from '@inertiajs/react';
 import { History } from 'lucide-react';
-import { Card, DataTable, PageHeader, Select, StatusBadge, UserCell } from '@/Components/ui';
+import { Card, DataTable, PageHeader, Select, Stat, StatusBadge, UserCell } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDateTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Option, Paginated } from '@/types';
 
 type Row = { id: number; starts_at: string; lawyer: string; lawyer_avatar: string | null; organization: string | null; client: string; mode: string; kind: string; status: string; status_label: string; rescheduled: boolean };
+
+const countTones: Record<string, 'navy' | 'green' | 'gold' | 'red'> = { requested: 'gold', confirmed: 'green', completed: 'green', cancelled: 'red', declined: 'red', no_show: 'red' };
 
 /** Admin, Appointments: platform-wide view of consultations (who, when, status). Notes and messages stay private. */
 export default function Appointments({ rows, filters, statuses, counts }: { rows: Paginated<Row>; filters: Record<string, string>; statuses: Option[]; counts: Record<string, number> }) {
@@ -16,8 +18,8 @@ export default function Appointments({ rows, filters, statuses, counts }: { rows
     return (
         <AppLayout title={t('Appointments')} area="admin" wide>
             <PageHeader title={t('Appointments')} description={t('Consultations booked across the platform. Client messages and lawyer notes are not shown.')} />
-            <div className="mb-4 flex flex-wrap gap-5 text-sm">
-                {statuses.filter((s) => counts[s.value]).map((s) => <p key={s.value}><span className="text-2xl font-semibold tabular-nums">{counts[s.value]}</span> <span className="text-navy-500">{s.label}</span></p>)}
+            <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {statuses.map((s) => <Stat key={s.value} label={s.label} value={counts[s.value] ?? 0} tone={countTones[s.value] ?? 'navy'} />)}
             </div>
             <Card>
                 <DataTable

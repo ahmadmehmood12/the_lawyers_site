@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Public\PageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,3 +23,7 @@ foreach (['portal', 'admin'] as $file) {
         require __DIR__."/web/{$file}.php";
     }
 }
+
+Route::get('{slug}', [PageController::class, 'show'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('pages.show');

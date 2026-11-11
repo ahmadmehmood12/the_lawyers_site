@@ -22,7 +22,7 @@ export default function ClientForm({ client, cities }: { client: ClientData | nu
     }
 
     return (
-        <AppLayout title={client ? t('Edit client') : t('New client')}>
+        <AppLayout title={client ? t('Edit client') : t('New client')} wide>
             <PageHeader title={client ? t('Edit client') : t('New client')} breadcrumbs={[{ label: t('Clients'), href: route('clients.index') }, { label: client?.name ?? t('New') }]} />
             <form onSubmit={submit} className="max-w-3xl space-y-6">
                 <Card>

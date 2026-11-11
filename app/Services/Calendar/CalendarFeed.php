@@ -208,7 +208,15 @@ class CalendarFeed
                     'url' => $user->isClient() ? route('portal.appointments.index') : route('appointments.index'),
                     'manage_url' => $user->isClient() ? route('portal.appointments.index') : route('appointments.index'),
                     'has_history' => $moved || $a->rescheduledFrom !== null,
-                    'can' => ['edit' => false, 'reschedule' => false, 'cancel' => false],
+                    'appointment' => ['id' => $a->id, 'status' => $a->status->value, 'starts_at' => $a->starts_at->format('Y-m-d\TH:i')],
+                    'can' => [
+                        'edit' => false,
+                        'reschedule' => ! $user->isClient() && $user->can('manage', $a) && in_array($a->status, [AppointmentStatus::Requested, AppointmentStatus::Confirmed], true),
+                        'cancel' => ! $user->isClient() && $user->can('manage', $a) && in_array($a->status, [AppointmentStatus::Requested, AppointmentStatus::Confirmed], true),
+                        'confirm' => ! $user->isClient() && $user->can('manage', $a) && $a->status === AppointmentStatus::Requested,
+                        'decline' => ! $user->isClient() && $user->can('manage', $a) && $a->status === AppointmentStatus::Requested,
+                        'complete' => ! $user->isClient() && $user->can('manage', $a) && $a->status === AppointmentStatus::Confirmed,
+                    ],
                 ]);
             });
     }
@@ -235,6 +243,8 @@ class CalendarFeed
                 'case' => $t->legalCase ? ['id' => $t->legalCase->id, 'title' => $t->legalCase->title, 'reference' => $t->legalCase->case_number ?: $t->legalCase->reference] : null,
                 'status' => $t->status === TaskStatus::Done ? 'completed' : 'scheduled',
                 'status_label' => $t->status->label(),
+                'task' => ['id' => $t->id, 'status' => $t->status->value, 'due_date' => $t->due_date->toDateString(), 'status_label' => $t->status->label()],
+                'can' => ['edit' => true, 'reschedule' => false, 'cancel' => false, 'confirm' => false, 'decline' => false, 'complete' => false],
                 'url' => route('tasks.index'),
                 'manage_url' => route('tasks.index'),
             ]));
@@ -390,8 +400,8 @@ class CalendarFeed
         return [
             'subtitle' => null, 'description' => null, 'location' => null, 'case' => null, 'client' => null, 'lawyer' => null,
             'ghost' => false, 'moved_to' => null, 'original_start' => null, 'reason' => null, 'manage_url' => null,
-            'has_history' => false, 'hearing' => null, 'recurrence' => 'none', 'recurrence_label' => null, 'visibility' => null, 'owner' => null, 'editable' => null,
-            'can' => ['edit' => false, 'reschedule' => false, 'cancel' => false, 'complete' => false],
+            'has_history' => false, 'hearing' => null, 'task' => null, 'appointment' => null, 'recurrence' => 'none', 'recurrence_label' => null, 'visibility' => null, 'owner' => null, 'editable' => null,
+            'can' => ['edit' => false, 'reschedule' => false, 'cancel' => false, 'complete' => false, 'confirm' => false, 'decline' => false],
             ...$item,
             'start' => $item['start'] instanceof Carbon ? $item['start']->format('Y-m-d\TH:i') : $item['start'],
             'end' => $item['end'] instanceof Carbon ? $item['end']->format('Y-m-d\TH:i') : $item['end'],

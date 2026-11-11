@@ -24,7 +24,7 @@ export default function DraftCreate({ templates, cases, clients, preset }: { tem
     const countFor = (c: string) => templates.filter((tp) => (c === 'all' || tp.category === c) && matches(tp)).length;
 
     return (
-        <AppLayout title={t('New draft')}>
+        <AppLayout title={t('New draft')} wide>
             <PageHeader title={t('New draft')} breadcrumbs={[{ label: t('Legal Drafting'), href: route('drafts.index') }, { label: t('New') }]} />
             <div className="grid gap-6 lg:grid-cols-3">
                 <Card className="lg:col-span-2">

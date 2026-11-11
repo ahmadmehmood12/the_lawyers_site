@@ -6,6 +6,7 @@ use App\Http\Controllers\Workspace\AiController;
 use App\Http\Controllers\Workspace\AnalyticsController;
 use App\Http\Controllers\Workspace\AppointmentController;
 use App\Http\Controllers\Workspace\ArticleController;
+use App\Http\Controllers\Workspace\BillingController;
 use App\Http\Controllers\Workspace\CaseController;
 use App\Http\Controllers\Workspace\ClientController;
 use App\Http\Controllers\Workspace\DashboardController;
@@ -55,6 +56,8 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
     Route::post('tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::put('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
+    Route::post('tasks/{task}/calendar', [TaskController::class, 'updateCalendar'])->name('tasks.calendar');
+    Route::post('tasks/{task}/status', [TaskController::class, 'status'])->name('tasks.status');
 
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('throttle:60,1')->name('documents.store');
@@ -141,6 +144,11 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
     Route::delete('settings/organization/logo', [OrganizationSettingsController::class, 'removeLogo'])->name('settings.organization.logo.destroy');
     Route::put('settings/reminders', [OrganizationSettingsController::class, 'updateReminders'])->name('settings.reminders.update');
     Route::post('settings/plan', [OrganizationSettingsController::class, 'changePlan'])->name('settings.plan');
+
+    Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::post('billing/checkout', [BillingController::class, 'checkout'])->middleware('throttle:20,1')->name('billing.checkout');
+    Route::post('billing/manual', [BillingController::class, 'manual'])->middleware('throttle:10,1')->name('billing.manual');
+    Route::get('billing/return', [BillingController::class, 'return'])->name('billing.return');
 });
 
 Route::middleware(['auth', 'verified', 'account:lawyer', 'workspace'])->group(function () {

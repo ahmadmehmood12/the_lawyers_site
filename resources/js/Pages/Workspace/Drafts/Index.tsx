@@ -12,7 +12,7 @@ export default function DraftsIndex({ drafts, filters, statuses }: { drafts: Pag
     const t = useT();
     const { locale } = useLocale();
     return (
-        <AppLayout title={t('Legal Drafting')}>
+        <AppLayout title={t('Legal Drafting')} wide>
             <PageHeader title={t('Legal Drafting')} description={t('Draft, review and export pleadings, notices and agreements.')} actions={<LinkButton href={route('drafts.create')} icon={<Plus className="size-4" />}>{t('New draft')}</LinkButton>} />
             <Card>
                 <DataTable

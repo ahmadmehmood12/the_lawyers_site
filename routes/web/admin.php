@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\OrganizationController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PlatformController;
 use App\Http\Controllers\Admin\ReferenceDataController;
 use App\Http\Controllers\Admin\RoleController;
@@ -66,7 +67,9 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::put('reviews/{review}', [ContentController::class, 'moderateReview'])->name('reviews.moderate');
         Route::put('comments/{comment}', [ContentController::class, 'moderateComment'])->name('comments.moderate');
         Route::get('pages', [ContentController::class, 'pages'])->name('pages.index');
+        Route::post('pages', [ContentController::class, 'storePage'])->name('pages.store');
         Route::put('pages/{page}', [ContentController::class, 'savePage'])->name('pages.update');
+        Route::delete('pages/{page}', [ContentController::class, 'destroyPage'])->name('pages.destroy');
     });
 
     // Homepage showcase: testimonials (text and video), team and designations (docs/Modules/Showcase.md).
@@ -104,6 +107,14 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::get('plans', [PlatformController::class, 'plans'])->name('plans.index');
         Route::post('plans', [PlatformController::class, 'savePlan'])->name('plans.store');
         Route::put('plans/{plan}', [PlatformController::class, 'savePlan'])->name('plans.update');
+
+        Route::get('payment-methods', [PaymentController::class, 'methods'])->name('payment-methods.index');
+        Route::post('payment-methods', [PaymentController::class, 'storeMethod'])->name('payment-methods.store');
+        Route::put('payment-methods/{paymentMethod}', [PaymentController::class, 'updateMethod'])->name('payment-methods.update');
+        Route::get('plan-payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::post('plan-payments/{planPayment}/approve', [PaymentController::class, 'approve'])->name('payments.approve');
+        Route::post('plan-payments/{planPayment}/reject', [PaymentController::class, 'reject'])->name('payments.reject');
+        Route::get('plan-payments/{planPayment}/screenshot', [PaymentController::class, 'screenshot'])->name('payments.screenshot');
     });
 
     Route::middleware('permission:settings.manage')->group(function () {

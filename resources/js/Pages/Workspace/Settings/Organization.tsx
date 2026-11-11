@@ -29,8 +29,8 @@ export default function OrganizationSettings({ organization: o, canManage, remin
     const setRem = (i: number, patch: Partial<Reminder>) => rem.setData('reminders', rem.data.reminders.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
     return (
-        <AppLayout title={t('Settings')}>
-            <PageHeader title={t('Organization settings')} actions={<LinkButton href={route('account.edit')} variant="secondary">{t('My account')}</LinkButton>} />
+        <AppLayout title={t('Settings')} wide>
+            <PageHeader title={t('Organization settings')} actions={<div className="flex gap-2"><LinkButton href={route('billing.index')} variant="secondary">{t('Billing & plans')}</LinkButton><LinkButton href={route('account.edit')} variant="secondary">{t('My account')}</LinkButton></div>} />
             <div className="grid gap-6 lg:grid-cols-3">
                 <form className="space-y-6 lg:col-span-2" onSubmit={(e) => { e.preventDefault(); form.transform((d) => ({ ...d, city_id: d.city_id || null, founded_year: d.founded_year || null })); form.put(route('settings.organization.update'), { preserveScroll: true }); }}>
                     <Card>

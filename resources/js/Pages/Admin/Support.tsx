@@ -1,6 +1,6 @@
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { Badge, Button, Card, DataTable, Modal, PageHeader, Select, Textarea, UserCell } from '@/Components/ui';
+import { Badge, Button, Card, DataTable, Modal, PageHeader, Select, Stat, Textarea, UserCell } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDateTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
@@ -29,6 +29,7 @@ type Row = {
 };
 
 const statusTone = { new: 'amber', in_progress: 'navy', resolved: 'green' } as const;
+const countTones: Record<string, 'navy' | 'green' | 'gold' | 'red'> = { new: 'gold', in_progress: 'navy', resolved: 'green' };
 
 export default function Support({ messages, filters, kinds, statuses, counts }: { messages: Paginated<Row>; filters: Record<string, string>; kinds: Option[]; statuses: Option[]; counts: Record<string, number> }) {
     const t = useT();
@@ -40,12 +41,8 @@ export default function Support({ messages, filters, kinds, statuses, counts }: 
     return (
         <AppLayout title={t('Feedback and messages')} area="admin" wide>
             <PageHeader title={t('Feedback and messages')} description={t('Contact-us messages and feedback from clients, lawyers, firms and staff. Only platform admins can see this inbox.')} />
-            <div className="mb-4 flex flex-wrap gap-6 text-sm">
-                {statuses.map((s) => (
-                    <p key={s.value}>
-                        <span className="text-2xl font-semibold tabular-nums">{counts[s.value] ?? 0}</span> <span className="text-navy-500 dark:text-navy-400">{s.label}</span>
-                    </p>
-                ))}
+            <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {statuses.map((s) => <Stat key={s.value} label={s.label} value={counts[s.value] ?? 0} tone={countTones[s.value] ?? 'navy'} />)}
             </div>
             <Card>
                 <DataTable

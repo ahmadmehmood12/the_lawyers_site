@@ -70,4 +70,16 @@ return [
         'webhook_secret' => env('PAYMENT_WEBHOOK_SECRET'),
     ],
 
+    /*
+    | Stripe Checkout for plan purchases. Card details are collected on
+    | Stripe's hosted page; only signed webhooks / server lookups fulfil an
+    | order. Amounts are charged in this currency (two-decimal).
+    */
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => env('STRIPE_CURRENCY', 'PKR'),
+    ],
+
 ];

@@ -7,6 +7,7 @@ use App\Enums\CalendarEventType;
 use App\Enums\CalendarVisibility;
 use App\Enums\CaseStatus;
 use App\Enums\Recurrence;
+use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\CalendarEvent;
@@ -64,6 +65,7 @@ class CalendarController extends Controller
             'options' => [
                 'eventTypes' => CalendarEventType::options(),
                 'statuses' => CalendarEventStatus::options(),
+                'taskStatuses' => $organization ? TaskStatus::options() : [],
                 'recurrence' => Recurrence::options(),
                 'visibility' => $organization ? CalendarVisibility::options() : [],
                 'cases' => match (true) {

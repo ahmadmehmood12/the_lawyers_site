@@ -20,7 +20,7 @@ export default function ClientShow({ client, cases, invoices, appointments, can 
     const perms = usePermissions();
 
     return (
-        <AppLayout title={client.name}>
+        <AppLayout title={client.name} wide>
             <PageHeader
                 title={client.name}
                 description={client.company_name ?? undefined}

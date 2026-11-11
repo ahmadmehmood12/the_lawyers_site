@@ -71,7 +71,7 @@ export default function Dashboard({ stats, todayHearings, upcoming, tasks, break
     ].filter((item): item is { label: string; href: string; icon: LucideIcon } => Boolean(item));
 
     return (
-        <AppLayout title={t('Dashboard')}>
+        <AppLayout title={t('Dashboard')} wide>
             <PageHeader
                 title={t('Good day, :name', { name: firstName })}
                 description={formatDate(new Date().toISOString(), locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}

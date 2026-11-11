@@ -1,18 +1,20 @@
 import { Link, router } from '@inertiajs/react';
 import { Briefcase, CalendarClock, Check, ExternalLink, History, MapPin, Repeat, User, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Modal } from '@/Components/ui';
+import { Badge, Button, Input, Modal, Select } from '@/Components/ui';
 import { cn } from '@/lib/cn';
 import { useLocale, useT } from '@/lib/i18n';
 import { colorFor } from './colors';
 import { fmtWhen } from './dates';
 import type { CalendarItem, HistoryStep } from './types';
+import type { Option } from '@/types';
 
 const statusTone = { scheduled: 'navy', rescheduled: 'amber', completed: 'green', cancelled: 'red' } as const;
 
 /** Everything about one item, its scheduling history, and the actions the user may take. */
-export function EventDetails({ item, onClose, onEdit, onReschedule, onCancel, onChanged }: {
+export function EventDetails({ item, taskStatuses, onClose, onEdit, onReschedule, onCancel, onChanged }: {
     item: CalendarItem | null;
+    taskStatuses: Option[];
     onClose: () => void;
     onEdit: (item: CalendarItem) => void;
     onReschedule: (item: CalendarItem) => void;
@@ -23,10 +25,14 @@ export function EventDetails({ item, onClose, onEdit, onReschedule, onCancel, on
     const { locale } = useLocale();
     const [history, setHistory] = useState<HistoryStep[] | null>(null);
     const [showHistory, setShowHistory] = useState(false);
+    const [taskDue, setTaskDue] = useState('');
+    const [taskStatus, setTaskStatus] = useState('open');
 
     useEffect(() => {
         setHistory(null);
         setShowHistory(false);
+        setTaskDue(item?.task?.due_date ?? '');
+        setTaskStatus(item?.task?.status ?? 'open');
     }, [item?.key]);
 
     function loadHistory() {
@@ -97,11 +103,53 @@ export function EventDetails({ item, onClose, onEdit, onReschedule, onCancel, on
                     </div>
                 )}
 
+                {item.source === 'task' && item.task && (
+                    <div className="space-y-3 rounded-lg border border-navy-100 p-3 dark:border-navy-800">
+                        <p className="text-sm font-medium">{t('Task details')}</p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <Input label={t('Due date')} type="date" value={taskDue} onChange={(event) => setTaskDue(event.target.value)} />
+                            <Select label={t('Status')} value={taskStatus} onChange={(event) => setTaskStatus(event.target.value)} options={taskStatuses} />
+                        </div>
+                        <Button
+                            size="sm"
+                            disabled={!taskDue}
+                            onClick={() => router.post(route('tasks.calendar', item.id), { due_date: taskDue, status: taskStatus }, { preserveScroll: true, onSuccess: () => { onChanged(); onClose(); } })}
+                        >
+                            {t('Save task')}
+                        </Button>
+                    </div>
+                )}
+
+                {item.source === 'appointment' && item.appointment && (
+                    <div className="flex flex-wrap gap-2 rounded-lg border border-navy-100 p-3 dark:border-navy-800">
+                        <p className="w-full text-sm font-medium">{t('Consultation actions')}</p>
+                        {item.can.confirm && (
+                            <Button size="sm" variant="success" icon={<Check className="size-4" />} onClick={() => router.post(route('appointments.transition', item.id), { status: 'confirmed' }, { preserveScroll: true, onSuccess: () => { onChanged(); onClose(); } })}>{t('Confirm')}</Button>
+                        )}
+                        {item.can.decline && (
+                            <Button
+                                size="sm"
+                                variant="danger"
+                                onClick={() => {
+                                    const reason = window.prompt(t('Reason for declining'));
+                                    if (!reason) return;
+                                    router.post(route('appointments.transition', item.id), { status: 'declined', reason }, { preserveScroll: true, onSuccess: () => { onChanged(); onClose(); } });
+                                }}
+                            >
+                                {t('Decline')}
+                            </Button>
+                        )}
+                        {item.can.complete && item.appointment.status === 'confirmed' && (
+                            <Button size="sm" variant="secondary" onClick={() => router.post(route('appointments.transition', item.id), { status: 'completed' }, { preserveScroll: true, onSuccess: () => { onChanged(); onClose(); } })}>{t('Mark completed')}</Button>
+                        )}
+                    </div>
+                )}
+
                 <div className="flex flex-wrap gap-2 border-t border-navy-100 pt-4 dark:border-navy-800">
                     {item.can.reschedule && <Button size="sm" icon={<CalendarClock className="size-4" />} onClick={() => onReschedule(item)}>{t('Reschedule')}</Button>}
                     {item.can.edit && <Button size="sm" variant="secondary" onClick={() => onEdit(item)}>{t('Edit')}</Button>}
-                    {item.can.complete && <Button size="sm" variant="secondary" icon={<Check className="size-4" />} onClick={() => router.post(route('calendar.complete', item.id), {}, { preserveScroll: true, onSuccess: () => { onChanged(); onClose(); } })}>{t('Mark done')}</Button>}
-                    {item.can.cancel && <Button size="sm" variant="ghost" onClick={() => onCancel(item)}>{t('Cancel event')}</Button>}
+                    {item.can.complete && item.source === 'event' && <Button size="sm" variant="secondary" icon={<Check className="size-4" />} onClick={() => router.post(route('calendar.complete', item.id), {}, { preserveScroll: true, onSuccess: () => { onChanged(); onClose(); } })}>{t('Mark done')}</Button>}
+                    {item.can.cancel && <Button size="sm" variant="ghost" onClick={() => onCancel(item)}>{item.source === 'appointment' ? t('Cancel consultation') : t('Cancel event')}</Button>}
                     {item.url && <Link href={item.url} className="ms-auto inline-flex items-center gap-1 text-sm font-medium text-navy-700 hover:underline dark:text-navy-200">{item.source === 'hearing' ? t('Open case') : t('Open')}<ExternalLink className="size-3.5" /></Link>}
                     {item.manage_url && item.manage_url !== item.url && <Link href={item.manage_url} className="inline-flex items-center gap-1 text-sm font-medium text-navy-700 hover:underline dark:text-navy-200">{item.source === 'hearing' || item.source === 'note' ? t('Court diary') : t('Manage')}</Link>}
                 </div>

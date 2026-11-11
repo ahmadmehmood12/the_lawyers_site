@@ -26,12 +26,14 @@ export type CalendarItem = {
     manage_url: string | null;
     has_history: boolean;
     hearing: { id: number; hearing_time: string | null; assigned_lawyer_id: number | null } | null;
+    task: { id: number; status: string; due_date: string | null; status_label: string } | null;
+    appointment: { id: number; status: string; starts_at: string } | null;
     recurrence: string;
     recurrence_label: string | null;
     visibility: string | null;
     owner: string | null;
     editable: EventForm | null;
-    can: { edit: boolean; reschedule: boolean; cancel: boolean; complete?: boolean };
+    can: { edit: boolean; reschedule: boolean; cancel: boolean; complete?: boolean; confirm?: boolean; decline?: boolean };
 };
 
 export type EventForm = {

@@ -47,7 +47,7 @@ class ActivityPresenter
     /**
      * @return array{id: int, sentence: string, actor: string, actor_avatar: string|null, icon: string, url: string|null, log: string, created_at: string}
      */
-    public static function present(Activity $activity, string $audience = 'organization'): array
+    public static function present(Activity $activity, string $audience = 'organization', bool $includeNetwork = true): array
     {
         $actor = $activity->causer instanceof User ? $activity->causer->name : __('The system');
         $subject = self::subjectName($activity, $audience);
@@ -72,8 +72,8 @@ class ActivityPresenter
             'url' => $audience === 'organization' ? self::url($activity) : null,
             'log' => (string) $activity->log_name,
             'event' => (string) $activity->description,
-            'ip_address' => $activity->getAttribute('ip_address'),
-            'device' => self::device($activity->getAttribute('user_agent')),
+            'ip_address' => $includeNetwork ? $activity->getAttribute('ip_address') : null,
+            'device' => $includeNetwork ? self::device($activity->getAttribute('user_agent')) : null,
             'created_at' => $activity->created_at->toIso8601String(),
         ];
     }

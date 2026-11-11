@@ -44,6 +44,18 @@ const content: Content = {
                     note: 'Your CNIC is encrypted and hidden. Only your Bar Council and enrollment details are shown as verification evidence, and only after approval.',
                 },
                 {
+                    id: 'articles',
+                    title: 'Publish legal articles',
+                    paragraphs: ['Your public profile can show articles you have written. This helps clients understand your practice and brings readers to your profile from the legal library.'],
+                    steps: [
+                        'Open Articles from your public profile or the workspace.',
+                        'Write the title, summary and body in English or Urdu.',
+                        'Save a draft, or submit the article for review when it is ready.',
+                        'Our editorial team reviews it. Only approved articles appear publicly.',
+                    ],
+                    note: 'Articles are general legal information, not legal advice. Do not include client names or confidential case details.',
+                },
+                {
                     id: 'verification',
                     title: 'Get the verified badge',
                     paragraphs: ['Verification confirms that a human reviewed your Bar enrollment evidence. It is not a guarantee of competence or of any case outcome.'],
@@ -131,7 +143,7 @@ const content: Content = {
                     paragraphs: ['Reminders are sent through the official WhatsApp Business API to people who have consented to receive them.'],
                     bullets: [
                         'Choose which events trigger a reminder: hearing scheduled, rescheduled, cancelled, appointment and payment.',
-                        'Templates are approved by Meta before use; the admin panel shows each template’s status.',
+                        'Templates are approved by Meta before use, and the delivery log shows whether a reminder was sent.',
                         'Every delivery is logged with its status and any error.',
                         'Clients control their notification preferences.',
                     ],
@@ -190,6 +202,18 @@ const content: Content = {
                         'دستیابی: نئے مؤکل قبول کر رہے ہیں یا نہیں۔',
                     ],
                     note: 'آپ کا شناختی کارڈ خفیہ رکھا جاتا ہے۔ بار کونسل اور انرولمنٹ کی تفصیلات صرف منظوری کے بعد تصدیقی ثبوت کے طور پر دکھائی جاتی ہیں۔',
+                },
+                {
+                    id: 'articles',
+                    title: 'قانونی مضامین شائع کریں',
+                    paragraphs: ['آپ کی عوامی پروفائل پر وہ مضامین دکھائے جا سکتے ہیں جو آپ نے لکھے ہوں۔ اس سے مؤکلوں کو آپ کی مہارت سمجھنے میں مدد ملتی ہے اور قانونی لائبریری سے لوگ آپ کی پروفائل تک پہنچتے ہیں۔'],
+                    steps: [
+                        'اپنی عوامی پروفائل یا ورک اسپیس سے مضامین کھولیں۔',
+                        'عنوان، خلاصہ اور متن انگریزی یا اردو میں لکھیں۔',
+                        'ڈرافٹ محفوظ کریں، یا تیار ہونے پر مضمون جائزے کے لیے جمع کریں۔',
+                        'ادارتی ٹیم جائزہ لیتی ہے۔ صرف منظور شدہ مضامین عوامی طور پر دکھائی دیتے ہیں۔',
+                    ],
+                    note: 'مضامین عام قانونی معلومات ہیں، قانونی مشورہ نہیں۔ مؤکل کے نام یا خفیہ مقدمے کی تفصیلات شامل نہ کریں۔',
                 },
                 {
                     id: 'verification',
@@ -279,7 +303,7 @@ const content: Content = {
                     paragraphs: ['یاد دہانیاں سرکاری واٹس ایپ بزنس اے پی آئی کے ذریعے صرف ان لوگوں کو بھیجی جاتی ہیں جنہوں نے رضامندی دی ہو۔'],
                     bullets: [
                         'منتخب کریں کہ کون سے واقعات یاد دہانی بھیجیں: سماعت مقرر، تبدیل، منسوخ، ملاقات اور ادائیگی۔',
-                        'ٹیمپلیٹس استعمال سے پہلے میٹا سے منظور ہوتے ہیں؛ ایڈمن پینل ہر ٹیمپلیٹ کی حیثیت دکھاتا ہے۔',
+                        'ٹیمپلیٹس استعمال سے پہلے میٹا سے منظور ہوتے ہیں، اور ترسیل کا لاگ دکھاتا ہے کہ یاد دہانی بھیجی گئی یا نہیں۔',
                         'ہر ترسیل حیثیت اور ممکنہ خرابی کے ساتھ لاگ ہوتی ہے۔',
                         'مؤکل اپنی اطلاع کی ترجیحات خود کنٹرول کرتے ہیں۔',
                     ],
@@ -371,6 +395,7 @@ const content: Content = {
                         'Share client records with the team; keep private notes separate.',
                         'Store documents against cases or in the firm vault.',
                         'Use templates for consistent drafting across the firm.',
+                        'Advocates can write legal articles; only approved articles appear on their public profiles.',
                         'Every change is recorded in the activity log.',
                     ],
                 },
@@ -494,6 +519,7 @@ const content: Content = {
                         'مؤکل کے ریکارڈ ٹیم کے ساتھ شیئر کریں؛ نجی نوٹس الگ رکھیں۔',
                         'دستاویزات مقدمے کے ساتھ یا فرم کے خزانے میں محفوظ کریں۔',
                         'پوری فرم میں یکساں ڈرافٹنگ کے لیے ٹیمپلیٹس استعمال کریں۔',
+                        'وکلاء قانونی مضامین لکھ سکتے ہیں؛ صرف منظور شدہ مضامین ان کی عوامی پروفائل پر دکھائی دیتے ہیں۔',
                         'ہر تبدیلی ایکٹیویٹی لاگ میں درج ہوتی ہے۔',
                     ],
                 },

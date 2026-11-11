@@ -14,7 +14,7 @@ export default function TeamIndex({ members, invitations, roles, permissions, is
     const invite = useForm({ email: '', role: 'associate_advocate' });
 
     return (
-        <AppLayout title={t('Team')}>
+        <AppLayout title={t('Team')} wide>
             <PageHeader title={t('Team')} description={t('Members, roles and invitations. Each role grants a fixed set of permissions.')} />
             {!isFirm && <Alert tone="info" className="mb-5">{t('You can add a clerk, assistant or associate to your individual practice.')}</Alert>}
             <div className="grid gap-6 lg:grid-cols-3">
