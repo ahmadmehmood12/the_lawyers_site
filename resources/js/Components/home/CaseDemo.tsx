@@ -1,16 +1,18 @@
-import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-    Bell, BookOpen, Briefcase, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText,
-    Gavel, LayoutDashboard, MapPin, MousePointerClick, Plus, Receipt, Scale, Search, Users,
+    BookOpen, Briefcase, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText,
+    Gavel, LayoutDashboard, MapPin, Plus, Receipt, Scale, Users,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { DemoShell, DemoToast, PersonaAvatar, useDemoEngine, usePersona } from '@/Components/demo/engine';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n';
 
 /**
  * Homepage demo (docs/Features/Home-Page.md): a drawn copy of the workspace where a cursor opens a case,
  * schedules a hearing (date, time, court, judge, district, practice area), then opens the calendar and
- * the new entry. Hovering pauses the script so visitors can scroll inside the screen. All data is sample.
+ * the new entry. Hovering pauses the script so visitors can scroll inside the screen. The advocate is
+ * DemoPersona (real name and photo); the matters are sample data. Engine: Components/demo/engine.tsx.
  */
 
 type View = 'cases' | 'case' | 'calendar';
@@ -48,8 +50,6 @@ const statusTone: Record<string, string> = {
     Disposed: 'bg-navy-100 text-navy-500 ring-navy-200',
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const CANCELLED = Symbol('cancelled');
 
 function addDays(date: Date, days: number): Date {
     const next = new Date(date);
@@ -57,13 +57,9 @@ function addDays(date: Date, days: number): Date {
     return next;
 }
 
-export function CaseDemo() {
+export function CaseDemo({ className }: { className?: string }) {
     const t = useT();
-    const reduce = useReducedMotion();
-    const frameRef = useRef<HTMLDivElement>(null);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const inView = useInView(frameRef, { amount: 0.35 });
-
+    const persona = usePersona();
     const target = useMemo(() => addDays(new Date(), 6), []);
     const dateLabel = target.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const FINAL: Required<Values> = { date: dateLabel, time: '09:30 AM', court: SELECTS.court[CHOICE], judge: SELECTS.judge[CHOICE], district: SELECTS.district[CHOICE], area: SELECTS.area[CHOICE] };
@@ -76,72 +72,11 @@ export function CaseDemo() {
     const [toast, setToast] = useState(false);
     const [scheduled, setScheduled] = useState(false);
     const [popover, setPopover] = useState(false);
-    const [cursor, setCursor] = useState({ x: 420, y: 300, visible: false });
-    const [pressed, setPressed] = useState(false);
-    const [ripple, setRipple] = useState<{ id: number; x: number; y: number } | null>(null);
-    const [hovered, setHovered] = useState(false);
 
-    const paused = useRef(false);
-    const running = useRef(true);
-    const cursorRef = useRef(cursor);
-    cursorRef.current = cursor;
-    paused.current = hovered || !inView;
-
-    useEffect(() => {
-        if (reduce) return;
-        running.current = true;
-
-        async function wait(ms: number) {
-            let left = ms;
-            while (left > 0) {
-                if (!running.current) throw CANCELLED;
-                await sleep(40);
-                if (!paused.current) left -= 40;
-            }
-        }
-
-        function find(name: string): HTMLElement | null {
-            const matches = Array.from(frameRef.current?.querySelectorAll<HTMLElement>(`[data-demo="${name}"]`) ?? []);
-            return matches.find((element) => element.getBoundingClientRect().width > 0) ?? null;
-        }
-
-        async function moveTo(name: string, duration = 750) {
-            await wait(60);
-            const element = find(name);
-            const frame = frameRef.current;
-            const scroller = scrollRef.current;
-            if (!element || !frame) return;
-
-            if (scroller && scroller.contains(element)) {
-                const box = element.getBoundingClientRect();
-                const area = scroller.getBoundingClientRect();
-                if (box.top < area.top + 8 || box.bottom > area.bottom - 8) {
-                    scroller.scrollTo({ top: scroller.scrollTop + (box.top - area.top) - area.height / 3, behavior: 'smooth' });
-                    await wait(550);
-                }
-            }
-
-            const box = element.getBoundingClientRect();
-            const origin = frame.getBoundingClientRect();
-            setCursor({ x: box.left - origin.left + Math.min(box.width / 2, 60), y: box.top - origin.top + box.height / 2, visible: true });
-            await wait(duration);
-        }
-
-        async function click() {
-            setPressed(true);
-            setRipple({ id: Date.now(), x: cursorRef.current.x, y: cursorRef.current.y });
-            await wait(130);
-            setPressed(false);
-            await wait(160);
-        }
-
-        async function type(field: Field, text: string) {
+    const engine = useDemoEngine(async ({ wait, moveTo, click, type, scrollTop }) => {
+        async function fill(field: Field, text: string) {
             setFocused(field);
-            for (let i = 1; i <= text.length; i++) {
-                setValues((current) => ({ ...current, [field]: text.slice(0, i) }));
-                await wait(55);
-            }
-            await wait(200);
+            await type(text, (value) => setValues((current) => ({ ...current, [field]: value })));
         }
 
         async function choose(field: keyof typeof SELECTS) {
@@ -157,159 +92,81 @@ export function CaseDemo() {
             await wait(250);
         }
 
-        function reset() {
-            setView('cases');
-            setModal(false);
-            setValues({});
-            setFocused(null);
-            setOpenSelect(null);
-            setToast(false);
-            setScheduled(false);
-            setPopover(false);
-            scrollRef.current?.scrollTo({ top: 0 });
-        }
+        setView('cases');
+        setModal(false);
+        setValues({});
+        setFocused(null);
+        setOpenSelect(null);
+        setToast(false);
+        setScheduled(false);
+        setPopover(false);
+        scrollTop();
+        await wait(900);
+        await moveTo('case-target', 1000);
+        await click();
+        setView('case');
+        scrollTop();
+        await wait(900);
+        await moveTo('btn-schedule');
+        await click();
+        setModal(true);
+        await wait(500);
+        await moveTo('field-date', 600);
+        await click();
+        await fill('date', FINAL.date);
+        await moveTo('field-time', 500);
+        await click();
+        await fill('time', FINAL.time);
+        await choose('court');
+        await choose('judge');
+        await choose('district');
+        await choose('area');
+        setFocused(null);
+        await moveTo('btn-save', 700);
+        await click();
+        setModal(false);
+        setScheduled(true);
+        setToast(true);
+        await wait(700);
+        await moveTo('hearing-new', 700);
+        await wait(900);
+        await moveTo('nav-calendar', 900);
+        await click();
+        setToast(false);
+        setView('calendar');
+        scrollTop();
+        await wait(1100);
+        await moveTo('event-new', 900);
+        await click();
+        setPopover(true);
+        await wait(3800);
+    });
 
-        async function script() {
-            reset();
-            await wait(900);
-            await moveTo('case-target', 1000);
-            await click();
-            setView('case');
-            scrollRef.current?.scrollTo({ top: 0 });
-            await wait(900);
-            await moveTo('btn-schedule');
-            await click();
-            setModal(true);
-            await wait(500);
-            await moveTo('field-date', 600);
-            await click();
-            await type('date', FINAL.date);
-            await moveTo('field-time', 500);
-            await click();
-            await type('time', FINAL.time);
-            await choose('court');
-            await choose('judge');
-            await choose('district');
-            await choose('area');
-            setFocused(null);
-            await moveTo('btn-save', 700);
-            await click();
-            setModal(false);
-            setScheduled(true);
-            setToast(true);
-            await wait(700);
-            await moveTo('hearing-new', 700);
-            await wait(900);
-            await moveTo('nav-calendar', 900);
-            await click();
-            setToast(false);
-            setView('calendar');
-            scrollRef.current?.scrollTo({ top: 0 });
-            await wait(1100);
-            await moveTo('event-new', 900);
-            await click();
-            setPopover(true);
-            await wait(3800);
-        }
-
-        (async () => {
-            try {
-                while (running.current) {
-                    await script();
-                }
-            } catch (error) {
-                if (error !== CANCELLED) throw error;
-            }
-        })();
-
-        return () => {
-            running.current = false;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reduce]);
-
-    const nav: [string, ReactNode, View | null][] = [
-        [t('Dashboard'), <LayoutDashboard key="d" className="size-3.5" />, null],
-        [t('Court diary'), <BookOpen key="b" className="size-3.5" />, null],
-        [t('Cases'), <Briefcase key="c" className="size-3.5" />, 'cases'],
-        [t('Calendar'), <CalendarDays key="ca" className="size-3.5" />, 'calendar'],
-        [t('Clients'), <Users key="u" className="size-3.5" />, null],
-        [t('Documents'), <FileText key="f" className="size-3.5" />, null],
-        [t('Drafting'), <Scale key="s" className="size-3.5" />, null],
-        [t('Invoices'), <Receipt key="r" className="size-3.5" />, null],
+    const nav = [
+        { key: 'dashboard', label: t('Dashboard'), icon: <LayoutDashboard className="size-3.5" /> },
+        { key: 'diary', label: t('Court diary'), icon: <BookOpen className="size-3.5" /> },
+        { key: 'cases', label: t('Cases'), icon: <Briefcase className="size-3.5" /> },
+        { key: 'calendar', label: t('Calendar'), icon: <CalendarDays className="size-3.5" />, demo: 'nav-calendar' },
+        { key: 'clients', label: t('Clients'), icon: <Users className="size-3.5" /> },
+        { key: 'documents', label: t('Documents'), icon: <FileText className="size-3.5" /> },
+        { key: 'drafting', label: t('Drafting'), icon: <Scale className="size-3.5" /> },
+        { key: 'invoices', label: t('Invoices'), icon: <Receipt className="size-3.5" /> },
     ];
     const activeNav: View = view === 'case' ? 'cases' : view;
 
-    return (
-        <div
-            ref={frameRef}
-            dir="ltr"
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            className="relative h-[30rem] select-none overflow-hidden rounded-xl border border-navy-200 bg-white text-[11px] leading-snug text-navy-900 shadow-[0_30px_60px_-30px_rgba(15,30,54,0.45)] sm:h-[34rem] dark:border-navy-700 dark:bg-navy-950 dark:text-navy-50"
-            role="img"
-            aria-label={t('Animated demo: a lawyer schedules a hearing from a case and it appears on the calendar')}
-        >
-            {/* Browser chrome */}
-            <div className="flex h-8 items-center gap-2 border-b border-navy-100 bg-navy-50 px-3 dark:border-navy-800 dark:bg-navy-900">
-                <span className="size-2.5 rounded-full bg-red-400" /><span className="size-2.5 rounded-full bg-gold-400" /><span className="size-2.5 rounded-full bg-verdant-400" />
-                <div className="mx-auto flex h-5 w-1/2 items-center justify-center rounded bg-white px-2 text-[10px] text-navy-400 ring-1 ring-navy-100 dark:bg-navy-950 dark:ring-navy-800">
-                    {view === 'calendar' ? '/calendar' : view === 'case' ? '/cases/1842-b-2026' : '/cases'}
-                </div>
-            </div>
-
-            <div className="flex h-[calc(100%-2rem)]">
-                {/* Sidebar */}
-                <aside className="hidden w-36 shrink-0 flex-col bg-navy-900 p-2 text-navy-200 sm:flex">
-                    <div className="mb-3 flex items-center gap-1.5 px-1.5 pt-1 text-[12px] font-semibold text-white">
-                        <span className="grid size-5 place-items-center rounded bg-gold-500 text-[10px] text-navy-950">W</span> Wakeel Diary
-                    </div>
-                    {nav.map(([label, icon, key]) => (
-                        <div key={label} data-demo={key === 'calendar' ? 'nav-calendar' : undefined} className={cn('mb-0.5 flex items-center gap-2 rounded-md px-2 py-1.5', key === activeNav ? 'bg-white/10 font-medium text-white' : 'opacity-80')}>
-                            {icon}{label}
-                        </div>
-                    ))}
-                    <div className="mt-auto rounded-md bg-white/5 p-2 text-[10px]">
-                        <p className="font-medium text-white">{t('Tomorrow')}</p>
-                        <p className="opacity-80">{t('4 hearings, 2 tasks')}</p>
-                    </div>
-                </aside>
-
-                <div className="flex min-w-0 flex-1 flex-col">
-                    {/* App top bar */}
-                    <div className="flex h-10 shrink-0 items-center gap-2 border-b border-navy-100 px-3 dark:border-navy-800">
-                        <div className="flex h-6 flex-1 items-center gap-1.5 rounded-md bg-navy-50 px-2 text-navy-400 dark:bg-navy-900"><Search className="size-3" />{t('Search cases, clients, FIRs')}</div>
-                        <span data-demo="nav-calendar" className={cn('grid size-6 place-items-center rounded-md sm:hidden', activeNav === 'calendar' ? 'bg-navy-900 text-white' : 'text-navy-400')}><CalendarDays className="size-3.5" /></span>
-                        <Bell className="size-3.5 text-navy-400" />
-                        <div className="flex items-center gap-1.5">
-                            <span className="grid size-6 place-items-center rounded-full bg-gold-100 text-[10px] font-semibold text-gold-700">AR</span>
-                            <span className="hidden font-medium md:inline">Adv. Ayesha Rana</span>
-                        </div>
-                    </div>
-
-                    <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-navy-50/50 p-3 dark:bg-navy-950 [scrollbar-width:thin]">
-                        <AnimatePresence mode="wait" initial={false}>
-                            <motion.div key={view} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-                                {view === 'cases' && <CasesView />}
-                                {view === 'case' && <CaseView scheduled={scheduled} values={FINAL} />}
-                                {view === 'calendar' && <CalendarView target={target} scheduled={scheduled} popover={popover} values={FINAL} />}
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
-                </div>
-            </div>
-
-            {/* Schedule hearing dialog */}
+    const overlay = (
+        <>
             <AnimatePresence>
                 {modal && (
                     <motion.div className="absolute inset-0 z-20 grid place-items-center bg-navy-950/40 p-3 backdrop-blur-[1px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <motion.div initial={{ scale: 0.96, y: 8 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, opacity: 0 }} transition={{ duration: 0.22 }} className="w-full max-w-sm rounded-xl bg-white p-4 shadow-2xl ring-1 ring-navy-100 dark:bg-navy-900 dark:ring-navy-700">
                             <div className="mb-3 flex items-center gap-2">
                                 <span className="grid size-7 place-items-center rounded-lg bg-gold-50 text-gold-700"><Gavel className="size-3.5" /></span>
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="text-[13px] font-semibold">{t('Schedule hearing')}</p>
                                     <p className="text-[10px] text-navy-500">State vs. Muhammad Arshad</p>
                                 </div>
+                                <PersonaAvatar className="size-7" />
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <DemoInput name="date" label={t('Date')} value={values.date} focused={focused === 'date'} icon={<CalendarDays className="size-3" />} />
@@ -320,8 +177,8 @@ export function CaseDemo() {
                                         value={values[field]} focused={focused === field} open={openSelect === field} options={SELECTS[field]} />
                                 ))}
                                 <div className="col-span-2">
-                                    <p className="mb-0.5 text-[10px] font-medium text-navy-500">{t('Purpose')}</p>
-                                    <div className="rounded-md border border-navy-200 px-2 py-1.5 dark:border-navy-700">{t('Arguments on bail')}</div>
+                                    <p className="mb-0.5 text-[10px] font-medium text-navy-500">{t('Appearing advocate')}</p>
+                                    <div className="flex items-center gap-1.5 rounded-md border border-navy-200 px-2 py-1 dark:border-navy-700"><PersonaAvatar className="size-5 ring-0" />{persona.title}</div>
                                 </div>
                             </div>
                             <div className="mt-3 flex justify-end gap-2">
@@ -332,45 +189,22 @@ export function CaseDemo() {
                     </motion.div>
                 )}
             </AnimatePresence>
+            <DemoToast show={toast}><CheckCircle2 className="size-3.5 text-verdant-300" /><span>{t('Hearing scheduled')} · {FINAL.date}, {FINAL.time}</span></DemoToast>
+        </>
+    );
 
-            {/* Toast */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-3 right-3 z-30 flex items-center gap-2 rounded-lg bg-navy-900 px-3 py-2 text-white shadow-lg">
-                        <CheckCircle2 className="size-3.5 text-verdant-300" />
-                        <span>{t('Hearing scheduled')} · {FINAL.date}, {FINAL.time}</span>
-                    </motion.div>
-                )}
+    return (
+        <DemoShell engine={engine} className={className} nav={nav} active={activeNav} overlay={overlay}
+            path={view === 'calendar' ? '/calendar' : view === 'case' ? '/cases/1842-b-2026' : '/cases'}
+            label={t('Animated demo: a lawyer schedules a hearing from a case and it appears on the calendar')}>
+            <AnimatePresence mode="wait" initial={false}>
+                <motion.div key={view} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                    {view === 'cases' && <CasesView />}
+                    {view === 'case' && <CaseView scheduled={scheduled} values={FINAL} />}
+                    {view === 'calendar' && <CalendarView target={target} scheduled={scheduled} popover={popover} values={FINAL} />}
+                </motion.div>
             </AnimatePresence>
-
-            {/* Paused hint */}
-            <AnimatePresence>
-                {hovered && !reduce && (
-                    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute right-3 top-10 z-40 flex items-center gap-1.5 rounded-full bg-navy-900/85 px-2.5 py-1 text-[10px] text-white shadow">
-                        <MousePointerClick className="size-3" /> {t('Paused · scroll to explore')}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Cursor and click ripple */}
-            {!reduce && (
-                <>
-                    <AnimatePresence>
-                        {ripple && (
-                            <motion.span key={ripple.id} className="pointer-events-none absolute z-50 size-8 rounded-full bg-gold-400/40" style={{ left: ripple.x - 16, top: ripple.y - 16 }}
-                                initial={{ scale: 0.2, opacity: 0.9 }} animate={{ scale: 1.4, opacity: 0 }} transition={{ duration: 0.5 }} onAnimationComplete={() => setRipple(null)} />
-                        )}
-                    </AnimatePresence>
-                    <motion.div className="pointer-events-none absolute left-0 top-0 z-50" initial={false}
-                        animate={{ x: cursor.x - 3, y: cursor.y - 2, opacity: cursor.visible ? 1 : 0, scale: pressed ? 0.85 : 1 }}
-                        transition={{ x: { duration: 0.7, ease: [0.45, 0, 0.2, 1] }, y: { duration: 0.7, ease: [0.45, 0, 0.2, 1] }, scale: { duration: 0.1 } }}>
-                        <svg width="20" height="22" viewBox="0 0 20 22" className="drop-shadow-md">
-                            <path d="M2 1.5 L2 17.5 L6.4 13.4 L9.3 20 L12.2 18.7 L9.4 12.2 L15.5 12.2 Z" fill="#0f1e36" stroke="#fff" strokeWidth="1.4" strokeLinejoin="round" />
-                        </svg>
-                    </motion.div>
-                </>
-            )}
-        </div>
+        </DemoShell>
     );
 }
 
@@ -402,7 +236,7 @@ function CasesView() {
                         </div>
                         <span className="truncate text-navy-600 dark:text-navy-300">{court}</span>
                         <span className="hidden tabular-nums text-navy-500 sm:block">{`${(i * 3 + 14) % 28 + 1} Nov`}</span>
-                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] ring-1 ring-inset', statusTone[status])}>{status}</span>
+                        <span className="flex items-center gap-1.5"><PersonaAvatar className="hidden size-5 md:grid" /><span className={cn('rounded-full px-2 py-0.5 text-[10px] ring-1 ring-inset', statusTone[status])}>{status}</span></span>
                     </div>
                 ))}
             </div>
@@ -412,6 +246,7 @@ function CasesView() {
 
 function CaseView({ scheduled, values }: { scheduled: boolean; values: Required<Values> }) {
     const t = useT();
+    const persona = usePersona();
     const past = [
         ['28 Oct 2026', t('Notice issued to the State; report and record called')],
         ['14 Oct 2026', t('Petition filed; fixed for preliminary hearing')],
@@ -427,6 +262,7 @@ function CaseView({ scheduled, values }: { scheduled: boolean; values: Required<
                         <span className="rounded-full bg-verdant-50 px-2 py-0.5 text-[10px] text-verdant-700 ring-1 ring-verdant-200">{t('Active')}</span>
                         <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[10px] text-navy-600 ring-1 ring-navy-200 dark:bg-navy-900 dark:text-navy-300">{t('Criminal law')}</span>
                     </div>
+                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-navy-500"><PersonaAvatar className="size-5" /><span>{t('Lead counsel')} · <span className="font-medium text-navy-800 dark:text-navy-100">{persona.title}</span></span></div>
                 </div>
                 <div className="flex gap-1.5">
                     <span className="rounded-md px-2.5 py-1.5 font-medium ring-1 ring-navy-200 dark:ring-navy-700">{t('Add task')}</span>
@@ -459,6 +295,7 @@ function CaseView({ scheduled, values }: { scheduled: boolean; values: Required<
                                     <div className="min-w-0 flex-1">
                                         <p className="font-medium">{values.date} · {values.time} <span className="ms-1 rounded bg-gold-500 px-1 text-[9px] text-navy-950">{t('New')}</span></p>
                                         <p className="text-[10px] text-navy-500">{t('Arguments on bail')} · {values.court} · {values.judge}</p>
+                                        <p className="mt-1 flex items-center gap-1 text-[10px] text-navy-500"><PersonaAvatar className="size-4 ring-0" />{persona.title}</p>
                                     </div>
                                 </div>
                             </motion.li>
@@ -490,6 +327,7 @@ function CaseView({ scheduled, values }: { scheduled: boolean; values: Required<
 
 function CalendarView({ target, scheduled, popover, values }: { target: Date; scheduled: boolean; popover: boolean; values: Required<Values> }) {
     const t = useT();
+    const persona = usePersona();
     const year = target.getFullYear();
     const month = target.getMonth();
     const days = new Date(year, month + 1, 0).getDate();
@@ -549,6 +387,7 @@ function CalendarView({ target, scheduled, popover, values }: { target: Date; sc
                                                 <PopRow icon={<Scale className="size-3" />} text={values.judge} />
                                                 <PopRow icon={<MapPin className="size-3" />} text={values.district} />
                                                 <PopRow icon={<Briefcase className="size-3" />} text={values.area} />
+                                                <p className="flex items-center gap-1.5 pt-1 text-[10px] text-navy-600 dark:text-navy-300"><PersonaAvatar className="size-4 ring-0" /><span className="truncate">{persona.title}</span></p>
                                             </div>
                                             <p className="mt-2 rounded-md bg-navy-900 py-1 text-center font-medium text-white dark:bg-gold-500 dark:text-navy-950">{t('Open case')}</p>
                                         </motion.div>

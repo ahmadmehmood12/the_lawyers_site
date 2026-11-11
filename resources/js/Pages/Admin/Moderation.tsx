@@ -133,7 +133,7 @@ function Item({ tab, item }: { tab: Tab; item: any }) {
 function StatePill({ status, label, by }: { status: string; label: string; by?: string | null }) {
     const t = useT();
     const styles = status === 'pending'
-        ? 'bg-gold-100 text-gold-800 dark:bg-gold-500/15 dark:text-gold-200'
+        ? 'bg-gold-100 text-gold-700 dark:bg-gold-500/15 dark:text-gold-200'
         : status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300' : 'bg-verdant-100 text-verdant-800 dark:bg-verdant-500/15 dark:text-verdant-200';
     const icon = status === 'pending' ? <Clock className="size-3.5" /> : status === 'rejected' ? <XCircle className="size-3.5" /> : <CheckCircle2 className="size-3.5" />;
     return (

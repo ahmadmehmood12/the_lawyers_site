@@ -52,7 +52,7 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
     }
 
     return (
-        <AuthLayout wide={professional} title={t('Create your account')} description={form.data.registration_type === 'client' ? t('Find verified advocates and follow your case online.') : t('Your court diary, cases and clients — in one secure place.')}>
+        <AuthLayout demo="case" wide={professional} title={t('Create your account')} description={form.data.registration_type === 'client' ? t('Find verified advocates and follow your case online.') : t('Your court diary, cases and clients — in one secure place.')}>
             <div className="mb-5 grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('Account type')}>
                 {choices.map((choice) => (
                     <button

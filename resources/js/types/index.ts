@@ -47,6 +47,7 @@ export type SharedProps = {
     flash: { success: string | null; error: string | null };
     /** Only on sign-in / sign-up pages (Admin, Settings, Sign-in page media). */
     authMedia?: AuthMedia | null;
+    demoPersona?: DemoPersona | null;
     errors: Record<string, string>;
     [key: string]: unknown;
 };
@@ -76,3 +77,6 @@ export type AuthMedia = {
     description_ur: string;
     default_image: string;
 };
+
+/** The advocate shown in the homepage and sign-in animations (App\\Services\\Directory\\DemoPersona). */
+export type DemoPersona = { name: string; first_name: string; photo_url: string | null; city: string | null; counts: Record<'cases' | 'hearings' | 'appointments' | 'tasks' | 'drafts' | 'clients', number> };

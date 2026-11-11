@@ -15,7 +15,7 @@ export default function ForgotPassword() {
     }
 
     return (
-        <AuthLayout title={t('Reset your password')} description={t('Enter your email and we will send you a 6-digit code.')}>
+        <AuthLayout demo="phone" title={t('Reset your password')} description={t('Enter your email and we will send you a 6-digit code.')}>
             <form onSubmit={submit} className="space-y-4">
                 <Input label={t('Email')} type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} required autoFocus />
                 <Button type="submit" className="w-full" loading={form.processing}>{t('Send code')}</Button>

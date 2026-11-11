@@ -93,7 +93,7 @@ class DemoSeeder extends Seeder
         $bj = $judge($banking, 'Judge Banking Court II', '2');
 
         // The solo advocate whose diary the captures show.
-        $this->ayesha = $make('Ayesha Siddiqui', 'ayesha@wakeel.test', AccountType::Lawyer, '+923001234567');
+        $this->ayesha = $make('Mahnoor Siddiqui', 'ayesha@wakeel.test', AccountType::Lawyer, '+923001234567');
         $profile = $profiles->createFor($this->ayesha);
         $profile->fill([
             'title' => 'Advocate', 'bar_council_id' => $punjab, 'enrollment_number' => 'LHR-DEMO-1042', 'cnic' => '35202-0000000-1',

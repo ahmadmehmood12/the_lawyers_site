@@ -29,7 +29,7 @@ export default function VerifyEmail({ email }: { email: string }) {
     }
 
     return (
-        <AuthLayout title={t('Verify your email')} description={t('Enter the 6-digit code we sent to your email address.')}>
+        <AuthLayout demo="draft" title={t('Verify your email')} description={t('Enter the 6-digit code we sent to your email address.')}>
             <div className="mb-5 flex items-center gap-3 rounded-lg bg-navy-50 p-3 text-sm ring-1 ring-navy-100 dark:bg-navy-900 dark:ring-navy-800">
                 <MailCheck className="size-5 shrink-0 text-gold-600" />
                 <span className="min-w-0 truncate">{t('Code sent to')} <strong dir="ltr">{email}</strong></span>

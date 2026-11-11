@@ -79,7 +79,7 @@ export function Avatar({ name, src, size = 'md' }: { name: string; src?: string 
         .join('');
     const [failed, setFailed] = useState<string | null>(null);
     return src && failed !== src ? (
-        <img src={src} alt={name} loading="lazy" onError={() => setFailed(src)} className={cn('shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-navy-800', sizes[size])} />
+        <img src={src} alt={name} loading="lazy" onError={() => setFailed(src)} className={cn('shrink-0 rounded-full object-cover object-center ring-2 ring-white dark:ring-navy-800', sizes[size])} />
     ) : (
         <span className={cn('inline-flex shrink-0 items-center justify-center rounded-full bg-navy-800 font-semibold text-gold-200 dark:bg-navy-700', sizes[size])} aria-hidden>
             {initials}

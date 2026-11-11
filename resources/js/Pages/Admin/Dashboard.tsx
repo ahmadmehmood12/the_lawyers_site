@@ -12,7 +12,7 @@ type Directory = { lawyers: LawyerCardData[]; firms: FirmCardData[]; practiceAre
 export default function AdminDashboard({ kpis, signups, deliveries, integrations, directory }: { kpis: Record<string, number>; signups: { label: string; value: number }[]; deliveries: Record<string, number>; integrations: Record<string, boolean>; directory: Directory }) {
     const t = useT();
     return (
-        <AppLayout title={t('Admin')} area="admin">
+        <AppLayout title={t('Admin')} area="admin" wide>
             <PageHeader title={t('Platform overview')} />
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                 <Stat label={t('Lawyers')} value={kpis.lawyers} />

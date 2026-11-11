@@ -14,7 +14,7 @@ export default function ResetPassword({ email, token }: { email: string; token: 
     }
 
     return (
-        <AuthLayout title={t('Choose a new password')}>
+        <AuthLayout demo="phone" title={t('Choose a new password')}>
             <form onSubmit={submit} className="space-y-4">
                 <Input label={t('Email')} type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} readOnly={Boolean(email)} required />
                 <Input label={t('New password')} type="password" autoComplete="new-password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} error={form.errors.password} required />

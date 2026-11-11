@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\PlatformController;
 use App\Models\Setting;
 use App\Services\Access\CurrentOrganization;
 use App\Services\Access\OrganizationAccess;
+use App\Services\Directory\DemoPersona;
 use App\Services\Messaging\MessagingService;
 use App\Support\PublicFile;
 use App\Support\Translations;
@@ -69,8 +70,12 @@ class HandleInertiaRequests extends Middleware
                 'site_theme' => Setting::get('site_theme', 'navy-gold') === 'white-green' ? 'white-green' : 'navy-gold',
             ],
             // Sign-in / sign-up promotional panel, only on the auth pages (Admin, Settings, Sign-in page).
-            'authMedia' => $request->routeIs('login', 'register', 'password.request', 'password.reset', 'two-factor.login', 'verification.notice', 'password.confirm', 'invitations.show')
+            'authMedia' => $request->routeIs('login', 'register', 'password.request', 'password.reset', 'two-factor.login', 'verification.notice', 'password.code', 'password.confirm', 'invitations.show')
                 ? fn () => PlatformController::authMedia()
+                : null,
+            // The advocate shown in the homepage and sign-in animations (DemoPersona).
+            'demoPersona' => $request->routeIs('home', 'login', 'register', 'password.request', 'password.reset', 'password.code', 'verification.notice')
+                ? fn () => app(DemoPersona::class)->get()
                 : null,
             'translations' => Inertia::once(fn () => Translations::forLocale($locale))->as('translations-'.$locale),
             'auth' => [

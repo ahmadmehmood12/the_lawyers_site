@@ -1,7 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { AnimatePresence, motion, MotionConfig, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { Plus, Search } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArticleCard, type ArticleCardData } from '@/Components/domain/ArticleCard';
 import { LinkButton } from '@/Components/ui';
 import { controlClasses } from '@/Components/ui/Field';
@@ -12,6 +12,9 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
 import { BookingJourney } from '@/Components/home/BookingJourney';
 import { CaseDemo } from '@/Components/home/CaseDemo';
+import { DraftDemo } from '@/Components/home/DraftDemo';
+import { HearingPhone, PHONE_STAGES, stageProgress, useProgressState } from '@/Components/home/HearingPhone';
+import { HeroDemo } from '@/Components/home/HeroDemo';
 import { CitationStream } from '@/Components/home/CitationStream';
 import { DraftingTyper } from '@/Components/home/DraftingTyper';
 import { HowItWorks } from '@/Components/home/HowItWorks';
@@ -38,23 +41,13 @@ type Props = {
     canonical: string;
 };
 
-type Capture = { src: string; alt: string; phone?: boolean };
-
 const ease = [0.16, 1, 0.3, 1] as const;
-
-/** A real capture of the product, framed by a hairline. Never a drawn window. */
-function Shot({ capture, eager = false, className }: { capture: Capture; eager?: boolean; className?: string }) {
-    return (
-        <figure className={cn('hm-shot', capture.phone && 'mx-auto max-w-[300px] rounded-[22px]', className)} data-kind="product">
-            <img src={capture.src} alt={capture.alt} width={capture.phone ? 390 : 1440} height={capture.phone ? 844 : 900} loading={eager ? 'eager' : 'lazy'} decoding="async" />
-        </figure>
-    );
-}
 
 export default function Home({ specializations, cities, articles, plans, showcase, faqs, canonical }: Props) {
     const t = useT();
     const { locale } = useLocale();
     const [query, setQuery] = useState({ search: '', city: '', specialization: '' });
+    const siteName = usePage<SharedProps>().props.app.name;
 
     return (
         <PublicLayout
@@ -62,7 +55,7 @@ export default function Home({ specializations, cities, articles, plans, showcas
                 title: t('Find a lawyer in Pakistan, court diary for advocates'),
                 description: t('Search verified advocates by city, court and practice area. Case management, court diary and WhatsApp hearing reminders for lawyers and law firms in Pakistan.'),
                 canonical,
-                jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'Wakeel Diary', url: canonical, potentialAction: { '@type': 'SearchAction', target: `${route('lawyers.index')}?search={query}`, 'query-input': 'required name=query' } },
+                jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: siteName, url: canonical, potentialAction: { '@type': 'SearchAction', target: `${route('lawyers.index')}?search={query}`, 'query-input': 'required name=query' } },
             }}
         >
             <MotionConfig reducedMotion="user">
@@ -168,9 +161,9 @@ function Hero() {
                         <LinkButton href={route('lawyers.index')} variant="secondary" size="lg">{t('Find a lawyer')}</LinkButton>
                     </div>
                 </motion.div>
-                <motion.div className="relative lg:w-[118%]" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
+                <motion.div className="relative" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
                     <motion.div style={depth({ y: shotY })}>
-                        <Shot eager capture={{ src: '/images/screens/dashboard.webp', alt: t('An advocate’s dashboard with three hearings in court today') }} />
+                        <HeroDemo className="h-[28rem] sm:h-[32rem] lg:h-[35rem]" />
                     </motion.div>
                     <motion.div style={depth({ y: alertY })} className="pointer-events-none absolute inset-0 [&>*]:pointer-events-auto">
                         <WhatsAppAlert siteName={app.name} />
@@ -181,59 +174,58 @@ function Hero() {
     );
 }
 
+/**
+ * Scroll story: the section is tall and the phone stays pinned; scroll position drives HearingPhone,
+ * so scrolling down plays the next step and scrolling up rewinds it.
+ */
 function HearingRun() {
     const t = useT();
-    const [active, setActive] = useState(0);
-    const steps: { title: string; body: string; capture: Capture }[] = [
-        { title: t('On the cause list'), body: t('The diary lists each matter by court and room, with what to bring.'), capture: { src: '/images/screens/diary-day.webp', alt: t('Court diary, day view') } },
-        { title: t('Order recorded at the bench'), body: t('Record the order and the next date from your phone before leaving court.'), capture: { src: '/images/screens/outcome-phone.webp', alt: t('Recording proceedings on a phone'), phone: true } },
-        { title: t('History that is never overwritten'), body: t('Each hearing joins the case timeline. A correction keeps the original.'), capture: { src: '/images/screens/case-timeline.webp', alt: t('Case timeline with hearings, orders and receipts') } },
-        { title: t('The client knows the next date'), body: t('Clients see progress in their portal, with WhatsApp reminders if they agree.'), capture: { src: '/images/screens/portal-case-phone.webp', alt: t('Client portal on a phone'), phone: true } },
+    const ref = useRef<HTMLElement>(null);
+    const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+    const p = useProgressState(scrollYProgress);
+    const steps: { title: string; body: string; range: [number, number] }[] = [
+        { title: t('On the cause list'), body: t('The diary lists each matter by court and room, with what to bring.'), range: [0, PHONE_STAGES.list[1]] },
+        { title: t('Order recorded at the bench'), body: t('Record the order and the next date from your phone before leaving court.'), range: [PHONE_STAGES.order[0], PHONE_STAGES.save[1]] },
+        { title: t('History that is never overwritten'), body: t('Each hearing joins the case timeline. A correction keeps the original.'), range: [PHONE_STAGES.history[0], PHONE_STAGES.history[1]] },
+        { title: t('The client knows the next date'), body: t('Clients get the next date on WhatsApp in English and Urdu, if they agree.'), range: [PHONE_STAGES.lock[0], 1] },
     ];
+    const active = Math.max(0, steps.findIndex((step) => p <= step.range[1]));
 
     return (
-        <section className="border-t border-navy-100 bg-white py-20 lg:py-28 dark:border-navy-800 dark:bg-navy-900/40" aria-labelledby="hm-run">
-            <div className="hm-wrap">
-                <h2 id="hm-run" className="max-w-[18ch] text-4xl font-semibold sm:text-5xl">{t('One hearing, start to finish')}</h2>
-                <div className="mt-12 grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-                    <ol>
-                        {steps.map((step, index) => (
-                            <RunStep key={step.title} index={index} active={active === index} onEnter={setActive} title={step.title} body={step.body} capture={step.capture} />
-                        ))}
-                    </ol>
-                    <div className="hidden lg:block">
-                        <div className="hm-sticky hm-panel flex min-h-[560px] items-center justify-center p-8">
+        <section ref={ref} className="relative h-[480vh] border-t border-navy-100 bg-white dark:border-navy-800 dark:bg-navy-900/40" aria-labelledby="hm-run">
+            <div className="sticky top-16 flex h-[calc(100svh-4rem)] items-center overflow-hidden">
+                <div className="hm-wrap grid w-full items-center gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
+                    <div>
+                        <h2 id="hm-run" className="max-w-[18ch] text-3xl font-semibold sm:text-5xl">{t('One hearing, start to finish')}</h2>
+                        <ol className="mt-10 hidden space-y-6 lg:block">
+                            {steps.map((step, index) => (
+                                <li key={step.title} className={cn('relative ps-6 transition-opacity duration-300', index === active ? 'opacity-100' : 'opacity-40')}>
+                                    <span className="absolute inset-y-0 start-0 w-0.5 rounded-full" style={{ background: 'var(--hm-rule)' }} />
+                                    <motion.span className="absolute start-0 top-0 w-0.5 rounded-full" style={{ background: 'var(--hm-accent)', height: `${stageProgress(p, step.range) * 100}%` }} />
+                                    <p className="text-sm font-medium text-navy-500 tabular-nums dark:text-navy-300"><span className="ltr-nums">{index + 1} / 4</span></p>
+                                    <h3 className="mt-1 text-2xl font-semibold">{step.title}</h3>
+                                    <p className="mt-2 max-w-[40ch] text-lg text-navy-600 dark:text-navy-300">{step.body}</p>
+                                </li>
+                            ))}
+                        </ol>
+                        <div className="mt-3 lg:hidden">
+                            <div className="mb-2 flex gap-1.5">
+                                {steps.map((step) => <span key={step.title} className="h-1 flex-1 overflow-hidden rounded-full bg-navy-100 dark:bg-navy-800"><span className="block h-full bg-gold-500" style={{ width: `${stageProgress(p, step.range) * 100}%` }} /></span>)}
+                            </div>
                             <AnimatePresence mode="wait">
-                                <motion.div key={active} className="w-full" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease }}>
-                                    <Shot capture={steps[active].capture} className={steps[active].capture.phone ? 'max-w-[280px]' : undefined} />
+                                <motion.div key={active} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+                                    <p className="font-semibold">{active + 1}. {steps[active].title}</p>
+                                    <p className="text-sm text-navy-600 dark:text-navy-300">{steps[active].body}</p>
                                 </motion.div>
                             </AnimatePresence>
                         </div>
                     </div>
+                    <div className="flex justify-center pt-8">
+                        <HearingPhone progress={scrollYProgress} className="h-[min(54svh,560px)] lg:h-[min(74svh,760px)]" />
+                    </div>
                 </div>
             </div>
         </section>
-    );
-}
-
-function RunStep({ index, active, onEnter, title, body, capture }: { index: number; active: boolean; onEnter: (index: number) => void; title: string; body: string; capture: Capture }) {
-    const ref = useRef<HTMLLIElement>(null);
-    const inView = useInView(ref, { margin: '-45% 0px -45% 0px' });
-    useEffect(() => {
-        if (inView) {
-            onEnter(index);
-        }
-    }, [inView, index, onEnter]);
-
-    return (
-        <li ref={ref} className="flex flex-col justify-center border-s-2 ps-6 transition-colors duration-300 lg:min-h-[62vh]" style={{ borderColor: active ? 'var(--hm-accent)' : 'var(--hm-rule)' }}>
-            <p className="text-sm font-medium text-navy-500 tabular-nums dark:text-navy-300"><span className="ltr-nums">{index + 1} / 4</span></p>
-            <h3 className="mt-2 text-2xl font-semibold sm:text-3xl">{title}</h3>
-            <p className="mt-3 max-w-[40ch] text-lg text-navy-600 dark:text-navy-300">{body}</p>
-            <div className="hm-panel mt-6 mb-12 p-4 lg:hidden">
-                <Shot capture={capture} />
-            </div>
-        </li>
     );
 }
 
@@ -273,7 +265,7 @@ function Paperwork() {
         [t('Fees and receipts'), t('Invoices, part payments and numbered receipts.')],
     ];
     return (
-        <section className="py-20 lg:py-28" aria-labelledby="hm-paper">
+        <section className="pt-20 pb-20 lg:pt-28 lg:pb-52" aria-labelledby="hm-paper">
             <div className="hm-wrap grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
                 <Reveal>
                     <h2 id="hm-paper" className="text-4xl font-semibold sm:text-5xl">{t('Drafts, documents and receipts')}</h2>
@@ -288,8 +280,8 @@ function Paperwork() {
                     <LegalReferences />
                 </Reveal>
                 <div className="relative pb-6 lg:pb-0">
-                    <Reveal><Shot capture={{ src: '/images/screens/draft-editor.webp', alt: t('A post-arrest bail application in the drafting editor') }} /></Reveal>
-                    <div className="relative mx-auto -mt-10 w-[min(22rem,90%)] lg:absolute lg:-bottom-8 lg:end-[-1rem] lg:mt-0">
+                    <Reveal><DraftDemo /></Reveal>
+                    <div className="relative mx-auto -mt-10 w-[min(22rem,90%)] lg:absolute lg:-bottom-44 lg:end-[-1rem] lg:mt-0">
                         <DraftingTyper />
                     </div>
                 </div>

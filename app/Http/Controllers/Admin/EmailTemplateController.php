@@ -78,7 +78,7 @@ class EmailTemplateController extends Controller
             'heading' => $fill($row?->heading) ?? $fill($row?->subject) ?? $meta['label'],
             'greeting' => __('Dear :name,', ['name' => 'Sana Malik']),
             'intro' => $row?->intro ? array_filter(explode("\n", $fill($row->intro))) : [__('Built-in wording is used until you save your own.')],
-            'details' => [__('Lawyer') => 'Ayesha Siddiqui', __('Date and time') => $sample[':date'], __('Status') => __('Confirmed')],
+            'details' => [__('Lawyer') => 'Mahnoor Siddiqui', __('Date and time') => $sample[':date'], __('Status') => __('Confirmed')],
             'action_label' => __('Open'),
             'action_url' => url('/'),
             'notice' => null,

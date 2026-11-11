@@ -2,7 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { MotionConfig, motion, useAnimationControls, useReducedMotion } from 'framer-motion';
 import { BadgeCheck, BellRing, CalendarDays, LockKeyhole } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Flash } from '@/Components/ui';
 import { Logo } from '@/Components/shell/Logo';
 import { LanguageSwitcher, ThemeToggle } from '@/Components/shell/Preferences';
@@ -11,13 +11,20 @@ import { ease, shake } from '@/lib/motion';
 import { useLocale, useT } from '@/lib/i18n';
 import type { AuthMedia, SharedProps } from '@/types';
 
+/** Product animations for the promotional panel, one per page (docs/Features/Home-Page.md#demos). */
+export type AuthDemo = 'hero' | 'case' | 'phone' | 'draft';
+const HeroDemo = lazy(() => import('@/Components/home/HeroDemo').then((m) => ({ default: m.HeroDemo })));
+const CaseDemo = lazy(() => import('@/Components/home/CaseDemo').then((m) => ({ default: m.CaseDemo })));
+const DraftDemo = lazy(() => import('@/Components/home/DraftDemo').then((m) => ({ default: m.DraftDemo })));
+const AutoPhone = lazy(() => import('@/Components/home/HearingPhone').then((m) => ({ default: function AutoPhone({ className }: { className?: string }) { return <m.HearingPhone progress={m.useAutoProgress(24)} className={className} />; } })));
+
 /**
  * Sign-in / sign-up shell: promotional media on the left (desktop), form on the right.
  * The media (image or short muted video, heading, description) is set in Admin, Settings.
  * Video plays only on large screens, never with reduced motion or data saver, and always
  * has a still poster; without uploads it shows a real product screenshot.
  */
-export default function AuthLayout({ title, description, children, wide }: { title: string; description?: string; children: ReactNode; wide?: boolean }) {
+export default function AuthLayout({ title, description, children, wide, demo = 'hero' }: { title: string; description?: string; children: ReactNode; wide?: boolean; demo?: AuthDemo }) {
     const t = useT();
     const { authMedia, errors } = usePage<SharedProps & { errors?: Record<string, string> }>().props;
     const media = authMedia ?? null;
@@ -37,7 +44,7 @@ export default function AuthLayout({ title, description, children, wide }: { tit
                 <meta name="robots" content="noindex" />
             </Head>
             <div className="flex min-h-dvh items-start bg-ivory dark:bg-navy-950">
-                {showPanel && <MediaPanel media={media} />}
+                {showPanel && <MediaPanel media={media} demo={demo} />}
                 <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
                     <header className="flex items-center justify-between px-4 py-4 sm:px-8">
                         <Link href={route('home')} className={cn(showPanel && 'lg:invisible')}>
@@ -65,7 +72,7 @@ export default function AuthLayout({ title, description, children, wide }: { tit
     );
 }
 
-function MediaPanel({ media }: { media: AuthMedia | null }) {
+function MediaPanel({ media, demo }: { media: AuthMedia | null; demo: AuthDemo }) {
     const t = useT();
     const { locale } = useLocale();
     const reduceMotion = useReducedMotion();
@@ -105,14 +112,19 @@ function MediaPanel({ media }: { media: AuthMedia | null }) {
                 <Link href={route('home')} className="self-start"><Logo inverted /></Link>
 
                 {!uploadedImage && media?.mode !== 'video' && (
-                    <motion.figure
+                    <motion.div
                         initial={reduceMotion ? false : { opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                        className="mt-10 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
+                        className={cn('mt-8', demo === 'phone' && 'flex justify-center pt-6')}
                     >
-                        <img src={image} alt={t('The advocate dashboard with today’s hearings')} className="w-full" />
-                    </motion.figure>
+                        <Suspense fallback={<div className={cn('animate-pulse rounded-xl bg-white/10', demo === 'phone' ? 'h-[min(58vh,600px)] w-[min(27vh,280px)]' : 'h-[24rem] xl:h-[28rem]')} />}>
+                            {demo === 'hero' && <HeroDemo className="h-[24rem] sm:h-[24rem] xl:h-[28rem]" />}
+                            {demo === 'case' && <CaseDemo className="h-[24rem] sm:h-[24rem] xl:h-[28rem]" />}
+                            {demo === 'draft' && <DraftDemo className="h-[24rem] sm:h-[24rem] xl:h-[28rem]" />}
+                            {demo === 'phone' && <AutoPhone className="h-[min(58vh,600px)]" />}
+                        </Suspense>
+                    </motion.div>
                 )}
 
                 <div className="mt-auto pt-10">
