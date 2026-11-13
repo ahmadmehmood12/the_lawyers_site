@@ -18,6 +18,7 @@ class EnsureEmailIsVerified
         'verification.notice',
         'verification.verify',
         'verification.send',
+        'verification.code',
         'logout',
         'locale.update',
         'theme.update',

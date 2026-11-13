@@ -15,8 +15,11 @@
         <meta name="theme-color" content="{{ $siteTheme === 'white-green' ? '#0f2c1e' : '#0f1e36' }}">
         <script>
             (function () {
-                var pref = document.documentElement.dataset.themePreference || localStorage.getItem('theme') || 'system';
-                if (pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                // Light by default; dark only after the person picks it with the theme button.
+                var stored = null;
+                try { stored = localStorage.getItem('theme'); } catch (e) {}
+                var pref = document.documentElement.dataset.themePreference || stored || 'light';
+                if (pref === 'dark') {
                     document.documentElement.classList.add('dark');
                 }
             })();

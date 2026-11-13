@@ -14,6 +14,8 @@ use App\Models\DocumentTemplate;
 use App\Models\LawyerProfile;
 use App\Models\Page;
 use App\Models\Review;
+use App\Notifications\ArticleModerated;
+use App\Notifications\ReviewPublished;
 use App\Support\HtmlSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -102,17 +104,26 @@ class ContentController extends Controller
             'published_at' => $validated['status'] === 'published' ? ($article->published_at ?? now()) : $article->published_at,
         ]);
 
+        if ($article->wasChanged('status') || $article->wasChanged('rejection_reason')) {
+            $article->author?->notify(new ArticleModerated($article->fresh(['category'])));
+        }
+
         return back()->with('success', __('Article updated.'));
     }
 
     public function moderateReview(Request $request, Review $review): RedirectResponse
     {
         $status = ReviewStatus::from($request->validate(['status' => ['required', Rule::in(['approved', 'rejected'])]])['status']);
+        $wasApproved = $review->status === ReviewStatus::Approved;
         $review->update(['status' => $status, 'moderated_by' => $request->user()->id, 'moderated_at' => now()]);
 
         $profile = LawyerProfile::query()->findOrFail($review->lawyer_profile_id);
         $approved = $profile->reviews()->where('status', ReviewStatus::Approved->value);
         $profile->forceFill(['rating_average' => round((float) $approved->avg('rating'), 2), 'rating_count' => $approved->count()])->save();
+
+        if ($status === ReviewStatus::Approved && ! $wasApproved) {
+            $profile->user?->notify(new ReviewPublished($review->load('author:id,name')));
+        }
 
         return back()->with('success', __('Review updated.'));
     }

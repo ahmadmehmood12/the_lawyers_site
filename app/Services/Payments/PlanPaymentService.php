@@ -8,6 +8,9 @@ use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\PlanPayment;
 use App\Models\User;
+use App\Notifications\PlanActivated;
+use App\Notifications\PlanPaymentReceived;
+use App\Notifications\PlanPaymentRejected;
 use App\Services\Subscriptions\SubscriptionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -49,6 +52,8 @@ class PlanPaymentService
             ->withProperties(['plan' => $plan->slug, 'cycle' => $cycle, 'amount' => (string) $payment->amount])
             ->log('plan_payment_submitted');
 
+        $user->notify(new PlanPaymentReceived($payment));
+
         return $payment;
     }
 
@@ -84,7 +89,11 @@ class PlanPaymentService
                 'admin_notes' => $adminNotes ?: $payment->admin_notes,
             ])->save();
 
-            $this->subscriptions->start($payment->organization, $payment->plan, $payment->billing_cycle);
+            $subscription = $this->subscriptions->start($payment->organization, $payment->plan, $payment->billing_cycle);
+            DB::afterCommit(function () use ($payment, $subscription): void {
+                collect([$payment->user, $payment->organization->owner])->filter()->unique('id')
+                    ->each(fn (User $user) => $user->notify(new PlanActivated($subscription, $payment)));
+            });
 
             activity('billing')->causedBy($verifiedBy)->performedOn($payment)
                 ->withProperties(['plan' => $payment->plan->slug, 'cycle' => $payment->billing_cycle, 'amount' => (string) $payment->amount, 'reference' => $payment->provider_reference])
@@ -106,6 +115,8 @@ class PlanPaymentService
         activity('billing')->causedBy($admin)->performedOn($payment)
             ->withProperties(['reason' => $reason])
             ->log('plan_payment_rejected');
+
+        $payment->user?->notify(new PlanPaymentRejected($payment, $reason));
 
         return $payment;
     }

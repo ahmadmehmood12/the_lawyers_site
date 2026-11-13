@@ -7,11 +7,14 @@ use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\AvailabilitySlot;
+use App\Models\Organization;
 use App\Models\UnavailableDate;
 use App\Models\User;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Appointments\AppointmentService;
 use App\Support\ReferenceOptions;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -21,6 +24,45 @@ use Inertia\Response;
 
 class AppointmentController extends Controller
 {
+    /**
+     * Consultation requests waiting for an answer: the lawyer's own, or the whole organization's
+     * for members allowed to manage appointments. Drives the header requests icon.
+     *
+     * @return Builder<Appointment>|null
+     */
+    public static function pendingRequests(User $user, Organization $organization): ?Builder
+    {
+        $manageAll = app(OrganizationAccess::class)->allows($user, $organization, 'appointments.manage');
+
+        if (! $manageAll && ! $user->isLawyer()) {
+            return null;
+        }
+
+        return Appointment::query()->forOrganization($organization)
+            ->where('status', AppointmentStatus::Requested->value)
+            ->when(! $manageAll, fn ($q) => $q->where('lawyer_id', $user->id));
+    }
+
+    /** Header dropdown: the latest pending requests (JSON). */
+    public function recent(Request $request): JsonResponse
+    {
+        $query = self::pendingRequests($request->user(), $this->organization());
+
+        return response()->json([
+            'count' => $query ? (clone $query)->count() : 0,
+            'items' => $query ? $query->with(['lawyer:id,name', 'client:id,name'])->latest()->limit(8)->get()->map(fn (Appointment $a) => [
+                'id' => $a->id,
+                'name' => $a->client?->name ?? $a->contact_name,
+                'starts_at' => $a->starts_at->toIso8601String(),
+                'mode' => $a->mode->label(),
+                'message' => str($a->client_message)->limit(90)->toString() ?: null,
+                'lawyer' => $a->lawyer?->name,
+                'received_at' => $a->created_at->toIso8601String(),
+            ]) : [],
+            'url' => route('appointments.index', ['scope' => 'requests']),
+        ]);
+    }
+
     public function index(Request $request, OrganizationAccess $access): Response
     {
         $organization = $this->organization();

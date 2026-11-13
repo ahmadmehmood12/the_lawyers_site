@@ -31,6 +31,16 @@ class EmailTemplateRegistry
             'feedback_received' => ['label' => __('Feedback received'), 'group' => __('Support'), 'placeholders' => ['name', 'site', 'reference', 'subject']],
             'contact_received' => ['label' => __('Contact message received'), 'group' => __('Support'), 'placeholders' => ['name', 'site', 'reference', 'subject']],
             'email_verification_code' => ['label' => __('Email verification code'), 'group' => __('Account'), 'placeholders' => ['name', 'site', 'code', 'minutes']],
+            'welcome' => ['label' => __('Welcome after sign up'), 'group' => __('Account'), 'placeholders' => ['name', 'site']],
+            'portal_invitation' => ['label' => __('Client portal invitation'), 'group' => __('Account'), 'placeholders' => ['name', 'site', 'firm', 'lawyer']],
+            'plan_payment_received' => ['label' => __('Plan payment received'), 'group' => __('Billing'), 'placeholders' => ['name', 'site', 'plan', 'amount']],
+            'plan_activated' => ['label' => __('Plan activated'), 'group' => __('Billing'), 'placeholders' => ['name', 'site', 'plan', 'date']],
+            'plan_payment_rejected' => ['label' => __('Plan payment not confirmed'), 'group' => __('Billing'), 'placeholders' => ['name', 'site', 'plan', 'reason']],
+            'trial_ending' => ['label' => __('Free trial ending'), 'group' => __('Billing'), 'placeholders' => ['name', 'site', 'plan', 'date']],
+            'plan_expired' => ['label' => __('Plan expired'), 'group' => __('Billing'), 'placeholders' => ['name', 'site', 'plan']],
+            'article_published' => ['label' => __('Article approved'), 'group' => __('Articles and reviews'), 'placeholders' => ['name', 'site', 'title']],
+            'article_rejected' => ['label' => __('Article sent back'), 'group' => __('Articles and reviews'), 'placeholders' => ['name', 'site', 'title', 'reason']],
+            'review' => ['label' => __('New review on your profile'), 'group' => __('Articles and reviews'), 'placeholders' => ['name', 'site', 'rating', 'client']],
             'password_reset_code' => ['label' => __('Password reset code'), 'group' => __('Account'), 'placeholders' => ['name', 'site', 'code', 'minutes']],
         ];
     }

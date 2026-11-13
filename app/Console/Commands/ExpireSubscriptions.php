@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\SubscriptionStatus;
 use App\Models\Subscription;
+use App\Notifications\PlanExpired;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -18,12 +19,18 @@ class ExpireSubscriptions extends Command
 {
     public function handle(): int
     {
-        $count = Subscription::query()
+        $expired = Subscription::query()
             ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::Trialing->value, SubscriptionStatus::PastDue->value])
             ->whereNotNull('ends_at')->where('ends_at', '<=', now())
-            ->update(['status' => SubscriptionStatus::Expired->value]);
+            ->with(['plan', 'organization.owner'])
+            ->get();
 
-        $this->info("Expired {$count} subscriptions.");
+        foreach ($expired as $subscription) {
+            $subscription->forceFill(['status' => SubscriptionStatus::Expired])->save();
+            $subscription->organization?->owner?->notify(new PlanExpired($subscription));
+        }
+
+        $this->info("Expired {$expired->count()} subscriptions.");
 
         return self::SUCCESS;
     }

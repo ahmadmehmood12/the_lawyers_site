@@ -43,7 +43,7 @@ export type SharedProps = {
         organization: CurrentOrganization | null;
         organizations: { id: number; name: string }[];
     };
-    unread: { notifications: number; messages: number } | null;
+    unread: { notifications: number; messages: number; appointments?: number } | null;
     flash: { success: string | null; error: string | null; upgrade?: import('@/Components/domain/UpgradeModal').UpgradeOffer | null };
     /** Only on sign-in / sign-up pages (Admin, Settings, Sign-in page media). */
     authMedia?: AuthMedia | null;

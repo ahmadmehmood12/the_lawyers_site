@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
     Route::get('activity/recent', [ActivityController::class, 'recent'])->name('activity.recent');
 
     Route::resource('clients', ClientController::class);
+    Route::post('clients/{client}/portal-invite', [ClientController::class, 'invitePortal'])->middleware('throttle:10,1')->name('clients.portal-invite');
 
     Route::resource('cases', CaseController::class)->except('destroy')->parameters(['cases' => 'case']);
     Route::put('cases/{case}/lawyers', [CaseController::class, 'updateLawyers'])->name('cases.lawyers.update');
@@ -103,6 +104,7 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
 
 Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->group(function () {
     Route::get('appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    Route::get('appointments/requests/recent', [AppointmentController::class, 'recent'])->middleware('throttle:120,1')->name('appointments.recent');
     Route::post('appointments', [AppointmentController::class, 'store'])->name('appointments.store');
     Route::post('appointments/{appointment}/status', [AppointmentController::class, 'transition'])->name('appointments.transition');
     Route::post('appointments/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->name('appointments.reschedule');

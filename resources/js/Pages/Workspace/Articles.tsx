@@ -12,7 +12,7 @@ export default function Articles({ articles, reviews }: { articles: Article[]; r
     const t = useT();
     const { locale } = useLocale();
     return (
-        <AppLayout title={t('Articles & reviews')}>
+        <AppLayout title={t('Articles & reviews')} wide>
             <PageHeader title={t('Articles & reviews')} description={t('Publish legal articles (after moderation) and respond to client reviews.')} actions={<LinkButton href={route('lawyer.articles.create')} icon={<Plus className="size-4" />}>{t('New article')}</LinkButton>} />
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card>

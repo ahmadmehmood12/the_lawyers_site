@@ -31,4 +31,9 @@ class Subscription extends Model
     {
         return $this->belongsTo(Plan::class);
     }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
 }

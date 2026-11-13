@@ -9,6 +9,7 @@ use App\Enums\UserStatus;
 use App\Services\Auth\OneTimeCodeService;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,7 +24,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'phone', 'avatar_path', 'password', 'account_type', 'locale', 'theme', 'referral_code', 'coupon_code'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
@@ -129,9 +130,10 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /** Preferred locale used for notifications and mail. */
+    /** Emails and notifications are written in the person's chosen language (English when unset). */
     public function preferredLocale(): string
     {
-        return $this->locale;
+        return in_array($this->locale, ['en', 'ur'], true) ? $this->locale : 'en';
     }
 
     /** E.164-ish WhatsApp number for notifications, when the user has one. */

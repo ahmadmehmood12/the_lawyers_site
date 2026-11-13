@@ -14,7 +14,7 @@ use Inertia\Response;
 class NotificationController extends Controller
 {
     /** @var list<string> */
-    public const EVENTS = ['hearing_reminder', 'hearing_update', 'appointment', 'payment', 'message', 'case_update', 'document_request'];
+    public const EVENTS = ['hearing_reminder', 'hearing_update', 'appointment', 'payment', 'message', 'case_update', 'document_request', 'article_update', 'review'];
 
     public function index(Request $request): Response
     {

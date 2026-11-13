@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Briefcase, MessageSquare, Pencil, Plus, Receipt, Trash2 } from 'lucide-react';
+import { Briefcase, MessageSquare, Pencil, Plus, Receipt, Trash2, Send } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, ConfirmAction, DetailList, EmptyState, LinkButton, PageHeader, StatusBadge } from '@/Components/ui';
 import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/Layouts/AppLayout';
@@ -33,6 +33,13 @@ export default function ClientShow({ client, cases, invoices, appointments, can 
                             <Link href={route('messages.store')} method="post" data={{ client_id: client.id }} as="button" className="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-4 text-sm font-medium ring-1 ring-navy-200 ring-inset hover:bg-navy-50 dark:bg-navy-900 dark:ring-navy-700">
                                 <MessageSquare className="size-4" />{t('Message')}
                             </Link>
+                        )}
+                        {can.update && client.email && (
+                            <ConfirmAction href={route('clients.portal-invite', client.id)} method="post" tone="primary"
+                                title={client.user_id ? t('Send the portal invitation again?') : t('Invite to the client portal?')}
+                                description={t('We email :email a link to set a password and follow their case online.', { email: client.email })}
+                                confirmLabel={t('Send invitation')}
+                                trigger={(open) => <Button variant="secondary" icon={<Send className="size-4" />} onClick={open}>{client.user_id ? t('Resend portal invite') : t('Invite to portal')}</Button>} />
                         )}
                         {can.update && <LinkButton href={route('clients.edit', client.id)} variant="secondary" icon={<Pencil className="size-4" />}>{t('Edit')}</LinkButton>}
                         {can.delete && cases.length === 0 && (

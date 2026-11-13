@@ -6,7 +6,7 @@ import { HearingHistoryDialog } from '@/Components/domain/HearingHistoryDialog';
 import { OutcomeDialog, RescheduleDialog } from '@/Components/domain/HearingDialogs';
 import { TaskDialog } from '@/Components/domain/TaskDialog';
 import { Stagger, StaggerItem } from '@/Components/motion';
-import { Button, Card, CardBody, CardHeader, EmptyState, Input, Modal, MonthCalendar, PageHeader, Select, Tabs } from '@/Components/ui';
+import { Button, Card, CardBody, CardHeader, EmptyState, Input, Modal, MonthCalendar, PageHeader, Select, Tabs, DateTimePicker } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/cn';
 import { formatDate, formatTime, todayIso } from '@/lib/format';
@@ -93,7 +93,7 @@ export default function DiaryIndex({ view, date, month, range, hearings, entries
                     <button type="button" className={cn('px-3 py-1.5 text-sm font-medium', isToday && 'text-gold-600')} onClick={() => visit({ date: todayIso() })}>{t('Today')}</button>
                     <button type="button" className="p-2 hover:bg-navy-50 dark:hover:bg-navy-800" onClick={() => visit({ date: shiftDate(date, step) })} aria-label={t('Next')}><ChevronRight className="size-4 rtl:rotate-180" /></button>
                 </div>
-                <input type="date" value={date} onChange={(e) => e.target.value && visit({ date: e.target.value })} className="rounded-lg border-0 px-3 py-1.5 text-sm ring-1 ring-navy-200 dark:bg-navy-900 dark:ring-navy-700" aria-label={t('Date')} />
+                <div className="w-44"><DateTimePicker type="date" required value={date} onChange={(e) => e.target.value && visit({ date: e.target.value })} aria-label={t('Date')} /></div>
                 <Tabs
                     className="border-0"
                     active={view}

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
 
         if (app()->environment('local')) {
             $this->call(DemoSeeder::class);
+            $this->call(PlanTestAccountsSeeder::class);
             $this->call(VideoReviewSeeder::class);
             // About 160 advocates, 30 firms and their cases with full history (takes a few minutes).
             $this->call(PakistanPracticeSeeder::class);

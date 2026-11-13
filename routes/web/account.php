@@ -8,6 +8,7 @@ use App\Http\Controllers\Account\OnboardingController;
 use App\Http\Controllers\Account\OrganizationSwitchController;
 use App\Http\Controllers\Account\PreferenceController;
 use App\Http\Controllers\Auth\OneTimeCodeController;
+use App\Http\Controllers\Auth\PortalInvitationController;
 use App\Http\Controllers\Shared\CalendarController;
 use App\Http\Controllers\Shared\ConversationController;
 use App\Http\Controllers\Workspace\InvitationController;
@@ -20,6 +21,9 @@ Route::middleware('guest')->group(function () {
     // Password reset by six-digit code (docs/Modules/Authentication.md).
     Route::get('forgot-password/code', [OneTimeCodeController::class, 'showReset'])->name('password.code');
     Route::post('forgot-password/code', [OneTimeCodeController::class, 'verifyReset'])->middleware('throttle:10,1')->name('password.code.verify');
+    // Client portal invitation: signed link from ClientPortalInvitation (7 days).
+    Route::get('portal/invitation/{user}', [PortalInvitationController::class, 'show'])->middleware('signed')->name('portal.invitation.show');
+    Route::post('portal/invitation/{user}', [PortalInvitationController::class, 'accept'])->middleware(['signed', 'throttle:10,1'])->name('portal.invitation.accept');
 });
 
 Route::middleware('auth')->group(function () {

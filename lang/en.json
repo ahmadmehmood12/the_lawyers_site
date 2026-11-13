@@ -65,5 +65,7 @@
     "verification_doc.degree": "Law degree",
     "verification_doc.high_court_license": "High Court license",
     "verification_doc.other": "Other evidence",
-    "verification_doc.supreme_court_license": "Supreme Court license"
+    "verification_doc.supreme_court_license": "Supreme Court license",
+    "event.article_update": "My articles",
+    "event.review": "Reviews on my profile"
 }

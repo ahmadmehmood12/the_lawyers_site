@@ -65,7 +65,8 @@ export default function Messages({ area, routePrefix, me, conversations, active,
     // Show a skeleton (not a blank pane) while another conversation loads.
     useEffect(() => {
         const off = [
-            router.on('start', (e) => setSwitching(e.detail.visit.method === 'get' && e.detail.visit.url.pathname.includes('/messages/') && !e.detail.visit.prefetch)),
+            // Background polls reload the same URL: no skeleton, the list just updates in place.
+            router.on('start', (e) => setSwitching(e.detail.visit.method === 'get' && e.detail.visit.url.pathname.includes('/messages/') && e.detail.visit.url.pathname !== window.location.pathname && !e.detail.visit.prefetch)),
             router.on('finish', () => setSwitching(false)),
         ];
         return () => off.forEach((stop) => stop());

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Listeners\LogEmailDelivery;
 use App\Models\Activity;
 use App\Models\Organization;
+use App\Notifications\Welcome;
 use App\Services\Access\CurrentOrganization;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Ai\AiProvider;
@@ -14,6 +15,7 @@ use App\Services\Mail\MailSettings;
 use App\Services\Messaging\MessagingService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Queue\Events\JobFailed;
@@ -74,6 +76,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Email delivery log (sent / failed) next to WhatsApp deliveries.
+        // Welcome email once the address is confirmed (code, link or portal invitation).
+        Event::listen(Verified::class, fn (Verified $event) => $event->user->notify(new Welcome));
         Event::listen(NotificationSent::class, [LogEmailDelivery::class, 'sent']);
         Event::listen(JobFailed::class, [LogEmailDelivery::class, 'failed']);
 

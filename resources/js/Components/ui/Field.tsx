@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { useId } from 'react';
 import { cn } from '@/lib/cn';
+import { DateTimePicker, type PickerKind } from './DateTimePicker';
 
 export const controlClasses = (invalid?: boolean, className?: string) =>
     cn(
@@ -37,9 +38,12 @@ export function Field({ label, error, hint, required, className, children }: Fie
 type Common = { label?: ReactNode; error?: string; hint?: ReactNode; wrapperClassName?: string };
 
 export function Input({ label, error, hint, wrapperClassName, className, required, ...props }: ComponentProps<'input'> & Common) {
+    const picker = props.type === 'date' || props.type === 'time' || props.type === 'datetime-local';
     return (
         <Field label={label} error={error} hint={hint} required={required} className={wrapperClassName}>
-            {(id) => <input id={id} required={required} aria-invalid={!!error} className={controlClasses(!!error, className)} {...props} />}
+            {(id) => picker
+                ? <DateTimePicker id={id} type={props.type as PickerKind} value={props.value} onChange={props.onChange} name={props.name} min={props.min} max={props.max} step={props.step} disabled={props.disabled} required={required} invalid={!!error} placeholder={props.placeholder} className={className} aria-label={props['aria-label']} />
+                : <input id={id} required={required} aria-invalid={!!error} className={controlClasses(!!error, className)} {...props} />}
         </Field>
     );
 }

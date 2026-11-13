@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Controllers\Admin\PlatformController;
+use App\Http\Controllers\Workspace\AppointmentController;
 use App\Models\Setting;
 use App\Services\Access\CurrentOrganization;
 use App\Services\Access\OrganizationAccess;
@@ -109,6 +110,7 @@ class HandleInertiaRequests extends Middleware
             'unread' => fn () => $user ? [
                 'notifications' => $user->unreadNotifications()->count(),
                 'messages' => app(MessagingService::class)->totalUnread($user),
+                'appointments' => $organization && $user->isProfessional() ? (int) AppointmentController::pendingRequests($user, $organization)?->count() : 0,
             ] : null,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
