@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\JudgmentImportController;
 use App\Http\Controllers\Webhooks\GreenApiWebhookController;
 use App\Http\Controllers\Webhooks\PaymentWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Webhooks\WhatsAppWebhookController;
+use App\Http\Middleware\EnsureJudgmentImportToken;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,3 +18,11 @@ Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle'])->
 Route::post('webhooks/green-api', GreenApiWebhookController::class)->middleware('throttle:240,1')->name('webhooks.green-api');
 Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)->middleware('throttle:120,1')->name('webhooks.payments');
 Route::post('webhooks/stripe', StripeWebhookController::class)->middleware('throttle:120,1')->name('webhooks.stripe');
+
+/*
+| Python scraper (lhc-scraper/scraper.py) imports reported-judgment metadata.
+| Protected by JUDGMENTS_IMPORT_TOKEN; see docs/judgment-automation.md.
+*/
+Route::post('judgments/import', JudgmentImportController::class)
+    ->middleware([EnsureJudgmentImportToken::class, 'throttle:120,1'])
+    ->name('api.judgments.import');

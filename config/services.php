@@ -93,4 +93,13 @@ return [
         'currency' => env('STRIPE_CURRENCY', 'PKR'),
     ],
 
+    /*
+    | Bearer token used by the Python LHC scraper to POST judgment metadata to
+    | /api/judgments/import. When blank the endpoint stays closed (401).
+    | See docs/judgment-automation.md.
+    */
+    'judgments' => [
+        'import_token' => env('JUDGMENTS_IMPORT_TOKEN'),
+    ],
+
 ];
