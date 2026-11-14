@@ -1,6 +1,6 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { BadgeCheck, Camera, Check, ExternalLink, Newspaper, Plus, Trash2 } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Alert, Avatar, Button, Card, CardBody, CardHeader, Checkbox, Input, LinkButton, PageHeader, Select, StatusBadge, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/cn';
@@ -119,32 +119,55 @@ function Enrollment({ profile, options }: { profile: Profile; options: Options }
 function Qualifications({ profile }: { profile: Profile }) {
     const t = useT();
     const form = useForm({ educations: profile.educations ?? [], experiences: profile.experiences ?? [], credentials: profile.credentials ?? [] });
-    type Row = Record<string, string | number | null>;
-    const list = (key: 'educations' | 'experiences' | 'credentials', blank: Row, fields: [string, string, string?][]) => (
+    type Row = Record<string, string | number | boolean | null>;
+    type Key = 'educations' | 'experiences' | 'credentials';
+    /** text | year | select | current */
+    type FieldDef = [string, string, string?];
+    const thisYear = new Date().getFullYear();
+    const years = Array.from({ length: thisYear - 1949 }, (_, i) => ({ value: String(thisYear - i), label: String(thisYear - i) }));
+    const errorOf = (key: Key, i: number, field: string) => (form.errors as Record<string, string>)[`${key}.${i}.${field}`];
+    const update = (key: Key, i: number, patch: Row) => form.setData(key, (form.data[key] as Row[]).map((r, j) => (j === i ? { ...r, ...patch } : r)));
+
+    const list = (key: Key, blank: Row, fields: FieldDef[], addLabel: string) => (
         <div className="space-y-3">
             {(form.data[key] as Row[]).map((row, i) => (
-                <div key={i} className="grid gap-2 rounded-lg border border-navy-100 p-3 sm:grid-cols-[repeat(auto-fit,minmax(140px,1fr))_auto] dark:border-navy-800">
-                    {fields.map(([field, label, type]) =>
-                        type === 'select' ? (
-                            <Select key={field} label={t(label)} value={String(row[field] ?? '')} onChange={(e) => form.setData(key, (form.data[key] as Row[]).map((r, j) => (j === i ? { ...r, [field]: e.target.value } : r)))} options={[{ value: 'publication', label: t('Publication') }, { value: 'certification', label: t('Certification') }, { value: 'award', label: t('Award') }]} />
-                        ) : (
-                            <Input key={field} label={t(label)} type={type ?? 'text'} value={String(row[field] ?? '')} onChange={(e) => form.setData(key, (form.data[key] as Row[]).map((r, j) => (j === i ? { ...r, [field]: e.target.value || null } : r)))} error={(form.errors as Record<string, string>)[`${key}.${i}.${field}`]} />
-                        ),
+                <div key={i} className={cn('rounded-lg border p-3', row.is_current ? 'border-gold-300 bg-gold-50/40 dark:border-gold-500/30 dark:bg-gold-500/5' : 'border-navy-100 dark:border-navy-800')}>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_8rem_8rem_auto]">
+                        {fields.filter(([, , type]) => type !== 'current').map(([field, label, type]) => {
+                            const disabled = field === 'end_year' && Boolean(row.is_current);
+                            if (type === 'select') {
+                                return <Select key={field} label={t(label)} value={String(row[field] ?? '')} onChange={(e) => update(key, i, { [field]: e.target.value })} error={errorOf(key, i, field)}
+                                    options={[{ value: 'publication', label: t('Publication') }, { value: 'certification', label: t('Certification') }, { value: 'award', label: t('Award') }, { value: 'membership', label: t('Membership') }]} />;
+                            }
+                            if (type === 'year') {
+                                return <Select key={field} label={t(label)} value={disabled ? '' : String(row[field] ?? '')} disabled={disabled} onChange={(e) => update(key, i, { [field]: e.target.value ? Number(e.target.value) : null })}
+                                    options={years} placeholder={disabled ? t('Present') : t('Year')} error={errorOf(key, i, field)} />;
+                            }
+                            return <Input key={field} label={t(label)} value={String(row[field] ?? '')} onChange={(e) => update(key, i, { [field]: e.target.value || null })} error={errorOf(key, i, field)} required />;
+                        })}
+                        <div className="flex items-end justify-end"><Button variant="ghost" size="sm" aria-label={t('Remove')} onClick={() => form.setData(key, (form.data[key] as Row[]).filter((_, j) => j !== i))}><Trash2 className="size-4" /></Button></div>
+                    </div>
+                    {fields.some(([, , type]) => type === 'current') && (
+                        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm">
+                            <input type="checkbox" className="size-4 accent-navy-900" checked={Boolean(row.is_current)} onChange={(e) => update(key, i, { is_current: e.target.checked, ...(e.target.checked ? { end_year: null } : {}) })} />
+                            {t('I currently work here')}
+                            {row.is_current && <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[11px] font-semibold text-gold-700">{t('Current position')}</span>}
+                        </label>
                     )}
-                    <div className="flex items-end"><Button variant="ghost" size="sm" aria-label={t('Remove')} onClick={() => form.setData(key, (form.data[key] as Row[]).filter((_, j) => j !== i))}><Trash2 className="size-4" /></Button></div>
                 </div>
             ))}
-            <Button variant="secondary" size="sm" icon={<Plus className="size-4" />} onClick={() => form.setData(key, [...(form.data[key] as Row[]), blank])}>{t('Add')}</Button>
+            <Button variant="secondary" size="sm" icon={<Plus className="size-4" />} onClick={() => form.setData(key, [...(form.data[key] as Row[]), blank])}>{addLabel}</Button>
         </div>
     );
     return (
         <StepForm step="qualifications" form={form} title={t('Education & experience')} description={t('Self-reported unless verified. Shown on your profile.')}>
             <h4 className="font-sans text-sm font-semibold">{t('Education')}</h4>
-            {list('educations', { degree: '', institution: '', year: null }, [['degree', 'Degree'], ['institution', 'Institution'], ['year', 'Year', 'number']])}
-            <h4 className="pt-2 font-sans text-sm font-semibold">{t('Previous positions')}</h4>
-            {list('experiences', { position: '', organization: '', start_year: null, end_year: null }, [['position', 'Position'], ['organization', 'Organization'], ['start_year', 'From', 'number'], ['end_year', 'To', 'number']])}
+            {list('educations', { degree: '', institution: '', year: null }, [['degree', 'Degree'], ['institution', 'Institution'], ['year', 'Year', 'year']], t('Add education'))}
+            <h4 className="pt-2 font-sans text-sm font-semibold">{t('Experience')}</h4>
+            <p className="-mt-2 text-xs text-navy-500">{t('Add your current position and past roles. Tick “I currently work here” for your present position.')}</p>
+            {list('experiences', { position: '', organization: '', start_year: null, end_year: null, is_current: false }, [['position', 'Position'], ['organization', 'Organization'], ['start_year', 'From', 'year'], ['end_year', 'To', 'year'], ['is_current', '', 'current']], t('Add position'))}
             <h4 className="pt-2 font-sans text-sm font-semibold">{t('Publications & certifications')}</h4>
-            {list('credentials', { type: 'publication', title: '', issuer: '', year: null }, [['type', 'Type', 'select'], ['title', 'Title'], ['issuer', 'Publisher / issuer'], ['year', 'Year', 'number']])}
+            {list('credentials', { type: 'publication', title: '', issuer: '', year: null }, [['type', 'Type', 'select'], ['title', 'Title'], ['issuer', 'Publisher / issuer'], ['year', 'Year', 'year']], t('Add publication or certificate'))}
         </StepForm>
     );
 }
@@ -167,13 +190,7 @@ function Practice({ profile, options }: { profile: Profile; options: Options }) 
                 <div className="flex flex-wrap gap-2">{options.languages.map((l) => <button type="button" key={l} className={chip(form.data.languages.includes(l))} onClick={() => toggle('languages', l)}>{t(l)}</button>)}</div>
                 {form.errors.languages && <p className="mt-1 text-xs text-red-600">{form.errors.languages}</p>}
             </div>
-            <div>
-                <p className="mb-2 text-sm font-medium">{t('Courts of practice')}</p>
-                <select multiple value={form.data.court_ids} onChange={(e) => form.setData('court_ids', Array.from(e.target.selectedOptions).map((o) => o.value))} className="h-56 w-full rounded-lg border-0 p-2 text-sm ring-1 ring-navy-200 dark:bg-navy-900 dark:ring-navy-700" aria-label={t('Courts of practice')}>
-                    {options.courts.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
-                <p className="mt-1 text-xs text-navy-500">{t('Hold Ctrl / Cmd to select several. :count selected.', { count: form.data.court_ids.length })}</p>
-            </div>
+            <CourtPicker courts={options.courts} selected={form.data.court_ids} onToggle={(id) => toggle('court_ids', id)} onClear={() => form.setData('court_ids', [])} chip={chip} error={form.errors.court_ids} />
         </StepForm>
     );
 }
@@ -215,5 +232,37 @@ function Publish({ profile }: { profile: Profile }) {
             <Checkbox label={t('List my profile in the public lawyer directory')} checked={form.data.is_public} onChange={(e) => form.setData('is_public', e.target.checked)} />
             <Alert tone="info">{t('Your profile shows “Verified” only after our team approves your Bar enrollment evidence. Until then it is clearly marked as self-reported.')}</Alert>
         </StepForm>
+    );
+}
+
+/** Courts of practice as chips (like practice areas), with search because the list is long. */
+function CourtPicker({ courts, selected, onToggle, onClear, chip, error }: { courts: SelectOption[]; selected: string[]; onToggle: (id: string) => void; onClear: () => void; chip: (active: boolean) => string; error?: string }) {
+    const t = useT();
+    const [query, setQuery] = useState('');
+    const [showAll, setShowAll] = useState(false);
+    const chosen = courts.filter((c) => selected.includes(String(c.value)));
+    const q = query.trim().toLowerCase();
+    const matches = courts.filter((c) => !selected.includes(String(c.value)) && (!q || c.label.toLowerCase().includes(q)));
+    const visible = showAll || q ? matches.slice(0, 200) : matches.slice(0, 24);
+    return (
+        <div>
+            <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">{t('Courts of practice')} <span className="text-xs text-navy-500">({t(':count selected', { count: selected.length })})</span></p>
+                {selected.length > 0 && <button type="button" onClick={onClear} className="text-xs text-navy-500 hover:underline">{t('Clear all')}</button>}
+            </div>
+            {chosen.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                    {chosen.map((c) => <button type="button" key={c.value} className={chip(true)} onClick={() => onToggle(String(c.value))}>{c.label} <span aria-hidden className="ms-1 opacity-70">×</span></button>)}
+                </div>
+            )}
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Search courts, for example Lahore High Court or Sessions Kasur')} aria-label={t('Search courts')}
+                className="mb-2 w-full rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-navy-200 focus:ring-2 focus:ring-gold-500 dark:bg-navy-900 dark:ring-navy-700" />
+            <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto pe-1">
+                {visible.map((c) => <button type="button" key={c.value} className={chip(false)} onClick={() => onToggle(String(c.value))}>{c.label}</button>)}
+                {visible.length === 0 && <p className="text-sm text-navy-500">{q ? t('No court matches your search.') : t('All courts selected.')}</p>}
+            </div>
+            {!q && !showAll && matches.length > visible.length && <button type="button" onClick={() => setShowAll(true)} className="mt-2 text-sm font-medium text-navy-700 hover:underline dark:text-navy-200">{t('Show all :count courts', { count: matches.length })}</button>}
+            {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+        </div>
     );
 }

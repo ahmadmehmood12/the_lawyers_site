@@ -129,7 +129,7 @@ class LawyerDirectoryController extends Controller
                 'province' => $lawyer->province?->name,
                 'courts' => $lawyer->courts->map(fn ($c) => app()->getLocale() === 'ur' && $c->name_ur ? $c->name_ur : $c->name),
                 'educations' => $lawyer->educations->map->only(['degree', 'institution', 'year']),
-                'experiences' => $lawyer->experiences->map->only(['position', 'organization', 'start_year', 'end_year', 'description']),
+                'experiences' => $lawyer->experiences->sortByDesc(fn ($e) => [$e->is_current, $e->start_year])->values()->map->only(['position', 'organization', 'start_year', 'end_year', 'is_current', 'description']),
                 'credentials' => $lawyer->credentials->map->only(['type', 'title', 'issuer', 'year', 'url']),
                 'verified_at' => $lawyer->verified_at?->toDateString(),
                 'firms' => $firms,

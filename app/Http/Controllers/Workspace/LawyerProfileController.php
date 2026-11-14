@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -56,7 +57,7 @@ class LawyerProfileController extends Controller
                 'court_ids' => $profile->courts->pluck('id'),
                 'languages' => $profile->languages->pluck('language'),
                 'educations' => $profile->educations->map->only(['degree', 'institution', 'year']),
-                'experiences' => $profile->experiences->map->only(['position', 'organization', 'start_year', 'end_year', 'description']),
+                'experiences' => $profile->experiences->sortByDesc(fn ($e) => [$e->is_current, $e->start_year])->values()->map->only(['position', 'organization', 'start_year', 'end_year', 'is_current', 'description']),
                 'credentials' => $profile->credentials->map->only(['type', 'title', 'issuer', 'year', 'url']),
                 'onboarding_completed' => $profile->onboarding_completed_at !== null,
             ],
@@ -104,6 +105,7 @@ class LawyerProfileController extends Controller
                 'experiences.*.organization' => ['required', 'string', 'max:160'],
                 'experiences.*.start_year' => ['nullable', 'integer', 'between:1950,'.$year],
                 'experiences.*.end_year' => ['nullable', 'integer', 'between:1950,'.$year],
+                'experiences.*.is_current' => ['boolean'],
                 'experiences.*.description' => ['nullable', 'string', 'max:1000'],
                 'credentials' => ['array', 'max:30'],
                 'credentials.*.type' => ['required', Rule::in(['publication', 'certification', 'award'])],
@@ -138,6 +140,14 @@ class LawyerProfileController extends Controller
         };
 
         $data = $request->validate($rules);
+
+        if ($step === 'qualifications') {
+            foreach ($data['experiences'] ?? [] as $i => $e) {
+                if (! ($e['is_current'] ?? false) && filled($e['start_year'] ?? null) && filled($e['end_year'] ?? null) && $e['end_year'] < $e['start_year']) {
+                    throw ValidationException::withMessages(["experiences.{$i}.end_year" => __('The end year cannot be before the start year.')]);
+                }
+            }
+        }
 
         DB::transaction(function () use ($step, $data, $profile): void {
             match ($step) {
@@ -200,7 +210,8 @@ class LawyerProfileController extends Controller
         $profile->educations()->delete();
         $profile->educations()->createMany($data['educations'] ?? []);
         $profile->experiences()->delete();
-        $profile->experiences()->createMany($data['experiences'] ?? []);
+        $profile->experiences()->createMany(collect($data['experiences'] ?? [])
+            ->map(fn ($e) => [...$e, 'is_current' => (bool) ($e['is_current'] ?? false), 'end_year' => ($e['is_current'] ?? false) ? null : ($e['end_year'] ?? null)])->all());
         $profile->credentials()->delete();
         $profile->credentials()->createMany($data['credentials'] ?? []);
     }
