@@ -62,7 +62,7 @@ class DraftController extends Controller
         $organization = $this->organization();
 
         return Inertia::render('Workspace/Drafts/Create', [
-            'templates' => DocumentTemplate::query()->where('is_active', true)
+            'templates' => DocumentTemplate::query()->where('kind', 'draft')->where('is_active', true)
                 ->where(fn ($q) => $q->whereNull('organization_id')->orWhere('organization_id', $organization->id))
                 ->orderBy('category')->orderBy('title')->get(['id', 'organization_id', 'category', 'title', 'title_ur', 'description', 'review_status', 'language'])
                 ->map(fn ($t) => [...$t->toArray(), 'title' => app()->getLocale() === 'ur' && $t->title_ur ? $t->title_ur : $t->title, 'own' => $t->organization_id !== null]),

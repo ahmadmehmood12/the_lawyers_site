@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Http\Controllers\Admin\PlatformController;
 use App\Http\Controllers\Workspace\AppointmentController;
 use App\Models\Setting;
+use App\Models\TimeEntry;
 use App\Services\Access\CurrentOrganization;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Directory\DemoPersona;
@@ -112,6 +113,12 @@ class HandleInertiaRequests extends Middleware
                 'messages' => app(MessagingService::class)->totalUnread($user),
                 'appointments' => $organization && $user->isProfessional() ? (int) AppointmentController::pendingRequests($user, $organization)?->count() : 0,
             ] : null,
+            // The current user's running case timer, for the header pill (TimeEntryController).
+            'runningTimer' => fn () => $user && $user->isProfessional() ? (function () use ($user) {
+                $entry = TimeEntry::query()->where('user_id', $user->id)->whereNull('ended_at')->with('legalCase:id,title,reference')->latest('started_at')->first();
+
+                return $entry ? ['id' => $entry->id, 'case_id' => $entry->legal_case_id, 'case_title' => $entry->legalCase?->title, 'started_at' => $entry->started_at->toIso8601String(), 'description' => $entry->description] : null;
+            })() : null,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

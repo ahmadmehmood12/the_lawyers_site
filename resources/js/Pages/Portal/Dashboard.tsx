@@ -1,13 +1,14 @@
 import { Link } from '@inertiajs/react';
 import { Briefcase, CalendarDays, FileText, Search, Wallet } from 'lucide-react';
 import { Card, CardBody, CardHeader, EmptyState, LinkButton, PageHeader, Stat, StatusBadge } from '@/Components/ui';
+import { type CourtHoliday, CourtHolidaysCard } from '@/Components/domain/CourtHolidays';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDate, formatDateTime, formatMoney, formatTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 type Hearing = { id: number; hearing_date: string; hearing_time: string | null; status: string; status_label: string; purpose: string | null; court: string | null; case: { id: number; title: string } | null };
 
-export default function PortalDashboard({ stats, nextHearings, appointments, lawyers }: { stats: { cases: number; upcoming: number; documents: number; due: number }; nextHearings: Hearing[]; appointments: { id: number; starts_at: string; status: string; status_label: string; lawyer: string }[]; lawyers: { name: string; slug: string | null }[] }) {
+export default function PortalDashboard({ stats, nextHearings, appointments, lawyers, courtHolidays }: { courtHolidays: CourtHoliday[]; stats: { cases: number; upcoming: number; documents: number; due: number }; nextHearings: Hearing[]; appointments: { id: number; starts_at: string; status: string; status_label: string; lawyer: string }[]; lawyers: { name: string; slug: string | null }[] }) {
     const t = useT();
     const { locale } = useLocale();
     return (
@@ -36,6 +37,7 @@ export default function PortalDashboard({ stats, nextHearings, appointments, law
                     )}
                 </Card>
                 <div className="space-y-6">
+                    <CourtHolidaysCard holidays={courtHolidays} />
                     <Card>
                         <CardHeader title={t('My lawyers')} />
                         <CardBody className="space-y-2 text-sm">

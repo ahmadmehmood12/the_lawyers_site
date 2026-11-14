@@ -11,6 +11,7 @@ use App\Enums\ReviewStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Client;
+use App\Models\CourtHoliday;
 use App\Models\Document;
 use App\Models\Hearing;
 use App\Models\Invoice;
@@ -59,6 +60,7 @@ class PortalController extends Controller
         $user = $request->user();
 
         return Inertia::render('Portal/Dashboard', [
+            'courtHolidays' => CourtHoliday::upcoming(4),
             'stats' => [
                 'cases' => $this->cases($request)->count(),
                 'upcoming' => $this->hearings($request)->where('status', HearingStatus::Scheduled->value)->whereDate('hearing_date', '>=', today())->count(),

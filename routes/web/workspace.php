@@ -17,9 +17,11 @@ use App\Http\Controllers\Workspace\ExpenseController;
 use App\Http\Controllers\Workspace\HearingController;
 use App\Http\Controllers\Workspace\InvoiceController;
 use App\Http\Controllers\Workspace\LawyerProfileController;
+use App\Http\Controllers\Workspace\LegalFormController;
 use App\Http\Controllers\Workspace\OrganizationSettingsController;
 use App\Http\Controllers\Workspace\TaskController;
 use App\Http\Controllers\Workspace\TeamController;
+use App\Http\Controllers\Workspace\TimeEntryController;
 use App\Http\Controllers\Workspace\VerificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,12 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
     Route::post('cases/{case}/archive', [CaseController::class, 'archive'])->name('cases.archive');
     Route::post('cases/{case}/hearings', [HearingController::class, 'store'])->name('cases.hearings.store');
     Route::post('cases/{case}/expenses', [ExpenseController::class, 'store'])->name('cases.expenses.store');
+    // Time tracker (docs/Modules/Cases.md#time).
+    Route::post('cases/{case}/time/start', [TimeEntryController::class, 'start'])->name('cases.time.start');
+    Route::post('cases/{case}/time', [TimeEntryController::class, 'store'])->name('cases.time.store');
+    Route::post('time/{entry}/stop', [TimeEntryController::class, 'stop'])->name('time.stop');
+    Route::put('time/{entry}', [TimeEntryController::class, 'update'])->name('time.update');
+    Route::delete('time/{entry}', [TimeEntryController::class, 'destroy'])->name('time.destroy');
     Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
 
     Route::put('hearings/{hearing}', [HearingController::class, 'update'])->name('hearings.update');
@@ -125,6 +133,11 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
 });
 
 Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->group(function () {
+    // Wakalatnama and Power of Attorney forms (docs/Modules/Legal-Drafting.md#forms).
+    Route::get('legal-forms', [LegalFormController::class, 'index'])->name('legal-forms.index');
+    Route::get('legal-forms/{form}', [LegalFormController::class, 'show'])->name('legal-forms.show');
+    Route::get('legal-forms/{form}/prefill', [LegalFormController::class, 'prefill'])->middleware('throttle:60,1')->name('legal-forms.prefill');
+    Route::post('legal-forms/{form}', [LegalFormController::class, 'store'])->name('legal-forms.store');
     Route::get('drafts', [DraftController::class, 'index'])->name('drafts.index');
     Route::get('drafts/create', [DraftController::class, 'create'])->name('drafts.create');
     Route::post('drafts', [DraftController::class, 'store'])->name('drafts.store');

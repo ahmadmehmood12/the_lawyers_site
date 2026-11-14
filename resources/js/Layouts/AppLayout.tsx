@@ -7,6 +7,7 @@ import { UpgradeModal } from '@/Components/domain/UpgradeModal';
 import { Avatar, Dropdown, Flash } from '@/Components/ui';
 import { ActivityBell } from '@/Components/shell/ActivityBell';
 import { AppointmentsMenu } from '@/Components/shell/AppointmentsMenu';
+import { RunningTimerPill } from '@/Components/domain/CaseTime';
 import { Logo } from '@/Components/shell/Logo';
 import { MessagesMenu } from '@/Components/shell/MessagesMenu';
 import { adminNav, portalNav, workspaceNav, type NavGroup, type NavItem } from '@/Components/shell/navigation';
@@ -111,6 +112,7 @@ export default function AppLayout({ title, children, area = 'workspace', wide = 
                         <div className="flex-1" />
                         <LanguageSwitcher className="text-navy-700 dark:text-navy-200" />
                         <ThemeToggle className="text-navy-700 dark:text-navy-200" />
+                        {area === 'workspace' && <RunningTimerPill />}
                         {area === 'workspace' && auth.organization && route().has('appointments.recent') && (auth.user?.account_type === 'lawyer' || auth.organization.permissions.includes('appointments.manage')) && <AppointmentsMenu />}
                         {area !== 'admin' && auth.user && <MessagesMenu />}
                         {area === 'workspace' && auth.organization && route().has('activity.recent') && <ActivityBell />}

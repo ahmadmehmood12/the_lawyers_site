@@ -10,6 +10,7 @@ use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Appointment;
+use App\Models\CourtHoliday;
 use App\Models\Hearing;
 use App\Models\Invoice;
 use App\Models\LegalCase;
@@ -44,6 +45,7 @@ class DashboardController extends Controller
         $lawyerProfile = $user->lawyerProfile;
 
         return Inertia::render('Workspace/Dashboard', [
+            'courtHolidays' => CourtHoliday::upcoming(4),
             'stats' => [
                 'totalCases' => $cases()->count(),
                 'activeCases' => $cases()->whereIn('status', CaseStatus::openValues())->count(),

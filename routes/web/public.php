@@ -7,6 +7,7 @@ use App\Http\Controllers\Public\FirmDirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LawyerDirectoryController;
 use App\Http\Controllers\Public\PageController;
+use App\Http\Controllers\Public\ReportedJudgmentController;
 use App\Http\Controllers\Public\SeoController;
 use App\Http\Controllers\Public\SpecializationController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,8 @@ Route::get('law-firms/{firm:slug}', [FirmDirectoryController::class, 'show'])->n
 Route::get('practice-areas', [SpecializationController::class, 'index'])->name('specializations.index');
 Route::get('practice-areas/{specialization:slug}', [SpecializationController::class, 'show'])->name('specializations.show');
 
+Route::get('reported-judgments', [ReportedJudgmentController::class, 'index'])->name('judgments.index');
+Route::get('reported-judgments/{judgment:slug}', [ReportedJudgmentController::class, 'show'])->name('judgments.show');
 Route::get('articles', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
 Route::post('articles/{article:slug}/comments', [ArticleController::class, 'comment'])->middleware(['auth', 'throttle:10,1'])->name('articles.comments.store');

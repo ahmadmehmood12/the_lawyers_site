@@ -12,6 +12,8 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { SelectOption } from '@/types/domain';
 import { BookingJourney } from '@/Components/home/BookingJourney';
 import { CaseDemo } from '@/Components/home/CaseDemo';
+import { CourtCalendarStrip } from '@/Components/home/CourtCalendarStrip';
+import type { CourtHoliday } from '@/Components/domain/CourtHolidays';
 import { DraftDemo } from '@/Components/home/DraftDemo';
 import { HearingPhone, PHONE_STAGES, stageProgress, useProgressState } from '@/Components/home/HearingPhone';
 import { HeroDemo } from '@/Components/home/HeroDemo';
@@ -39,12 +41,13 @@ type Props = {
     /** Deferred: real platform totals and ranked lawyers (App\Services\Directory\HomepageShowcase). */
     showcase?: { stats: ShowcaseStats; top: TopLawyersData; testimonials: TestimonialItem[]; videos: TestimonialItem[]; team: TeamGroup[] };
     faqs: { id: number; question: string; answer: string }[];
+    courtHolidays: CourtHoliday[];
     canonical: string;
 };
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-export default function Home({ specializations, cities, articles, plans, showcase, faqs, canonical }: Props) {
+export default function Home({ specializations, cities, articles, plans, showcase, faqs, courtHolidays, canonical }: Props) {
     const t = useT();
     const { locale } = useLocale();
     const [query, setQuery] = useState({ search: '', city: '', specialization: '' });
@@ -73,6 +76,7 @@ export default function Home({ specializations, cities, articles, plans, showcas
                     <Testimonials items={showcase?.testimonials} />
                     <VideoTestimonials items={showcase?.videos} />
                     <TeamSection groups={showcase?.team} />
+                    <CourtCalendarStrip holidays={courtHolidays} />
                     <Plans plans={plans} />
                     <Questions faqs={faqs} />
 

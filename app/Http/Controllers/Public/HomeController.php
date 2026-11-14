@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use App\Models\CourtHoliday;
 use App\Models\LawyerProfile;
 use App\Models\Organization;
 use App\Models\Plan;
@@ -46,6 +47,7 @@ class HomeController extends Controller
                 'top' => app(HomepageShowcase::class)->topLawyers(),
                 ...app(HomepageShowcase::class)->content(),
             ], 'showcase'),
+            'courtHolidays' => CourtHoliday::upcoming(6),
             'faqs' => collect(FaqPageController::all())->where('show_on_home', true)->take(8)->values(),
             'canonical' => route('home'),
         ]);

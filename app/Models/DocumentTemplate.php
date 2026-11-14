@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['organization_id', 'category', 'title', 'title_ur', 'language', 'description', 'body', 'review_status', 'reviewed_by', 'reviewed_at', 'is_active', 'created_by'])]
+#[Fillable(['organization_id', 'category', 'kind', 'fields', 'title', 'title_ur', 'language', 'description', 'body', 'review_status', 'reviewed_by', 'reviewed_at', 'is_active', 'created_by'])]
 class DocumentTemplate extends Model
 {
     /**
@@ -15,6 +15,7 @@ class DocumentTemplate extends Model
     protected function casts(): array
     {
         return [
+            'fields' => 'array',
             'reviewed_at' => 'datetime',
             'is_active' => 'boolean',
         ];

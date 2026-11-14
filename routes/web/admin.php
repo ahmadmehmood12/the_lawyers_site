@@ -2,13 +2,16 @@
 
 use App\Http\Controllers\Admin\AppointmentOverviewController;
 use App\Http\Controllers\Admin\ContentController;
+use App\Http\Controllers\Admin\CourtCalendarController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\Admin\LegalFormTemplateController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PlatformController;
 use App\Http\Controllers\Admin\ReferenceDataController;
+use App\Http\Controllers\Admin\ReportedJudgmentController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ShowcaseController;
 use App\Http\Controllers\Admin\SupportInboxController;
@@ -59,14 +62,21 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::get('templates', [ContentController::class, 'templates'])->name('templates.index');
         Route::post('templates', [ContentController::class, 'saveTemplate'])->name('templates.store');
         Route::put('templates/{template}', [ContentController::class, 'saveTemplate'])->name('templates.update');
+        Route::get('legal-forms', [LegalFormTemplateController::class, 'index'])->name('legal-forms.index');
+        Route::post('legal-forms', [LegalFormTemplateController::class, 'store'])->name('legal-forms.store');
+        Route::put('legal-forms/{form}', [LegalFormTemplateController::class, 'update'])->name('legal-forms.update');
+        Route::delete('legal-forms/{form}', [LegalFormTemplateController::class, 'destroy'])->name('legal-forms.destroy');
     });
 
     Route::middleware('permission:content.moderate')->group(function () {
         Route::get('moderation', [ContentController::class, 'moderation'])->name('articles.index');
         Route::get('moderation/reviews', [ContentController::class, 'moderation'])->defaults('tab', 'reviews')->name('reviews.index');
-        Route::put('articles/{article}', [ContentController::class, 'moderateArticle'])->name('articles.moderate');
-        Route::put('reviews/{review}', [ContentController::class, 'moderateReview'])->name('reviews.moderate');
-        Route::put('comments/{comment}', [ContentController::class, 'moderateComment'])->name('comments.moderate');
+        // Decisions accept PUT or POST; a stray GET (reload, back button) returns to the list instead of a 405.
+        Route::match(['put', 'post'], 'moderation/articles/{article}', [ContentController::class, 'moderateArticle'])->name('articles.moderate');
+        Route::match(['put', 'post'], 'moderation/reviews/{review}', [ContentController::class, 'moderateReview'])->name('reviews.moderate');
+        Route::match(['put', 'post'], 'moderation/comments/{comment}', [ContentController::class, 'moderateComment'])->name('comments.moderate');
+        Route::get('moderation/{kind}/{id}', fn (string $kind) => redirect()->route('admin.articles.index', ['tab' => in_array($kind, ['articles', 'reviews', 'comments'], true) ? $kind : 'articles']))
+            ->whereIn('kind', ['articles', 'reviews', 'comments'])->whereNumber('id');
         Route::get('pages', [ContentController::class, 'pages'])->name('pages.index');
         Route::post('pages', [ContentController::class, 'storePage'])->name('pages.store');
         Route::put('pages/{page}', [ContentController::class, 'savePage'])->name('pages.update');
@@ -88,6 +98,15 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::post('team-designations', [ShowcaseController::class, 'storeDesignation'])->name('team-designations.store');
         Route::put('team-designations/{designation}', [ShowcaseController::class, 'updateDesignation'])->name('team-designations.update');
         Route::delete('team-designations/{designation}', [ShowcaseController::class, 'destroyDesignation'])->name('team-designations.destroy');
+        Route::get('judgments', [ReportedJudgmentController::class, 'index'])->name('judgments.index');
+        Route::post('judgments', [ReportedJudgmentController::class, 'store'])->name('judgments.store');
+        Route::post('judgments/import', [ReportedJudgmentController::class, 'import'])->name('judgments.import');
+        Route::post('judgments/{judgment}', [ReportedJudgmentController::class, 'update'])->name('judgments.update');
+        Route::delete('judgments/{judgment}', [ReportedJudgmentController::class, 'destroy'])->name('judgments.destroy');
+        Route::get('court-calendar', [CourtCalendarController::class, 'index'])->name('court-calendar.index');
+        Route::post('court-calendar', [CourtCalendarController::class, 'store'])->name('court-calendar.store');
+        Route::put('court-calendar/{holiday}', [CourtCalendarController::class, 'update'])->name('court-calendar.update');
+        Route::delete('court-calendar/{holiday}', [CourtCalendarController::class, 'destroy'])->name('court-calendar.destroy');
         Route::get('faqs', [FaqController::class, 'index'])->name('faqs.index');
         Route::post('faqs', [FaqController::class, 'store'])->name('faqs.store');
         Route::put('faqs/{faq}', [FaqController::class, 'update'])->name('faqs.update');

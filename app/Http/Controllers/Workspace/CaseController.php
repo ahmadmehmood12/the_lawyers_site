@@ -17,9 +17,11 @@ use App\Models\Activity;
 use App\Models\Conversation;
 use App\Models\Hearing;
 use App\Models\LegalCase;
+use App\Models\TimeEntry;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Cases\CaseService;
 use App\Services\Subscriptions\SubscriptionService;
+use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,7 +34,7 @@ use Inertia\Response;
  */
 class CaseController extends Controller
 {
-    public const TABS = ['overview', 'parties', 'hearings', 'documents', 'tasks', 'finance', 'communications', 'timeline', 'audit'];
+    public const TABS = ['overview', 'parties', 'hearings', 'documents', 'tasks', 'time', 'finance', 'communications', 'timeline', 'audit'];
 
     public function index(Request $request): Response
     {
@@ -333,6 +335,26 @@ class CaseController extends Controller
                 'appointments' => $case->appointments()->latest('starts_at')->limit(20)->get()
                     ->map(fn ($a) => ['id' => $a->id, 'starts_at' => $a->starts_at->toIso8601String(), 'status' => $a->status->value, 'status_label' => $a->status->label(), 'contact_name' => $a->contact_name]),
             ],
+            'time' => (function () use ($case, $user): array {
+                $entries = TimeEntry::query()->where('legal_case_id', $case->id)->with('user:id,name,avatar_path')->orderByDesc('started_at')->limit(200)->get();
+                $total = fn ($list) => $list->sum(fn (TimeEntry $e) => $e->elapsed());
+                $weekStart = now()->startOfWeek();
+
+                return ['time' => [
+                    'entries' => $entries->map(fn (TimeEntry $e) => [
+                        'id' => $e->id, 'description' => $e->description, 'started_at' => $e->started_at->toIso8601String(), 'ended_at' => $e->ended_at?->toIso8601String(),
+                        'seconds' => $e->elapsed(), 'billable' => $e->billable, 'running' => $e->ended_at === null,
+                        'user' => ['id' => $e->user_id, 'name' => $e->user?->name, 'avatar' => PublicFile::url($e->user?->avatar_path)], 'mine' => $e->user_id === $user->id,
+                    ])->values(),
+                    'totals' => [
+                        'all' => $total($entries),
+                        'billable' => $total($entries->where('billable', true)),
+                        'week' => $total($entries->filter(fn (TimeEntry $e) => $e->started_at->gte($weekStart))),
+                        'mine' => $total($entries->where('user_id', $user->id)),
+                    ],
+                    'by_lawyer' => $entries->groupBy('user_id')->map(fn ($list) => ['name' => $list->first()->user?->name, 'avatar' => PublicFile::url($list->first()->user?->avatar_path), 'seconds' => $total($list)])->sortByDesc('seconds')->values(),
+                ]];
+            })(),
             'timeline' => ['events' => $case->events()->with('actor:id,name')->orderByDesc('occurred_at')->orderByDesc('id')->get()
                 ->map(fn ($e) => ['id' => $e->id, 'type' => $e->type, 'title' => $e->title, 'description' => $e->description, 'occurred_at' => $e->occurred_at->toIso8601String(), 'actor' => $e->actor?->name, 'visible_to_client' => $e->visible_to_client])],
             'audit' => ['activities' => Activity::query()

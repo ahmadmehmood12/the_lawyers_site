@@ -11,6 +11,7 @@ use App\Enums\TaskStatus;
 use App\Models\Appointment;
 use App\Models\CalendarEvent;
 use App\Models\Client;
+use App\Models\CourtHoliday;
 use App\Models\DiaryEntry;
 use App\Models\Hearing;
 use App\Models\LegalCase;
@@ -70,6 +71,10 @@ class CalendarFeed
             $items = $items->concat($this->notes($user, $organization, $from, $to, $filters));
         }
         $items = $items->concat($this->calendarEvents($user, $organization, $from, $to, $filters));
+
+        if ($wants('holiday')) {
+            $items = $items->concat($this->holidays($from, $to));
+        }
 
         return $items
             ->when($types !== [], fn (Collection $c) => $c->filter(fn ($i) => in_array($i['type'], $types, true)))
@@ -395,6 +400,29 @@ class CalendarFeed
      * @param  array<string, mixed>  $item
      * @return array<string, mixed>
      */
+    /** Court holidays and vacations from Admin, Court calendar (read only, everyone). */
+    private function holidays(Carbon $from, Carbon $to): Collection
+    {
+        return CourtHoliday::query()->where('is_active', true)
+            ->whereDate('starts_on', '<=', $to->toDateString())->whereDate('ends_on', '>=', $from->toDateString())
+            ->with('province:id,name')->get()
+            ->map(fn (CourtHoliday $h) => $this->item([
+                'key' => 'holiday-'.$h->id,
+                'source' => 'holiday',
+                'id' => $h->id,
+                'type' => 'holiday',
+                'title' => (app()->getLocale() === 'ur' && $h->title_ur ? $h->title_ur : $h->title).($h->tentative ? ' *' : ''),
+                'subtitle' => $h->kind === 'court_vacation' ? __('Court vacation') : __('Courts closed'),
+                'description' => $h->notes,
+                'location' => $h->province?->name,
+                'start' => $h->starts_on->copy()->startOfDay(),
+                'end' => $h->ends_on->copy()->endOfDay(),
+                'all_day' => true,
+                'status' => 'scheduled',
+                'status_label' => $h->tentative ? __('Subject to moon sighting') : __('Holiday'),
+            ]));
+    }
+
     private function item(array $item): array
     {
         return [

@@ -17,6 +17,7 @@ use App\Models\Review;
 use App\Notifications\ArticleModerated;
 use App\Notifications\ReviewPublished;
 use App\Support\HtmlSanitizer;
+use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -29,7 +30,7 @@ class ContentController extends Controller
     public function templates(Request $request): Response
     {
         return Inertia::render('Admin/Templates', [
-            'templates' => DocumentTemplate::query()->whereNull('organization_id')->with('reviewer:id,name')
+            'templates' => DocumentTemplate::query()->whereNull('organization_id')->where('kind', 'draft')->with('reviewer:id,name')
                 ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('title', 'like', "%{$s}%"))
                 ->orderBy('category')->orderBy('title')->paginate(30)->withQueryString()
                 ->through(fn ($t) => [...$t->only(['id', 'category', 'title', 'title_ur', 'language', 'description', 'body', 'review_status', 'is_active']), 'reviewer' => $t->reviewer?->name, 'reviewed_at' => $t->reviewed_at?->toDateString()]),
@@ -76,23 +77,29 @@ class ContentController extends Controller
             default => fn () => ArticleComment::query(),
         };
         $counts = $base()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
+        $waiting = [
+            'articles' => Article::query()->where('status', ArticleStatus::Pending->value)->count(),
+            'reviews' => Review::query()->where('status', ReviewStatus::Pending->value)->count(),
+            'comments' => ArticleComment::query()->where('status', ReviewStatus::Pending->value)->count(),
+        ];
         $filtered = fn () => $base()->when($state !== 'all', fn ($q) => $q->where('status', $states[$state]))->orderByRaw("status = 'pending' DESC")->latest('updated_at');
 
         return Inertia::render('Admin/Moderation', [
             'tab' => $tab,
             'state' => $state,
+            'waiting' => $waiting,
             'counts' => [
                 'pending' => (int) ($counts['pending'] ?? 0),
                 'approved' => (int) ($counts[$approved] ?? 0),
                 'rejected' => (int) ($counts['rejected'] ?? 0),
                 'all' => (int) $counts->sum(),
             ],
-            'articles' => $tab === 'articles' ? $filtered()->with(['author:id,name', 'category:id,name', 'approver:id,name'])->paginate(20)->withQueryString()
-                ->through(fn ($a) => ['id' => $a->id, 'title' => $a->title, 'slug' => $a->slug, 'author' => $a->author->name, 'category' => $a->category?->name, 'status' => $a->status->value, 'status_label' => $a->status->label(), 'excerpt' => $a->excerpt, 'body' => HtmlSanitizer::clean($a->body), 'reason' => $a->rejection_reason, 'moderator' => $a->approver?->name, 'views' => (int) $a->views, 'likes' => (int) $a->likes_count, 'updated_at' => $a->updated_at->toIso8601String()]) : null,
-            'reviews' => $tab === 'reviews' ? $filtered()->with(['author:id,name', 'lawyerProfile.user:id,name', 'moderator:id,name'])->paginate(20)->withQueryString()
-                ->through(fn ($r) => ['id' => $r->id, 'lawyer' => $r->lawyerProfile->user->name, 'author' => $r->author->name, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'status' => $r->status->value, 'status_label' => $r->status->label(), 'moderator' => $r->moderator?->name, 'moderated_at' => $r->moderated_at?->toIso8601String(), 'created_at' => $r->created_at->toIso8601String()]) : null,
-            'comments' => $tab === 'comments' ? $filtered()->with(['user:id,name', 'article:id,title,slug'])->paginate(30)->withQueryString()
-                ->through(fn ($c) => ['id' => $c->id, 'article' => $c->article->title, 'article_slug' => $c->article->slug, 'author' => $c->user->name, 'body' => $c->body, 'status' => $c->status->value, 'status_label' => $c->status->label(), 'created_at' => $c->created_at->toIso8601String(), 'updated_at' => $c->updated_at->toIso8601String()]) : null,
+            'articles' => $tab === 'articles' ? $filtered()->with(['author:id,name,avatar_path', 'category:id,name', 'approver:id,name', 'tags:id,name'])->paginate(20)->withQueryString()
+                ->through(fn ($a) => ['id' => $a->id, 'author_avatar' => PublicFile::url($a->author->avatar_path), 'tags' => $a->tags->pluck('name'), 'language' => $a->language, 'submitted_at' => $a->updated_at->toIso8601String(), 'title' => $a->title, 'slug' => $a->slug, 'author' => $a->author->name, 'category' => $a->category?->name, 'status' => $a->status->value, 'status_label' => $a->status->label(), 'excerpt' => $a->excerpt, 'body' => HtmlSanitizer::clean($a->body), 'reason' => $a->rejection_reason, 'moderator' => $a->approver?->name, 'views' => (int) $a->views, 'likes' => (int) $a->likes_count, 'updated_at' => $a->updated_at->toIso8601String()]) : null,
+            'reviews' => $tab === 'reviews' ? $filtered()->with(['author:id,name,avatar_path', 'lawyerProfile.user:id,name,avatar_path', 'moderator:id,name'])->paginate(20)->withQueryString()
+                ->through(fn ($r) => ['id' => $r->id, 'author_avatar' => PublicFile::url($r->author->avatar_path), 'lawyer_avatar' => PublicFile::url($r->lawyerProfile->user->avatar_path), 'lawyer' => $r->lawyerProfile->user->name, 'author' => $r->author->name, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'status' => $r->status->value, 'status_label' => $r->status->label(), 'moderator' => $r->moderator?->name, 'moderated_at' => $r->moderated_at?->toIso8601String(), 'created_at' => $r->created_at->toIso8601String()]) : null,
+            'comments' => $tab === 'comments' ? $filtered()->with(['user:id,name,avatar_path', 'article:id,title,slug'])->paginate(30)->withQueryString()
+                ->through(fn ($c) => ['id' => $c->id, 'author_avatar' => PublicFile::url($c->user->avatar_path), 'article' => $c->article->title, 'article_slug' => $c->article->slug, 'author' => $c->user->name, 'body' => $c->body, 'status' => $c->status->value, 'status_label' => $c->status->label(), 'created_at' => $c->created_at->toIso8601String(), 'updated_at' => $c->updated_at->toIso8601String()]) : null,
         ]);
     }
 
@@ -108,7 +115,7 @@ class ContentController extends Controller
             $article->author?->notify(new ArticleModerated($article->fresh(['category'])));
         }
 
-        return back()->with('success', __('Article updated.'));
+        return $this->backToQueue($request, 'articles', $validated['status'] === 'published' ? __('Article published.') : __('Article sent back to the author.'));
     }
 
     public function moderateReview(Request $request, Review $review): RedirectResponse
@@ -125,14 +132,22 @@ class ContentController extends Controller
             $profile->user?->notify(new ReviewPublished($review->load('author:id,name')));
         }
 
-        return back()->with('success', __('Review updated.'));
+        return $this->backToQueue($request, 'reviews', $status === ReviewStatus::Approved ? __('Review approved.') : __('Review rejected.'));
     }
 
     public function moderateComment(Request $request, ArticleComment $comment): RedirectResponse
     {
         $comment->update(['status' => $request->validate(['status' => ['required', Rule::in(['approved', 'rejected'])]])['status']]);
 
-        return back()->with('success', __('Comment updated.'));
+        return $this->backToQueue($request, 'comments', __('Comment updated.'));
+    }
+
+    /** After a decision, return to the same tab and filter of the moderation queue. */
+    private function backToQueue(Request $request, string $tab, string $message): RedirectResponse
+    {
+        $state = in_array($request->input('state'), ['pending', 'approved', 'rejected', 'all'], true) ? $request->input('state') : 'pending';
+
+        return redirect()->route('admin.articles.index', ['tab' => $tab, 'state' => $state, 'page' => $request->integer('page') ?: null])->with('success', $message);
     }
 
     public function complaints(Request $request): Response

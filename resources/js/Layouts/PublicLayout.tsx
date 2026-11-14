@@ -35,6 +35,7 @@ export default function PublicLayout({ seo, children }: { seo: Seo; children: Re
         { label: 'Find a Lawyer', href: route('lawyers.index') },
         { label: 'Law Firms', href: route('firms.index') },
         { label: 'Practice Areas', href: route('specializations.index') },
+        { label: 'Judgments', href: route('judgments.index') },
         { label: 'User Guide', href: route('guide') },
         { label: 'Legal Articles', href: route('articles.index') },
         { label: 'Pricing', href: route('pricing') },
@@ -127,7 +128,7 @@ function Footer() {
     const t = useT();
     const columns = [
         { title: 'For Clients', links: [['Find a Lawyer', route('lawyers.index')], ['Law Firms', route('firms.index')], ['Practice Areas', route('specializations.index')], ['Legal Resources', route('resources')]] },
-        { title: 'For Lawyers', links: [['Join as a Lawyer', route('register', { type: 'lawyer' })], ['Register a Law Firm', route('register', { type: 'firm' })], ['User Guide', route('guide')], ['Pricing', route('pricing')], ['Legal Articles', route('articles.index')]] },
+        { title: 'For Lawyers', links: [['Join as a Lawyer', route('register', { type: 'lawyer' })], ['Register a Law Firm', route('register', { type: 'firm' })], ['User Guide', route('guide')], ['Pricing', route('pricing')], ['Legal Articles', route('articles.index')], ['Reported Judgments', route('judgments.index')]] },
         { title: 'Company', links: [['About', route('about')], ['Contact', route('contact')], ['FAQs', route('faqs')], ['Terms of Service', route('terms')], ['Privacy Policy', route('privacy')]] },
     ];
     const { app } = usePage<SharedProps>().props;

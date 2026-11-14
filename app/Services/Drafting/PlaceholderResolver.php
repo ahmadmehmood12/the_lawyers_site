@@ -22,9 +22,31 @@ class PlaceholderResolver
         'party.opposite' => 'Opposite party name(s)', 'lawyer.name' => 'Lawyer name', 'lawyer.enrollment' => 'Enrollment number',
         'lawyer.category' => 'Advocate category', 'organization.name' => 'Chambers / firm name', 'organization.address' => 'Chambers address',
         'organization.city' => 'City', 'today' => "Today's date",
+        'lawyer.phone' => 'Lawyer phone', 'lawyer.email' => 'Lawyer email', 'lawyer.bar_council' => 'Bar Council', 'lawyer.chamber_address' => 'Chamber address',
     ];
 
-    public function resolve(string $body, Organization $organization, User $lawyer, ?LegalCase $case = null, ?Client $client = null): string
+    /**
+     * @param  array<string, string|null>  $extra  more values, e.g. form.client_name from a legal form
+     */
+    public function resolve(string $body, Organization $organization, User $lawyer, ?LegalCase $case = null, ?Client $client = null, array $extra = []): string
+    {
+        $values = [...$this->values($organization, $lawyer, $case, $client), ...$extra];
+
+        return preg_replace_callback('/\{\{\s*([a-z_.]+)\s*\}\}/', function (array $m) use ($values): string {
+            $value = $values[$m[1]] ?? null;
+
+            return filled($value)
+                ? nl2br(e((string) $value), false)
+                : '<span class="placeholder" data-placeholder="'.e($m[1]).'">{{'.e($m[1]).'}}</span>';
+        }, $body) ?? $body;
+    }
+
+    /**
+     * Every known placeholder value for this lawyer, case and client (used to prefill legal forms).
+     *
+     * @return array<string, string|null>
+     */
+    public function values(Organization $organization, User $lawyer, ?LegalCase $case = null, ?Client $client = null): array
     {
         $case?->loadMissing(['court:id,name', 'judge:id,name', 'parties', 'clients']);
         $client ??= $case?->clients->first();
@@ -38,14 +60,10 @@ class PlaceholderResolver
             'lawyer.name' => $lawyer->name, 'lawyer.enrollment' => $profile?->enrollment_number, 'lawyer.category' => $profile?->advocate_category?->label(),
             'organization.name' => $organization->name, 'organization.address' => $organization->address, 'organization.city' => $organization->city?->name,
             'today' => now()->translatedFormat('d F Y'),
+            'lawyer.phone' => $lawyer->phone, 'lawyer.email' => $lawyer->email, 'lawyer.bar_council' => $profile?->barCouncil?->name,
+            'lawyer.chamber_address' => $profile?->chamber_address ?: $organization->address,
         ];
 
-        return preg_replace_callback('/\{\{\s*([a-z_.]+)\s*\}\}/', function (array $m) use ($values): string {
-            $value = $values[$m[1]] ?? null;
-
-            return filled($value)
-                ? e((string) $value)
-                : '<span class="placeholder" data-placeholder="'.e($m[1]).'">{{'.e($m[1]).'}}</span>';
-        }, $body) ?? $body;
+        return array_map(fn ($v) => $v === null ? null : (string) $v, $values);
     }
 }

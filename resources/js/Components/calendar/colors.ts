@@ -14,6 +14,7 @@ export const typeColors: Record<string, { chip: string; dot: string; block: stri
     reminder: { chip: 'border-s-gold-500 bg-gold-50 text-gold-700 dark:bg-gold-700/30 dark:text-gold-100', dot: 'bg-gold-500', block: 'bg-gold-500 text-navy-950' },
     note: { chip: 'border-s-slate-400 bg-slate-50 text-slate-800 dark:bg-slate-800/60 dark:text-slate-100', dot: 'bg-slate-400', block: 'bg-slate-500 text-white' },
     personal: { chip: 'border-s-violet-500 bg-violet-50 text-violet-900 dark:bg-violet-900/40 dark:text-violet-100', dot: 'bg-violet-500', block: 'bg-violet-500 text-white' },
+    holiday: { chip: 'border-s-red-500 bg-red-50 text-red-900 dark:bg-red-900/30 dark:text-red-100', dot: 'bg-red-500', block: 'bg-red-500 text-white' },
     other: { chip: 'border-s-zinc-400 bg-zinc-50 text-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-100', dot: 'bg-zinc-400', block: 'bg-zinc-500 text-white' },
 };
 

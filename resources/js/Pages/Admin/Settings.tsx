@@ -1,6 +1,7 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { TypographySettings, type TypographyPayload } from '@/Components/domain/TypographySettings';
-import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, DetailList, Input, PageHeader, Select, Textarea } from '@/Components/ui';
+import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, DetailList, Input, PageHeader, Select, Tabs, Textarea } from '@/Components/ui';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { useT } from '@/lib/i18n';
 import type { AuthMedia, SharedProps } from '@/types';
@@ -103,11 +104,31 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
         { value: 'navy-gold', label: t('Navy & gold'), hint: t('Classic authority palette (default).'), swatches: ['#0f1e36', '#cfa33b', '#faf8f3'] },
         { value: 'white-green', label: t('White & green'), hint: t('White paper, deep legal green and gold.'), swatches: ['#0f2c1e', '#cfa33b', '#ffffff'] },
     ];
+    const settingsTabs = [
+        { key: 'general', label: t('General') },
+        { key: 'branding', label: t('Branding & contact') },
+        { key: 'email', label: t('Email (SMTP)') },
+        { key: 'whatsapp', label: t('WhatsApp') },
+        { key: 'typography', label: t('Typography') },
+        { key: 'signin', label: t('Sign-in page') },
+    ];
+    const [tab, setTab] = useState(() => {
+        const requested = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
+        return settingsTabs.some((x) => x.key === requested) ? (requested as string) : 'general';
+    });
+    function selectTab(key: string) {
+        setTab(key);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', key);
+        window.history.replaceState(window.history.state, '', url);
+    }
     const savedSecret = (has: boolean) => (has ? t('A secret is saved. Leave blank to keep it.') : t('No secret saved yet.'));
     return (
         <AppLayout title={t('Settings')} area="admin" wide>
-            <PageHeader title={t('Platform settings')} />
-            <div className="grid gap-6 lg:grid-cols-2">
+            <PageHeader title={t('Platform settings')} description={t('Each part of the platform has its own tab. Changes save per tab.')} />
+            <Tabs className="mb-6" active={tab} onChange={selectTab} tabs={settingsTabs} />
+            {tab === 'general' && (
+                <div className="grid items-start gap-6 lg:grid-cols-2">
                 <Card>
                     <CardHeader title={t('General')} />
                     <CardBody className="space-y-4">
@@ -144,43 +165,11 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                     <CardHeader title={t('Server configuration')} description={t('Non-secret values shown here come from the server environment.')} />
                     <CardBody><DetailList columns={1} items={Object.entries(env).map(([k, v]) => ({ label: k, value: typeof v === 'boolean' ? (v ? t('Configured') : t('Awaiting credentials')) : String(v) }))} /></CardBody>
                 </Card>
-
-                <Card className="lg:col-span-2">
-                    <CardHeader
-                        title={t('WhatsApp Business alerts')}
-                        description={t('Send hearing reminders and case alerts through the official WhatsApp Business Cloud API, branded with your site name.')}
-                        actions={<Badge tone={whatsapp.configured ? 'green' : 'amber'}>{whatsapp.configured ? t('Configured') : t('Not configured')}</Badge>}
-                    />
-                    <CardBody className="space-y-4">
-                        {!whatsapp.configured && <Alert tone="warning">{t('Until access token and phone number ID are saved, WhatsApp deliveries are recorded as “skipped” — never as sent.')}</Alert>}
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Select label={t('Enable WhatsApp alerts')} value={wa.data.enabled} onChange={(e) => wa.setData('enabled', e.target.value)} options={yesNo} />
-                            <Input label={t('Sender display name')} value={wa.data.display_name} onChange={(e) => wa.setData('display_name', e.target.value)} error={wa.errors.display_name} hint={t('Must match the display name approved in Meta Business Manager.')} />
-                            <Input label={t('Phone number ID')} value={wa.data.phone_number_id} onChange={(e) => wa.setData('phone_number_id', e.target.value)} error={wa.errors.phone_number_id} hint={t('From Meta Business Suite → WhatsApp → API setup.')} />
-                            <Input label={t('API version')} value={wa.data.api_version} onChange={(e) => wa.setData('api_version', e.target.value)} error={wa.errors.api_version} placeholder="v21.0" />
-                            <Input label={t('Access token')} type="password" autoComplete="new-password" value={wa.data.token} onChange={(e) => wa.setData('token', e.target.value)} error={wa.errors.token} hint={savedSecret(whatsapp.has_token)} />
-                            <Input label={t('App secret')} type="password" autoComplete="new-password" value={wa.data.app_secret} onChange={(e) => wa.setData('app_secret', e.target.value)} error={wa.errors.app_secret} hint={savedSecret(whatsapp.has_app_secret)} />
-                            <Input label={t('Webhook verify token')} type="password" autoComplete="new-password" value={wa.data.verify_token} onChange={(e) => wa.setData('verify_token', e.target.value)} error={wa.errors.verify_token} hint={savedSecret(whatsapp.has_verify_token)} />
-                            <div className="space-y-1">
-                                <Input label={t('Webhook URL')} value={whatsapp.webhook_url} readOnly onFocus={(e) => e.currentTarget.select()} />
-                                <p className="text-xs text-navy-500 dark:text-navy-400">{t('Add this callback URL in Meta, then subscribe to the “messages” field.')}</p>
-                            </div>
-                        </div>
-                        <fieldset className="space-y-2">
-                            <legend className="text-sm font-medium text-navy-800 dark:text-navy-200">{t('Remove saved secrets')}</legend>
-                            <div className="flex flex-wrap gap-4 text-sm">
-                                <Checkbox label={t('Access token')} checked={wa.data.clear_token} onChange={(e) => wa.setData('clear_token', e.target.checked)} />
-                                <Checkbox label={t('App secret')} checked={wa.data.clear_app_secret} onChange={(e) => wa.setData('clear_app_secret', e.target.checked)} />
-                                <Checkbox label={t('Verify token')} checked={wa.data.clear_verify_token} onChange={(e) => wa.setData('clear_verify_token', e.target.checked)} />
-                            </div>
-                        </fieldset>
-                        <Button loading={wa.processing} onClick={() => wa.put(route('admin.whatsapp-settings.update'), { preserveScroll: true, onSuccess: () => wa.reset('token', 'app_secret', 'verify_token', 'clear_token', 'clear_app_secret', 'clear_verify_token') })}>{t('Save WhatsApp settings')}</Button>
-                    </CardBody>
-                </Card>
-
-                <TypographySettings typography={typography} />
-
-                <Card className="lg:col-span-2">
+                </div>
+            )}
+            {tab === 'branding' && (
+                <div className="grid gap-6">
+                <Card>
                     <CardHeader title={t('Branding and social links')} description={t('The site name, logo and favicon appear in the header, footer, emails and WhatsApp alerts. Social links show in the footer only when filled.')} />
                     <CardBody className="space-y-5">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -220,8 +209,11 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                         <Button loading={brand.processing} onClick={() => brand.post(route('admin.branding-settings.update'), { preserveScroll: true, forceFormData: true, onSuccess: () => brand.reset('logo', 'favicon', 'remove_logo', 'remove_favicon') })}>{t('Save branding')}</Button>
                     </CardBody>
                 </Card>
-
-                <Card className="lg:col-span-2">
+                </div>
+            )}
+            {tab === 'email' && (
+                <div className="grid gap-6">
+                <Card>
                     <CardHeader title={t('Outgoing email (SMTP)')} description={t('Used for hearing reminders, receipts, feedback replies and account email. Blank fields fall back to the server environment.')} actions={<Badge tone={smtp.data.mail_mailer === 'log' ? 'amber' : 'green'}>{smtp.data.mail_mailer === 'log' ? t('Writing to log only') : smtp.data.mail_mailer.toUpperCase()}</Badge>} />
                     <CardBody className="space-y-4">
                         {smtp.data.mail_mailer === 'log' && <Alert tone="warning">{t('With the log mailer, emails are written to the server log and never delivered.')}</Alert>}
@@ -246,7 +238,52 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                         <p className="text-xs text-navy-500 dark:text-navy-400">{t('Save first, then send a test. The test uses the saved settings.')}</p>
                     </CardBody>
                 </Card>
-                <Card className="lg:col-span-2">
+                </div>
+            )}
+            {tab === 'whatsapp' && (
+                <div className="grid gap-6">
+                <Card>
+                    <CardHeader
+                        title={t('WhatsApp Business alerts')}
+                        description={t('Send hearing reminders and case alerts through the official WhatsApp Business Cloud API, branded with your site name.')}
+                        actions={<Badge tone={whatsapp.configured ? 'green' : 'amber'}>{whatsapp.configured ? t('Configured') : t('Not configured')}</Badge>}
+                    />
+                    <CardBody className="space-y-4">
+                        {!whatsapp.configured && <Alert tone="warning">{t('Until access token and phone number ID are saved, WhatsApp deliveries are recorded as “skipped” — never as sent.')}</Alert>}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Select label={t('Enable WhatsApp alerts')} value={wa.data.enabled} onChange={(e) => wa.setData('enabled', e.target.value)} options={yesNo} />
+                            <Input label={t('Sender display name')} value={wa.data.display_name} onChange={(e) => wa.setData('display_name', e.target.value)} error={wa.errors.display_name} hint={t('Must match the display name approved in Meta Business Manager.')} />
+                            <Input label={t('Phone number ID')} value={wa.data.phone_number_id} onChange={(e) => wa.setData('phone_number_id', e.target.value)} error={wa.errors.phone_number_id} hint={t('From Meta Business Suite → WhatsApp → API setup.')} />
+                            <Input label={t('API version')} value={wa.data.api_version} onChange={(e) => wa.setData('api_version', e.target.value)} error={wa.errors.api_version} placeholder="v21.0" />
+                            <Input label={t('Access token')} type="password" autoComplete="new-password" value={wa.data.token} onChange={(e) => wa.setData('token', e.target.value)} error={wa.errors.token} hint={savedSecret(whatsapp.has_token)} />
+                            <Input label={t('App secret')} type="password" autoComplete="new-password" value={wa.data.app_secret} onChange={(e) => wa.setData('app_secret', e.target.value)} error={wa.errors.app_secret} hint={savedSecret(whatsapp.has_app_secret)} />
+                            <Input label={t('Webhook verify token')} type="password" autoComplete="new-password" value={wa.data.verify_token} onChange={(e) => wa.setData('verify_token', e.target.value)} error={wa.errors.verify_token} hint={savedSecret(whatsapp.has_verify_token)} />
+                            <div className="space-y-1">
+                                <Input label={t('Webhook URL')} value={whatsapp.webhook_url} readOnly onFocus={(e) => e.currentTarget.select()} />
+                                <p className="text-xs text-navy-500 dark:text-navy-400">{t('Add this callback URL in Meta, then subscribe to the “messages” field.')}</p>
+                            </div>
+                        </div>
+                        <fieldset className="space-y-2">
+                            <legend className="text-sm font-medium text-navy-800 dark:text-navy-200">{t('Remove saved secrets')}</legend>
+                            <div className="flex flex-wrap gap-4 text-sm">
+                                <Checkbox label={t('Access token')} checked={wa.data.clear_token} onChange={(e) => wa.setData('clear_token', e.target.checked)} />
+                                <Checkbox label={t('App secret')} checked={wa.data.clear_app_secret} onChange={(e) => wa.setData('clear_app_secret', e.target.checked)} />
+                                <Checkbox label={t('Verify token')} checked={wa.data.clear_verify_token} onChange={(e) => wa.setData('clear_verify_token', e.target.checked)} />
+                            </div>
+                        </fieldset>
+                        <Button loading={wa.processing} onClick={() => wa.put(route('admin.whatsapp-settings.update'), { preserveScroll: true, onSuccess: () => wa.reset('token', 'app_secret', 'verify_token', 'clear_token', 'clear_app_secret', 'clear_verify_token') })}>{t('Save WhatsApp settings')}</Button>
+                    </CardBody>
+                </Card>
+                </div>
+            )}
+            {tab === 'typography' && (
+                <div className="grid gap-6">
+                <TypographySettings typography={typography} />
+                </div>
+            )}
+            {tab === 'signin' && (
+                <div className="grid gap-6">
+                <Card>
                     <CardHeader title={t('Sign-in page')} description={t('The panel beside the sign-in and sign-up forms on large screens. Use a professional image, or a short looping video with no sound.')} />
                     <CardBody className="space-y-5">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -266,7 +303,8 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                         <Button loading={media.processing} onClick={() => media.post(route('admin.auth-media-settings.update'), { preserveScroll: true, forceFormData: true, onSuccess: () => media.reset('image', 'video', 'poster', 'remove_image', 'remove_video', 'remove_poster') })}>{t('Save sign-in page')}</Button>
                     </CardBody>
                 </Card>
-            </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

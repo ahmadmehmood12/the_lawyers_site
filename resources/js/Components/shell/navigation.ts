@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
     Activity, BadgeCheck, CalendarRange, Clapperboard, Mail, Quote, UsersRound, BarChart3, Bell, BookOpen, Briefcase, Building2, CalendarClock, CalendarDays, ClipboardList, CreditCard, FileSignature, FileText, Gavel, Heart,
-    LayoutDashboard, Landmark, MapPinned, MessageSquare, Newspaper, Receipt, ScrollText, Search, Settings, ShieldCheck, Sparkles, Star, Tags, UserCog, Users, Wallet, AlertOctagon, Globe, HelpCircle, Inbox, KeyRound,
+    LayoutDashboard, Landmark, MapPinned, MessageSquare, Newspaper, Receipt, ScrollText, Search, Settings, ShieldCheck, Sparkles, Star, Tags, UserCog, Users, Wallet, AlertOctagon, Globe, HelpCircle, Inbox, KeyRound, Scale, Stamp,
 } from 'lucide-react';
 
 export type NavItem = { label: string; route: string; icon: LucideIcon; match?: string; permission?: string; platform?: string; mobile?: boolean; firmOnly?: boolean; lawyerOnly?: boolean };
@@ -25,6 +25,7 @@ export const workspaceNav: NavGroup[] = [
         items: [
             { label: 'Document Vault', route: 'documents.index', icon: FileText, match: 'documents.*', permission: 'documents.view' },
             { label: 'Legal Drafting', route: 'drafts.index', icon: FileSignature, match: 'drafts.*', permission: 'drafts.manage' },
+            { label: 'Wakalatnama & POA', route: 'legal-forms.index', icon: Stamp, match: 'legal-forms.*', permission: 'drafts.manage' },
             { label: 'AI Assistant', route: 'ai.index', icon: Sparkles, match: 'ai.*', permission: 'ai.use' },
         ],
     },
@@ -83,10 +84,12 @@ export const adminNav: NavGroup[] = [
         label: 'Content',
         items: [
             { label: 'Templates', route: 'admin.templates.index', icon: ScrollText, match: 'admin.templates.*', platform: 'templates.manage' },
-            { label: 'Articles', route: 'admin.articles.index', icon: Newspaper, match: 'admin.articles.*', platform: 'content.moderate' },
-            { label: 'Reviews', route: 'admin.reviews.index', icon: Star, match: 'admin.reviews.*', platform: 'content.moderate' },
+            { label: 'Legal Forms', route: 'admin.legal-forms.index', icon: Stamp, match: 'admin.legal-forms.*', platform: 'templates.manage' },
+            { label: 'Reported Judgments', route: 'admin.judgments.index', icon: Scale, match: 'admin.judgments.*', platform: 'content.moderate' },
+            { label: 'Articles & reviews', route: 'admin.articles.index', icon: Newspaper, match: 'admin.articles.*', platform: 'content.moderate' },
             { label: 'Testimonials', route: 'admin.testimonials.index', icon: Quote, match: 'admin.testimonials.*', platform: 'content.moderate' },
             { label: 'Video Reviews', route: 'admin.video-reviews.index', icon: Clapperboard, match: 'admin.video-reviews.*', platform: 'content.moderate' },
+            { label: 'Court Calendar', route: 'admin.court-calendar.index', icon: CalendarRange, match: 'admin.court-calendar.*', platform: 'content.moderate' },
             { label: 'FAQs', route: 'admin.faqs.index', icon: HelpCircle, match: 'admin.faqs.*', platform: 'content.moderate' },
             { label: 'Team & Founders', route: 'admin.team.index', icon: UsersRound, match: 'admin.team.*', platform: 'content.moderate' },
             { label: 'Feedback & Messages', route: 'admin.feedback.index', icon: Inbox, match: 'admin.feedback.*', platform: 'support.manage' },

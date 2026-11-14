@@ -5,6 +5,7 @@ import { DocumentUploadDialog } from '@/Components/domain/DocumentUploadDialog';
 import { CancelHearingDialog, OutcomeDialog, RescheduleDialog, ScheduleHearingDialog } from '@/Components/domain/HearingDialogs';
 import { TaskDialog } from '@/Components/domain/TaskDialog';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, ConfirmAction, DetailList, EmptyState, Input, LinkButton, Modal, PageHeader, Select, Skeleton, StatusBadge, Tabs } from '@/Components/ui';
+import { CaseTimeTab } from '@/Components/domain/CaseTime';
 import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/cn';
 import { formatBytes, formatDate, formatDateTime, formatMoney, formatTime, todayIso } from '@/lib/format';
@@ -46,6 +47,7 @@ export default function CaseShow({ tab, legalCase: c, section, counts, can, opti
         { key: 'hearings', label: t('Hearings & diary'), count: counts.hearings },
         { key: 'documents', label: t('Documents'), count: counts.documents, hidden: !can.viewDocuments },
         { key: 'tasks', label: t('Tasks'), count: counts.tasks },
+        { key: 'time', label: t('Time') },
         { key: 'finance', label: t('Fees & expenses') },
         { key: 'communications', label: t('Communications') },
         { key: 'timeline', label: t('Timeline') },
@@ -108,6 +110,7 @@ export default function CaseShow({ tab, legalCase: c, section, counts, can, opti
                     )}
                     {tab === 'documents' && section && <Documents documents={section.documents} drafts={section.drafts} can={can} caseId={c.id} onUpload={() => setUpload(true)} />}
                     {tab === 'tasks' && <Tasks tasks={section?.tasks ?? []} can={can} onEdit={setTask} />}
+                    {tab === 'time' && section?.time && <CaseTimeTab caseId={c.id} data={section.time} />}
                     {tab === 'finance' && <Finance data={section ?? {}} c={c} can={can} />}
                     {tab === 'communications' && <Communications data={section ?? {}} c={c} can={can} />}
                     {tab === 'timeline' && <Timeline events={section?.events ?? []} />}

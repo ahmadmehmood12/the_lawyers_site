@@ -6,6 +6,7 @@ import {
 import { ActivityItem, type ActivityEntry } from '@/Components/domain/ActivityItem';
 import { HearingCard } from '@/Components/domain/HearingCard';
 import { Alert, BarList, Card, CardBody, CardHeader, EmptyState, LinkButton, PageHeader, Skeleton, Stat, StatusBadge } from '@/Components/ui';
+import { type CourtHoliday, CourtHolidaysCard } from '@/Components/domain/CourtHolidays';
 import AppLayout from '@/Layouts/AppLayout';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
@@ -31,7 +32,7 @@ type IndexRow = { label: string; fact: string; href: string; icon: LucideIcon; s
  * Workspace home. The signature object is today's cause list; everything else
  * is one click from the practice index (every module the member may use).
  */
-export default function Dashboard({ stats, todayHearings, upcoming, tasks, breakdown, activity, index, profile, can }: Props) {
+export default function Dashboard({ stats, todayHearings, upcoming, tasks, breakdown, activity, index, profile, can, courtHolidays }: Props & { courtHolidays: CourtHoliday[] }) {
     const t = useT();
     const { locale } = useLocale();
     const { auth } = usePage<SharedProps>().props;
@@ -146,6 +147,7 @@ export default function Dashboard({ stats, todayHearings, upcoming, tasks, break
                 </div>
 
                 <div className="space-y-6">
+                    <CourtHolidaysCard holidays={courtHolidays} />
                     <Card>
                         <CardHeader title={t('Start something')} />
                         <ul className="divide-y divide-navy-100 dark:divide-navy-800">
