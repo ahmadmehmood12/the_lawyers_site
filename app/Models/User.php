@@ -47,6 +47,8 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'password' => 'hashed',
             'account_type' => AccountType::class,
             'status' => UserStatus::class,
+            'whatsapp_consent_at' => 'datetime',
+            'whatsapp_consent_revoked_at' => 'datetime',
         ];
     }
 
@@ -137,6 +139,12 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     }
 
     /** E.164-ish WhatsApp number for notifications, when the user has one. */
+    /** Explicit WhatsApp opt in that has not been withdrawn (WhatsAppConsent). */
+    public function hasWhatsAppConsent(): bool
+    {
+        return $this->whatsapp_consent_at !== null && $this->whatsapp_consent_revoked_at === null;
+    }
+
     public function routeNotificationForWhatsApp(): ?string
     {
         return $this->phone;

@@ -69,7 +69,7 @@ abstract class PlatformNotification extends Notification implements ShouldQueue
             $channels[] = 'mail';
         }
 
-        if ($this->whatsAppTemplate($notifiable) && $enabled(NotificationChannel::WhatsApp, false) && $notifiable->phone) {
+        if ($notifiable->hasWhatsAppConsent() && $enabled(NotificationChannel::WhatsApp, false) && $notifiable->phone && $this->whatsAppTemplate($notifiable)) {
             $channels[] = WhatsAppChannel::class;
         }
 

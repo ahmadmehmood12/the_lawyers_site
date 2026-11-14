@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::post('account/avatar', [AccountController::class, 'updateAvatar'])->name('account.avatar.update');
     Route::delete('account/avatar', [AccountController::class, 'removeAvatar'])->name('account.avatar.destroy');
     Route::post('account/sessions/logout-others', [AccountController::class, 'logoutOtherSessions'])->name('account.sessions.logout');
+    Route::post('account/whatsapp-consent', [AccountController::class, 'giveWhatsAppConsent'])->middleware('throttle:10,1')->name('account.whatsapp-consent.store');
+    Route::delete('account/whatsapp-consent', [AccountController::class, 'withdrawWhatsAppConsent'])->name('account.whatsapp-consent.destroy');
     Route::post('account/deletion', [AccountController::class, 'requestDeletion'])->name('account.deletion.request');
     Route::delete('account/deletion', [AccountController::class, 'cancelDeletion'])->name('account.deletion.cancel');
 

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Appointment;
+use Illuminate\Notifications\AnonymousNotifiable;
 
 class AppointmentReminder extends PlatformNotification
 {
@@ -68,6 +69,7 @@ class AppointmentReminder extends PlatformNotification
             'variables' => [$notifiable->name ?? '', $a->lawyer->name, $a->starts_at->format('d M Y H:i')],
             'subject' => $a,
             'organization_id' => $a->organization_id,
+            'client_id' => $notifiable instanceof AnonymousNotifiable ? $a->client_id : null,
             'dedupe' => 'wa:appointment:'.$a->id.':'.$this->daysBefore.':'.($notifiable->id ?? 'x'),
         ];
     }

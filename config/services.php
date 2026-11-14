@@ -51,6 +51,17 @@ return [
     ],
 
     /*
+    | Green-API, the second WhatsApp provider (docs/Features/WhatsApp.md#green-api). Admin settings
+    | override these; the active provider is chosen in Admin, Settings, WhatsApp.
+    */
+    'green_api' => [
+        'api_url' => env('GREEN_API_URL', 'https://api.green-api.com'),
+        'id_instance' => env('GREEN_API_ID_INSTANCE'),
+        'token' => env('GREEN_API_TOKEN'),
+        'webhook_token' => env('GREEN_API_WEBHOOK_TOKEN'),
+    ],
+
+    /*
     | AI provider for drafting/research assistance. Disabled when no key.
     | See docs/Modules/AI-Assistant.md.
     */

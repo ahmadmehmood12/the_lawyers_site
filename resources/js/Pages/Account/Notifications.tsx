@@ -9,7 +9,7 @@ import type { Option, Paginated } from '@/types';
 
 type Item = { id: string; data: { title: string; body: string; url?: string }; read_at: string | null; created_at: string };
 
-export default function NotificationsPage({ notifications, preferences, events, channels, area }: { notifications: Paginated<Item>; preferences: { event: string; channel: string; enabled: boolean }[]; events: string[]; channels: Option[]; area: 'workspace' | 'portal' | 'admin' }) {
+export default function NotificationsPage({ notifications, preferences, events, channels, area, whatsappConsent }: { whatsappConsent: boolean; notifications: Paginated<Item>; preferences: { event: string; channel: string; enabled: boolean }[]; events: string[]; channels: Option[]; area: 'workspace' | 'portal' | 'admin' }) {
     const t = useT();
     const { locale } = useLocale();
     const defaults: Record<string, boolean> = { in_app: true, email: true, whatsapp: false, sms: false };
@@ -38,7 +38,7 @@ export default function NotificationsPage({ notifications, preferences, events, 
                     <Pagination meta={notifications} />
                 </Card>
                 <Card>
-                    <CardHeader title={t('Preferences')} description={t('WhatsApp is off until you turn it on — this records your consent.')} />
+                    <CardHeader title={t('Preferences')} description={whatsappConsent ? t('Choose which alerts also come on WhatsApp.') : t('WhatsApp is off. Turn it on in Account settings to choose WhatsApp alerts.')} actions={!whatsappConsent ? <Link href={route('account.edit')} className="text-xs font-medium underline">{t('Account settings')}</Link> : undefined} />
                     <CardBody>
                         <table className="w-full text-sm">
                             <thead><tr><th />{usable.map((c) => <th key={c.value} className="px-1 pb-2 text-xs font-medium text-navy-500">{c.label}</th>)}</tr></thead>
@@ -46,7 +46,7 @@ export default function NotificationsPage({ notifications, preferences, events, 
                                 {events.map((event) => (
                                     <tr key={event}>
                                         <td className="py-1.5 pe-2">{t(`event.${event}`)}</td>
-                                        {usable.map((c) => <td key={c.value} className="text-center"><input type="checkbox" aria-label={`${t(`event.${event}`)} ${c.label}`} className="size-4 accent-navy-900" checked={form.data.preferences.find((p) => p.event === event && p.channel === c.value)?.enabled ?? false} onChange={() => toggle(event, c.value)} /></td>)}
+                                        {usable.map((c) => <td key={c.value} className="text-center"><input type="checkbox" aria-label={`${t(`event.${event}`)} ${c.label}`} className="size-4 accent-navy-900 disabled:opacity-30" disabled={c.value === 'whatsapp' && !whatsappConsent} title={c.value === 'whatsapp' && !whatsappConsent ? t('Turn on WhatsApp messages in Account settings first.') : undefined} checked={c.value === 'whatsapp' && !whatsappConsent ? false : form.data.preferences.find((p) => p.event === event && p.channel === c.value)?.enabled ?? false} onChange={() => toggle(event, c.value)} /></td>)}
                                     </tr>
                                 ))}
                             </tbody>

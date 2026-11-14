@@ -7,7 +7,7 @@ import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 type Props = {
-    client: { id: number; type: string; name: string; company_name: string | null; ntn: string | null; email: string | null; phone: string | null; whatsapp: string | null; address: string | null; preferred_locale: string; user_id: number | null; city: string | null; cnic: string | null; notes: string | null; whatsapp_consent: boolean; whatsapp_consent_at: string | null; created_at: string };
+    client: { id: number; type: string; name: string; company_name: string | null; ntn: string | null; email: string | null; phone: string | null; whatsapp: string | null; address: string | null; preferred_locale: string; user_id: number | null; city: string | null; cnic: string | null; notes: string | null; whatsapp_consent: boolean; whatsapp_consent_at: string | null; whatsapp_consent_source?: string | null; whatsapp_consent_revoked_at?: string | null; created_at: string };
     cases: { id: number; reference: string; title: string; status: string; status_label: string; court: string | null; next_hearing_at: string | null }[];
     invoices: { id: number; number: string; issue_date: string; total: string; amount_paid: string; status: string; status_label: string }[] | null;
     appointments: { id: number; starts_at: string; status: string; status_label: string }[];
@@ -102,7 +102,9 @@ export default function ClientShow({ client, cases, invoices, appointments, can 
                                 items={[
                                     { label: t('Phone'), value: <span className="ltr-nums">{client.phone}</span> },
                                     { label: t('WhatsApp'), value: <span className="ltr-nums">{client.whatsapp ?? client.phone}</span> },
-                                    { label: t('WhatsApp consent'), value: client.whatsapp_consent ? <Badge tone="green">{t('Given')} {client.whatsapp_consent_at && formatDate(client.whatsapp_consent_at, locale)}</Badge> : <Badge>{t('Not given')}</Badge> },
+                                    { label: t('WhatsApp consent'), value: client.whatsapp_consent
+                                        ? <span className="inline-flex flex-wrap items-center gap-2"><Badge tone="green">{t('Given')} {client.whatsapp_consent_at && formatDate(client.whatsapp_consent_at, locale)}</Badge><span className="text-xs text-navy-500">{client.whatsapp_consent_source === 'whatsapp_reply' ? t('via WhatsApp') : client.whatsapp_consent_source === 'client_portal' ? t('by the client in the portal') : t('recorded by the firm')}</span></span>
+                                        : <span className="inline-flex flex-wrap items-center gap-2"><Badge>{client.whatsapp_consent_revoked_at ? t('Withdrawn') : t('Not given')}</Badge>{client.whatsapp_consent_revoked_at && <span className="text-xs text-navy-500">{formatDate(client.whatsapp_consent_revoked_at, locale)}{client.whatsapp_consent_source === 'whatsapp_reply' ? ` · ${t('replied STOP')}` : ''}</span>}</span> },
                                     { label: t('Email'), value: client.email },
                                     { label: client.type === 'business' ? t('NTN') : t('CNIC'), value: <span className="ltr-nums">{client.type === 'business' ? client.ntn : client.cnic}</span> },
                                     { label: t('Address'), value: [client.address, client.city].filter(Boolean).join(', ') },

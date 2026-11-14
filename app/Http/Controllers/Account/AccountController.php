@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Rules\PakistaniPhone;
+use App\Services\WhatsApp\WhatsAppConsent;
 use App\Support\ImageReencoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +38,13 @@ class AccountController extends Controller
         return Inertia::render('Account/Edit', [
             'sessions' => $sessions,
             'deletionRequestedAt' => $request->user()->deletion_requested_at?->toIso8601String(),
+            'whatsapp' => [
+                'consent' => $request->user()->hasWhatsAppConsent(),
+                'consent_at' => $request->user()->whatsapp_consent_at?->toIso8601String(),
+                'revoked_at' => $request->user()->whatsapp_consent_revoked_at?->toIso8601String(),
+                'source' => $request->user()->whatsapp_consent_source,
+                'phone' => $request->user()->phone,
+            ],
             'area' => $request->user()->isClient() ? 'portal' : ($request->user()->isPlatformStaff() ? 'admin' : 'workspace'),
         ]);
     }
@@ -97,5 +106,27 @@ class AccountController extends Controller
         $request->user()->forceFill(['deletion_requested_at' => null])->save();
 
         return back()->with('success', __('Deletion request cancelled.'));
+    }
+
+    /** Explicit WhatsApp opt in from the Account page; the number must be a Pakistani mobile. */
+    public function giveWhatsAppConsent(Request $request, WhatsAppConsent $consent): RedirectResponse
+    {
+        $data = $request->validate([
+            'phone' => ['required', 'string', new PakistaniPhone],
+            'agree' => ['accepted'],
+        ]);
+        $user = $request->user();
+        $user->forceFill(['phone' => PakistaniPhone::normalize($data['phone'])])->save();
+        $consent->grant($user, $user->isClient() ? 'client_portal' : 'account_settings');
+
+        return back()->with('success', __('WhatsApp notifications are on. Choose which ones you want in Notifications.'));
+    }
+
+    /** Withdraw at any time; nothing more is sent on WhatsApp, even messages already queued. */
+    public function withdrawWhatsAppConsent(Request $request, WhatsAppConsent $consent): RedirectResponse
+    {
+        $consent->withdraw($request->user(), 'account_settings');
+
+        return back()->with('success', __('WhatsApp notifications are off. You will not receive any WhatsApp messages from us.'));
     }
 }

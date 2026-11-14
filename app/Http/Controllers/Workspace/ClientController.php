@@ -12,6 +12,7 @@ use App\Models\Invoice;
 use App\Models\User;
 use App\Notifications\ClientPortalInvitation;
 use App\Services\Subscriptions\SubscriptionService;
+use App\Services\WhatsApp\WhatsAppConsent;
 use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
@@ -97,6 +98,8 @@ class ClientController extends Controller
                 'notes' => $canSensitive ? $client->notes : null,
                 'whatsapp_consent' => $client->hasWhatsAppConsent(),
                 'whatsapp_consent_at' => $client->whatsapp_consent_at?->toIso8601String(),
+                'whatsapp_consent_source' => $client->whatsapp_consent_source,
+                'whatsapp_consent_revoked_at' => $client->whatsapp_consent_revoked_at?->toIso8601String(),
                 'created_at' => $client->created_at->toIso8601String(),
             ],
             'cases' => $client->cases->map(fn ($c) => [
@@ -157,10 +160,12 @@ class ClientController extends Controller
     /** Records WhatsApp opt-in/out with timestamps (consent is required before any WhatsApp message). */
     private function applyConsent(Client $client, bool $consent): void
     {
+        $service = app(WhatsAppConsent::class);
+
         if ($consent && ! $client->hasWhatsAppConsent()) {
-            $client->forceFill(['whatsapp_consent_at' => now(), 'whatsapp_consent_revoked_at' => null])->save();
+            $service->grant($client, 'recorded_by_lawyer');
         } elseif (! $consent && $client->hasWhatsAppConsent()) {
-            $client->forceFill(['whatsapp_consent_revoked_at' => now()])->save();
+            $service->withdraw($client, 'recorded_by_lawyer');
         }
     }
 

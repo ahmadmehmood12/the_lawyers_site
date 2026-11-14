@@ -1,5 +1,5 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import { Camera, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react';
+import { Camera, KeyRound, LogOut, MessageCircle, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Alert, Avatar, Badge, Button, Card, CardBody, CardHeader, Input, PageHeader, Select } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
@@ -9,7 +9,9 @@ import type { SharedProps } from '@/types';
 
 type Session = { id: string; ip_address: string | null; agent: string; last_active: string; current: boolean };
 
-export default function AccountEdit({ sessions, deletionRequestedAt, area }: { sessions: Session[]; deletionRequestedAt: string | null; area: 'workspace' | 'portal' | 'admin' }) {
+type WhatsAppConsentInfo = { consent: boolean; consent_at: string | null; revoked_at: string | null; source: string | null; phone: string | null };
+
+export default function AccountEdit({ sessions, deletionRequestedAt, area, whatsapp }: { sessions: Session[]; deletionRequestedAt: string | null; area: 'workspace' | 'portal' | 'admin'; whatsapp: WhatsAppConsentInfo }) {
     const t = useT();
     const { locale } = useLocale();
     const { auth } = usePage<SharedProps>().props;
@@ -71,6 +73,7 @@ export default function AccountEdit({ sessions, deletionRequestedAt, area }: { s
                     </CardBody>
                 </Card>
                 <TwoFactor enabled={user.two_factor_enabled} />
+                {area !== 'admin' && <WhatsAppConsentCard info={whatsapp} />}
                 <Card>
                     <CardHeader title={t('Active sessions')} />
                     <ul className="divide-y divide-navy-100 dark:divide-navy-800">
@@ -143,6 +146,47 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
                 )}
                 {codes.length > 0 && <div><p className="font-medium">{t('Store these recovery codes safely:')}</p><pre className="ltr-nums mt-2 rounded bg-navy-50 p-3 text-xs dark:bg-navy-800">{codes.join('\n')}</pre></div>}
                 {enabled && <Button variant="ghost" onClick={() => router.delete(route('two-factor.disable'), { preserveScroll: true })}>{t('Disable')}</Button>}
+            </CardBody>
+        </Card>
+    );
+}
+
+/**
+ * WhatsApp opt in (AccountController::giveWhatsAppConsent). Nothing is sent on WhatsApp without it,
+ * and withdrawing stops every message, including ones already queued.
+ */
+function WhatsAppConsentCard({ info }: { info: WhatsAppConsentInfo }) {
+    const t = useT();
+    const { locale } = useLocale();
+    const form = useForm({ phone: info.phone ?? '', agree: false });
+    const sources: Record<string, string> = {
+        account_settings: t('Account settings'), notification_preferences: t('Notification settings'), client_portal: t('Client portal'),
+        recorded_by_lawyer: t('Recorded by your lawyer'), whatsapp_reply: t('WhatsApp reply'), admin: t('Platform team'), contact_form: t('Contact form'),
+    };
+    return (
+        <Card>
+            <CardHeader title={t('WhatsApp notifications')} actions={info.consent ? <Badge tone="green" icon={<MessageCircle className="size-3" />}>{t('On')}</Badge> : <Badge>{t('Off')}</Badge>} />
+            <CardBody className="space-y-4">
+                {info.consent ? (
+                    <>
+                        <p className="text-sm text-navy-600 dark:text-navy-300">{t('You agreed to receive WhatsApp messages on :phone.', { phone: info.phone ?? '' })}</p>
+                        <p className="text-xs text-navy-500">{t('Agreed on :date via :source.', { date: info.consent_at ? formatDateTime(info.consent_at, locale) : '—', source: sources[info.source ?? ''] ?? info.source ?? '—' })}</p>
+                        <p className="text-sm text-navy-600 dark:text-navy-300">{t('Choose which alerts come on WhatsApp in Notifications. You can also reply STOP to any of our WhatsApp messages.')}</p>
+                        <Button variant="secondary" onClick={() => router.delete(route('account.whatsapp-consent.destroy'), { preserveScroll: true })}>{t('Stop WhatsApp messages')}</Button>
+                    </>
+                ) : (
+                    <form onSubmit={(e) => { e.preventDefault(); form.post(route('account.whatsapp-consent.store'), { preserveScroll: true }); }} className="space-y-4">
+                        <p className="text-sm text-navy-600 dark:text-navy-300">{t('Get hearing reminders and appointment updates on WhatsApp. We only send the alerts you choose, never marketing.')}</p>
+                        {info.revoked_at && <p className="text-xs text-navy-500">{t('You stopped WhatsApp messages on :date.', { date: formatDateTime(info.revoked_at, locale) })}</p>}
+                        <Input label={t('WhatsApp number')} type="tel" placeholder="+92 300 1234567" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} />
+                        <label className="flex items-start gap-2.5 text-sm">
+                            <input type="checkbox" checked={form.data.agree} onChange={(e) => form.setData('agree', e.target.checked)} className="mt-0.5 size-4 accent-navy-900" />
+                            <span>{t('I agree to receive WhatsApp messages about my cases, hearings and appointments on this number. I can stop them at any time.')}</span>
+                        </label>
+                        {form.errors.agree && <p className="text-xs text-red-600">{form.errors.agree}</p>}
+                        <Button type="submit" icon={<MessageCircle className="size-4" />} loading={form.processing} disabled={!form.data.agree || !form.data.phone}>{t('Turn on WhatsApp messages')}</Button>
+                    </form>
+                )}
             </CardBody>
         </Card>
     );

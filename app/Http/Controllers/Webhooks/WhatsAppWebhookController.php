@@ -6,10 +6,11 @@ use App\Enums\DeliveryStatus;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationDelivery;
 use App\Services\WhatsApp\WhatsAppClient;
+use App\Services\WhatsApp\WhatsAppConsent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-/** Meta webhook: verification handshake + message status callbacks (signature verified). */
+/** Meta webhook: verification handshake, message status callbacks and STOP replies (signature verified). */
 class WhatsAppWebhookController extends Controller
 {
     public function verify(Request $request, WhatsAppClient $client): Response
@@ -26,7 +27,7 @@ class WhatsAppWebhookController extends Controller
         return response('Forbidden', 403);
     }
 
-    public function handle(Request $request, WhatsAppClient $client): Response
+    public function handle(Request $request, WhatsAppClient $client, WhatsAppConsent $consent): Response
     {
         if (! $client->signatureIsValid($request->getContent(), $request->header('X-Hub-Signature-256'))) {
             return response('Invalid signature', 401);
@@ -36,6 +37,12 @@ class WhatsAppWebhookController extends Controller
             foreach ((array) ($entry['changes'] ?? []) as $change) {
                 foreach ((array) data_get($change, 'value.statuses', []) as $status) {
                     $this->applyStatus((string) ($status['id'] ?? ''), (string) ($status['status'] ?? ''), $status);
+                }
+                // A reply such as STOP withdraws WhatsApp consent for that number.
+                foreach ((array) data_get($change, 'value.messages', []) as $message) {
+                    if (($message['type'] ?? '') === 'text' && WhatsAppConsent::isOptOut((string) data_get($message, 'text.body', ''))) {
+                        $consent->optOutByNumber((string) ($message['from'] ?? ''));
+                    }
                 }
             }
         }
@@ -48,7 +55,7 @@ class WhatsAppWebhookController extends Controller
      */
     private function applyStatus(string $messageId, string $status, array $payload): void
     {
-        $delivery = $messageId !== '' ? NotificationDelivery::query()->where('provider_message_id', $messageId)->first() : null;
+        $delivery = $messageId !== '' ? NotificationDelivery::query()->where('provider_message_id', $messageId)->where(fn ($q) => $q->where('provider', 'meta')->orWhereNull('provider'))->first() : null;
 
         if (! $delivery) {
             return;

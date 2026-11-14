@@ -120,29 +120,49 @@ class PlatformController extends Controller
         ]);
     }
 
-    /** @return array{enabled: bool, display_name: string, phone_number_id: string, api_version: string, configured: bool, has_token: bool, has_app_secret: bool, has_verify_token: bool, webhook_url: string} */
+    /** WhatsApp settings for the admin form. Secrets are reported only as present or not. */
     private function whatsAppSettings(): array
     {
+        $client = app(WhatsAppClient::class);
+        $meta = $client->meta()->settings();
+        $green = $client->greenApi()->settings();
+
         return [
-            'enabled' => Setting::get('whatsapp_enabled', '1') === '1',
-            'display_name' => Setting::get('whatsapp_display_name') ?: config('app.name'),
-            'phone_number_id' => (string) Setting::get('whatsapp_phone_number_id', ''),
-            'api_version' => Setting::get('whatsapp_api_version') ?: config('services.whatsapp.api_version'),
-            'configured' => app(WhatsAppClient::class)->isConfigured(),
-            'has_token' => filled(Setting::getSecret('whatsapp_token')) || filled(config('services.whatsapp.token')),
-            'has_app_secret' => filled(Setting::getSecret('whatsapp_app_secret')) || filled(config('services.whatsapp.app_secret')),
-            'has_verify_token' => filled(Setting::getSecret('whatsapp_verify_token')) || filled(config('services.whatsapp.verify_token')),
-            'webhook_url' => url('/api/webhooks/whatsapp'),
+            'enabled' => $client->isEnabled(),
+            'provider' => $client->activeKey(),
+            'display_name' => $client->displayName(),
+            'configured' => $client->isConfigured(),
+            'meta' => [
+                'configured' => $client->meta()->isConfigured(),
+                'phone_number_id' => (string) Setting::get('whatsapp_phone_number_id', ''),
+                'api_version' => $meta['api_version'],
+                'has_token' => filled($meta['token']),
+                'has_app_secret' => filled($meta['app_secret']),
+                'has_verify_token' => filled($meta['verify_token']),
+                'webhook_url' => url('/api/webhooks/whatsapp'),
+            ],
+            'green_api' => [
+                'configured' => $client->greenApi()->isConfigured(),
+                'api_url' => $green['api_url'],
+                'id_instance' => (string) ($green['id_instance'] ?? ''),
+                'has_token' => filled($green['token']),
+                'has_webhook_token' => filled($green['webhook_token']),
+                'webhook_url' => url('/api/webhooks/green-api'),
+            ],
         ];
     }
 
-    /** Saves WhatsApp Business Cloud API credentials from the admin panel. */
+    /**
+     * Saves both providers' credentials and the active provider. Only one provider is active; it must
+     * have its credentials before it can be switched on. Secrets are encrypted and never echoed back.
+     */
     public function saveWhatsAppSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'enabled' => ['required', Rule::in(['0', '1'])],
+            'provider' => ['nullable', Rule::in(WhatsAppClient::PROVIDERS)],
             'display_name' => ['required', 'string', 'max:60'],
-            'phone_number_id' => ['nullable', 'string', 'max:60'],
+            'phone_number_id' => ['nullable', 'string', 'max:60', 'regex:/^\d*$/'],
             'api_version' => ['required', 'string', 'max:20', 'regex:/^v\d+\.\d+$/'],
             'token' => ['nullable', 'string', 'max:1000'],
             'app_secret' => ['nullable', 'string', 'max:1000'],
@@ -150,26 +170,59 @@ class PlatformController extends Controller
             'clear_token' => ['boolean'],
             'clear_app_secret' => ['boolean'],
             'clear_verify_token' => ['boolean'],
+            'green_api_url' => ['nullable', 'url:https', 'max:255'],
+            'green_api_id_instance' => ['nullable', 'string', 'max:30', 'regex:/^\d*$/'],
+            'green_api_token' => ['nullable', 'string', 'max:255'],
+            'green_api_webhook_token' => ['nullable', 'string', 'max:255'],
+            'clear_green_api_token' => ['boolean'],
+            'clear_green_api_webhook_token' => ['boolean'],
+        ], [
+            'phone_number_id.regex' => __('The phone number ID is the numeric ID from Meta, not the phone number.'),
+            'green_api_id_instance.regex' => __('The instance ID is the number shown in the Green-API console.'),
         ]);
 
         Setting::put('whatsapp_enabled', $validated['enabled']);
         Setting::put('whatsapp_display_name', trim($validated['display_name']));
         Setting::put('whatsapp_phone_number_id', trim((string) ($validated['phone_number_id'] ?? '')) ?: null);
         Setting::put('whatsapp_api_version', trim($validated['api_version']));
+        Setting::put('green_api_url', trim((string) ($validated['green_api_url'] ?? '')) ?: null);
+        Setting::put('green_api_id_instance', trim((string) ($validated['green_api_id_instance'] ?? '')) ?: null);
 
-        foreach (['token' => 'whatsapp_token', 'app_secret' => 'whatsapp_app_secret', 'verify_token' => 'whatsapp_verify_token'] as $field => $key) {
+        $secrets = [
+            'token' => 'whatsapp_token', 'app_secret' => 'whatsapp_app_secret', 'verify_token' => 'whatsapp_verify_token',
+            'green_api_token' => 'green_api_token', 'green_api_webhook_token' => 'green_api_webhook_token',
+        ];
+        foreach ($secrets as $field => $key) {
             if ($request->boolean("clear_{$field}")) {
                 Setting::putSecret($key, null);
             } elseif (filled($validated[$field] ?? null)) {
-                Setting::putSecret($key, $validated[$field]);
+                Setting::putSecret($key, trim($validated[$field]));
             }
         }
 
+        $client = app(WhatsAppClient::class);
+        $validated['provider'] ??= $client->activeKey();
+        if ($validated['enabled'] === '1' && $validated['provider'] !== $client->activeKey() && ! $client->provider($validated['provider'])->isConfigured()) {
+            return back()->withErrors(['provider' => __(':provider needs its credentials before it can be the active provider.', ['provider' => $client->provider($validated['provider'])->label()])]);
+        }
+
+        $previous = $client->activeKey();
+        Setting::put('whatsapp_provider', $validated['provider']);
+
         activity('admin')->causedBy($request->user())
-            ->withProperties(collect($validated)->except(['token', 'app_secret', 'verify_token'])->all())
+            ->withProperties([...collect($validated)->except(array_merge(array_keys($secrets), ['clear_token', 'clear_app_secret', 'clear_verify_token']))->all(), 'previous_provider' => $previous])
             ->log('whatsapp_settings_changed');
 
-        return back()->with('success', __('WhatsApp settings saved.'));
+        return back()->with('success', __('WhatsApp settings saved. Active provider: :provider.', ['provider' => $client->provider($validated['provider'])->label()]));
+    }
+
+    /** Live connection check for one provider; sends no message. */
+    public function testWhatsApp(Request $request): RedirectResponse
+    {
+        $provider = $request->validate(['provider' => ['required', Rule::in(WhatsAppClient::PROVIDERS)]])['provider'];
+        $result = app(WhatsAppClient::class)->provider($provider)->testConnection();
+
+        return back()->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
 
     /** @return array<string, mixed> */

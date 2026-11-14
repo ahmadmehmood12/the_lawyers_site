@@ -29,6 +29,7 @@ class NotificationController extends Controller
             ]),
             'preferences' => $user->notificationPreferences()->get(['event', 'channel', 'enabled']),
             'events' => self::EVENTS,
+            'whatsappConsent' => $request->user()->hasWhatsAppConsent(),
             'channels' => NotificationChannel::options(),
             'area' => $user->isClient() ? 'portal' : ($user->isPlatformStaff() ? 'admin' : 'workspace'),
         ]);
@@ -60,7 +61,14 @@ class NotificationController extends Controller
             'preferences.*.enabled' => ['required', 'boolean'],
         ]);
 
+        $canWhatsApp = $request->user()->hasWhatsAppConsent();
+
         foreach ($validated['preferences'] ?? [] as $preference) {
+            // WhatsApp per event switches only count after the account level opt in.
+            if ($preference['channel'] === 'whatsapp' && $preference['enabled'] && ! $canWhatsApp) {
+                $preference['enabled'] = false;
+            }
+
             NotificationPreference::query()->updateOrCreate(
                 ['user_id' => $request->user()->id, 'event' => $preference['event'], 'channel' => $preference['channel']],
                 ['enabled' => $preference['enabled']],

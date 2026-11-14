@@ -1,5 +1,6 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { TypographySettings, type TypographyPayload } from '@/Components/domain/TypographySettings';
+import { type WhatsAppSettings, WhatsAppSettingsPanel } from '@/Components/domain/WhatsAppSettingsPanel';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, DetailList, Input, PageHeader, Select, Tabs, Textarea } from '@/Components/ui';
 import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
@@ -7,17 +8,6 @@ import { useT } from '@/lib/i18n';
 import type { AuthMedia, SharedProps } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
-type WhatsAppSettings = {
-    enabled: boolean;
-    display_name: string;
-    phone_number_id: string;
-    api_version: string;
-    configured: boolean;
-    has_token: boolean;
-    has_app_secret: boolean;
-    has_verify_token: boolean;
-    webhook_url: string;
-};
 
 type MailSettings = { mailer: string; scheme: string | null; host: string | null; port: string; username: string | null; from_address: string | null; from_name: string | null; has_password: boolean };
 
@@ -87,18 +77,6 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
         { key: 'whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/92…' },
     ];
     const form = useForm({ default_plan: settings.default_plan ?? 'free', support_email: settings.support_email ?? '', ai_enabled: settings.ai_enabled ?? '0', ai_redact_personal_data: settings.ai_redact_personal_data ?? '1', reviews_require_moderation: settings.reviews_require_moderation ?? '1', site_theme: settings.site_theme ?? 'navy-gold' });
-    const wa = useForm({
-        enabled: whatsapp.enabled ? '1' : '0',
-        display_name: whatsapp.display_name,
-        phone_number_id: whatsapp.phone_number_id,
-        api_version: whatsapp.api_version,
-        token: '',
-        app_secret: '',
-        verify_token: '',
-        clear_token: false,
-        clear_app_secret: false,
-        clear_verify_token: false,
-    });
     const yesNo = [{ value: '1', label: t('Yes') }, { value: '0', label: t('No') }];
     const themes = [
         { value: 'navy-gold', label: t('Navy & gold'), hint: t('Classic authority palette (default).'), swatches: ['#0f1e36', '#cfa33b', '#faf8f3'] },
@@ -240,42 +218,7 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                 </Card>
                 </div>
             )}
-            {tab === 'whatsapp' && (
-                <div className="grid gap-6">
-                <Card>
-                    <CardHeader
-                        title={t('WhatsApp Business alerts')}
-                        description={t('Send hearing reminders and case alerts through the official WhatsApp Business Cloud API, branded with your site name.')}
-                        actions={<Badge tone={whatsapp.configured ? 'green' : 'amber'}>{whatsapp.configured ? t('Configured') : t('Not configured')}</Badge>}
-                    />
-                    <CardBody className="space-y-4">
-                        {!whatsapp.configured && <Alert tone="warning">{t('Until access token and phone number ID are saved, WhatsApp deliveries are recorded as “skipped” — never as sent.')}</Alert>}
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Select label={t('Enable WhatsApp alerts')} value={wa.data.enabled} onChange={(e) => wa.setData('enabled', e.target.value)} options={yesNo} />
-                            <Input label={t('Sender display name')} value={wa.data.display_name} onChange={(e) => wa.setData('display_name', e.target.value)} error={wa.errors.display_name} hint={t('Must match the display name approved in Meta Business Manager.')} />
-                            <Input label={t('Phone number ID')} value={wa.data.phone_number_id} onChange={(e) => wa.setData('phone_number_id', e.target.value)} error={wa.errors.phone_number_id} hint={t('From Meta Business Suite → WhatsApp → API setup.')} />
-                            <Input label={t('API version')} value={wa.data.api_version} onChange={(e) => wa.setData('api_version', e.target.value)} error={wa.errors.api_version} placeholder="v21.0" />
-                            <Input label={t('Access token')} type="password" autoComplete="new-password" value={wa.data.token} onChange={(e) => wa.setData('token', e.target.value)} error={wa.errors.token} hint={savedSecret(whatsapp.has_token)} />
-                            <Input label={t('App secret')} type="password" autoComplete="new-password" value={wa.data.app_secret} onChange={(e) => wa.setData('app_secret', e.target.value)} error={wa.errors.app_secret} hint={savedSecret(whatsapp.has_app_secret)} />
-                            <Input label={t('Webhook verify token')} type="password" autoComplete="new-password" value={wa.data.verify_token} onChange={(e) => wa.setData('verify_token', e.target.value)} error={wa.errors.verify_token} hint={savedSecret(whatsapp.has_verify_token)} />
-                            <div className="space-y-1">
-                                <Input label={t('Webhook URL')} value={whatsapp.webhook_url} readOnly onFocus={(e) => e.currentTarget.select()} />
-                                <p className="text-xs text-navy-500 dark:text-navy-400">{t('Add this callback URL in Meta, then subscribe to the “messages” field.')}</p>
-                            </div>
-                        </div>
-                        <fieldset className="space-y-2">
-                            <legend className="text-sm font-medium text-navy-800 dark:text-navy-200">{t('Remove saved secrets')}</legend>
-                            <div className="flex flex-wrap gap-4 text-sm">
-                                <Checkbox label={t('Access token')} checked={wa.data.clear_token} onChange={(e) => wa.setData('clear_token', e.target.checked)} />
-                                <Checkbox label={t('App secret')} checked={wa.data.clear_app_secret} onChange={(e) => wa.setData('clear_app_secret', e.target.checked)} />
-                                <Checkbox label={t('Verify token')} checked={wa.data.clear_verify_token} onChange={(e) => wa.setData('clear_verify_token', e.target.checked)} />
-                            </div>
-                        </fieldset>
-                        <Button loading={wa.processing} onClick={() => wa.put(route('admin.whatsapp-settings.update'), { preserveScroll: true, onSuccess: () => wa.reset('token', 'app_secret', 'verify_token', 'clear_token', 'clear_app_secret', 'clear_verify_token') })}>{t('Save WhatsApp settings')}</Button>
-                    </CardBody>
-                </Card>
-                </div>
-            )}
+            {tab === 'whatsapp' && <WhatsAppSettingsPanel whatsapp={whatsapp} />}
             {tab === 'typography' && (
                 <div className="grid gap-6">
                 <TypographySettings typography={typography} />

@@ -153,6 +153,7 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::get('settings', [PlatformController::class, 'settings'])->name('settings.edit');
         Route::put('settings', [PlatformController::class, 'saveSettings'])->name('settings.update');
         Route::put('settings/whatsapp', [PlatformController::class, 'saveWhatsAppSettings'])->name('whatsapp-settings.update');
+        Route::post('settings/whatsapp/test', [PlatformController::class, 'testWhatsApp'])->middleware('throttle:10,1')->name('whatsapp-settings.test');
         Route::put('settings/mail', [PlatformController::class, 'saveMailSettings'])->name('mail-settings.update');
         Route::post('settings/mail/test', [PlatformController::class, 'sendTestMail'])->middleware('throttle:6,1')->name('mail-settings.test');
         Route::post('settings/branding', [PlatformController::class, 'saveBrandingSettings'])->name('branding-settings.update');
