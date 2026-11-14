@@ -109,11 +109,21 @@ class ReportedJudgmentController extends Controller
             'tag_line' => ['nullable', 'string', 'max:2000'],
             'decision_date' => ['nullable', 'date'],
             'uploaded_on' => ['required', 'date'],
-            'source_url' => ['nullable', 'url:https,http', 'max:500'],
+            'text_mode' => ['required', Rule::in(['pdf', 'link'])],
+            'source_url' => ['nullable', 'required_if:text_mode,link', 'url:https,http', 'max:500'],
             'is_published' => ['boolean'],
-            'pdf' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'pdf' => [$request->input('text_mode') === 'pdf' && ! $judgment->pdf_path ? 'required' : 'nullable', 'file', 'mimes:pdf', 'max:20480'],
             'remove_pdf' => ['boolean'],
         ]);
+
+        // The judgment text is either an uploaded PDF or a link; choosing one clears the other.
+        if ($data['text_mode'] === 'link' && $judgment->pdf_path) {
+            Storage::disk('public')->delete($judgment->pdf_path);
+            $judgment->pdf_path = null;
+        }
+        if ($data['text_mode'] === 'pdf') {
+            $data['source_url'] = null;
+        }
 
         if ($request->boolean('remove_pdf') && $judgment->pdf_path) {
             Storage::disk('public')->delete($judgment->pdf_path);
@@ -126,7 +136,7 @@ class ReportedJudgmentController extends Controller
             $judgment->pdf_path = $request->file('pdf')->store('judgments', 'public');
         }
 
-        $judgment->fill(collect($data)->except(['pdf', 'remove_pdf'])->all())->save();
+        $judgment->fill(collect($data)->except(['pdf', 'remove_pdf', 'text_mode'])->all())->save();
         Cache::forget('judgment-counts');
     }
 }

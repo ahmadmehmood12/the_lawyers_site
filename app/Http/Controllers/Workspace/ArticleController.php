@@ -82,7 +82,7 @@ class ArticleController extends Controller
 
         return $request->boolean('submit')
             ? redirect()->route('lawyer.articles.index')->with('success', __('Submitted for review.'))
-            : redirect()->route('lawyer.articles.edit', $article)->with('success', __('Draft saved.'));
+            : redirect()->route('lawyer.articles.edit', $article->id)->with('success', __('Draft saved.'));
     }
 
     public function respond(Request $request, Review $review): RedirectResponse

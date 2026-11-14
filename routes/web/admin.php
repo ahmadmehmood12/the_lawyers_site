@@ -72,7 +72,7 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::get('moderation', [ContentController::class, 'moderation'])->name('articles.index');
         Route::get('moderation/reviews', [ContentController::class, 'moderation'])->defaults('tab', 'reviews')->name('reviews.index');
         // Decisions accept PUT or POST; a stray GET (reload, back button) returns to the list instead of a 405.
-        Route::match(['put', 'post'], 'moderation/articles/{article}', [ContentController::class, 'moderateArticle'])->name('articles.moderate');
+        Route::match(['put', 'post'], 'moderation/articles/{article:id}', [ContentController::class, 'moderateArticle'])->name('articles.moderate');
         Route::match(['put', 'post'], 'moderation/reviews/{review}', [ContentController::class, 'moderateReview'])->name('reviews.moderate');
         Route::match(['put', 'post'], 'moderation/comments/{comment}', [ContentController::class, 'moderateComment'])->name('comments.moderate');
         Route::get('moderation/{kind}/{id}', fn (string $kind) => redirect()->route('admin.articles.index', ['tab' => in_array($kind, ['articles', 'reviews', 'comments'], true) ? $kind : 'articles']))

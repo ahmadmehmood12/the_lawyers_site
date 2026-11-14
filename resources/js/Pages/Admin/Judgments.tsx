@@ -62,7 +62,8 @@ export default function Judgments({ rows, courts, counts, filters, csvColumns }:
 
 function JudgmentDialog({ row, courts, defaultCourt, onClose }: { row: Row | null; courts: SelectOption[]; defaultCourt?: string; onClose: () => void }) {
     const t = useT();
-    const form = useForm<{ court: string; case_type: string; case_number: string; title: string; judges: string; citation: string; tag_line: string; decision_date: string; uploaded_on: string; source_url: string; is_published: boolean; pdf: File | null; remove_pdf: boolean }>({
+    const form = useForm<{ court: string; case_type: string; case_number: string; title: string; judges: string; citation: string; tag_line: string; decision_date: string; uploaded_on: string; source_url: string; is_published: boolean; pdf: File | null; remove_pdf: boolean; text_mode: 'pdf' | 'link' }>({
+        text_mode: row?.pdf_url ? 'pdf' : row?.source_url ? 'link' : 'link',
         court: row?.court ?? defaultCourt ?? 'lhc', case_type: row?.case_type ?? '', case_number: row?.case_number ?? '', title: row?.title ?? '', judges: row?.judges ?? '',
         citation: row?.citation ?? '', tag_line: row?.tag_line ?? '', decision_date: row?.decision_date ?? '', uploaded_on: row?.uploaded_on ?? new Date().toISOString().slice(0, 10),
         source_url: row?.source_url ?? '', is_published: row?.is_published ?? true, pdf: null, remove_pdf: false,
@@ -85,13 +86,30 @@ function JudgmentDialog({ row, courts, defaultCourt, onClose }: { row: Row | nul
                 <Textarea wrapperClassName="sm:col-span-2" label={t('Tag line')} rows={2} value={form.data.tag_line} onChange={(e) => form.setData('tag_line', e.target.value)} error={form.errors.tag_line} />
                 <Input label={t('Decision date')} type="date" value={form.data.decision_date} onChange={(e) => form.setData('decision_date', e.target.value)} error={form.errors.decision_date} />
                 <Input label={t('Uploaded on')} type="date" value={form.data.uploaded_on} onChange={(e) => form.setData('uploaded_on', e.target.value)} error={form.errors.uploaded_on} required />
-                <Input wrapperClassName="sm:col-span-2" label={t('Link on the court website')} type="url" value={form.data.source_url} onChange={(e) => form.setData('source_url', e.target.value)} error={form.errors.source_url} placeholder="https://" />
-                <div className="space-y-1.5 sm:col-span-2">
-                    <p className="text-sm font-medium">{t('Judgment PDF')}</p>
-                    {row?.pdf_url && <p className="flex items-center gap-3 text-sm"><a href={row.pdf_url} target="_blank" rel="noreferrer" className="underline">{t('Current PDF')}</a><Checkbox label={t('Remove it')} checked={form.data.remove_pdf} onChange={(e) => form.setData('remove_pdf', e.target.checked)} /></p>}
-                    <input type="file" accept="application/pdf" className={fileClasses} onChange={(e) => form.setData('pdf', e.target.files?.[0] ?? null)} aria-label={t('Judgment PDF')} />
-                    {form.errors.pdf ? <p className="text-xs text-red-600">{form.errors.pdf}</p> : <p className="text-xs text-navy-500">{t('PDF up to 20 MB.')}</p>}
-                </div>
+                <fieldset className="space-y-3 sm:col-span-2">
+                    <legend className="text-sm font-medium">{t('Judgment text')}</legend>
+                    <div className="inline-flex rounded-lg bg-navy-50 p-1 text-sm dark:bg-navy-800" role="radiogroup">
+                        {([['link', t('Add a link')], ['pdf', t('Upload a PDF')]] as const).map(([mode, label]) => (
+                            <button key={mode} type="button" role="radio" aria-checked={form.data.text_mode === mode} onClick={() => form.setData('text_mode', mode)}
+                                className={cn('inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition', form.data.text_mode === mode ? 'bg-white text-navy-900 shadow-sm dark:bg-navy-700 dark:text-white' : 'text-navy-500 hover:text-navy-800')}>
+                                {mode === 'link' ? <ExternalLink className="size-4" /> : <FileText className="size-4" />}{label}
+                            </button>
+                        ))}
+                    </div>
+                    {form.data.text_mode === 'link' ? (
+                        <Input label={t('Link to the judgment')} type="url" value={form.data.source_url} onChange={(e) => form.setData('source_url', e.target.value)} error={form.errors.source_url} placeholder="https://" required
+                            hint={t('Paste the address of the judgment on the court website or any public PDF link.')} />
+                    ) : (
+                        <div className="space-y-1.5">
+                            {row?.pdf_url && <p className="flex items-center gap-3 text-sm"><a href={row.pdf_url} target="_blank" rel="noreferrer" className="underline">{t('Current PDF')}</a><span className="text-navy-500">{t('Choose a new file only to replace it.')}</span></p>}
+                            <input type="file" accept="application/pdf" className={fileClasses} onChange={(e) => form.setData('pdf', e.target.files?.[0] ?? null)} aria-label={t('Judgment PDF')} />
+                            {form.errors.pdf ? <p className="text-xs text-red-600">{form.errors.pdf}</p> : <p className="text-xs text-navy-500">{t('PDF up to 20 MB.')}</p>}
+                        </div>
+                    )}
+                    {row && ((form.data.text_mode === 'link' && row.pdf_url) || (form.data.text_mode === 'pdf' && row.source_url)) && (
+                        <p className="text-xs text-gold-700 dark:text-gold-300">{form.data.text_mode === 'link' ? t('Saving replaces the uploaded PDF with this link.') : t('Saving replaces the link with the uploaded PDF.')}</p>
+                    )}
+                </fieldset>
                 <Checkbox label={t('Show on the public page')} checked={form.data.is_published} onChange={(e) => form.setData('is_published', e.target.checked)} />
             </div>
         </Modal>

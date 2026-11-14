@@ -28,10 +28,14 @@ export default function JudgmentShow({ judgment: j, related, canonical }: { judg
                                 <iframe src={j.pdf_url} title={j.title} className="h-[80dvh] w-full bg-white" />
                             </div>
                         ) : (
-                            <div className="rounded-card border border-dashed border-navy-200 px-6 py-12 text-center dark:border-navy-700">
-                                <FileText className="mx-auto size-8 text-navy-300" />
-                                <p className="mt-3 font-medium">{t('The full text is not uploaded here yet.')}</p>
-                                {j.source_url && <a href={j.source_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm font-medium underline">{t('Read it on the court’s website')}<ExternalLink className="size-4" /></a>}
+                            <div className="rounded-card border border-navy-100 bg-white px-6 py-12 text-center dark:border-navy-800 dark:bg-navy-900">
+                                <FileText className="mx-auto size-9 text-navy-300" />
+                                {j.source_url ? (
+                                    <>
+                                        <p className="mt-3 font-medium">{t('The full judgment is published on the court’s website.')}</p>
+                                        <a href={j.source_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded bg-navy-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 dark:bg-gold-500 dark:text-navy-950">{t('Open the judgment')}<ExternalLink className="size-4" /></a>
+                                    </>
+                                ) : <p className="mt-3 font-medium">{t('The full text is not available here yet.')}</p>}
                             </div>
                         )}
                     </div>
@@ -43,7 +47,7 @@ export default function JudgmentShow({ judgment: j, related, canonical }: { judg
                             {(j.pdf_url || j.source_url) && (
                                 <div className="flex gap-2 border-t border-navy-100 p-4 dark:border-navy-800">
                                     {j.pdf_url && <a href={j.pdf_url} download className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-white dark:bg-gold-500 dark:text-navy-950"><Download className="size-4" />PDF</a>}
-                                    {j.source_url && <a href={j.source_url} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-navy-200 dark:ring-navy-700"><ExternalLink className="size-4" />{t('Source')}</a>}
+                                    {j.source_url && <a href={j.source_url} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-navy-200 dark:ring-navy-700"><ExternalLink className="size-4" />{t('Open judgment')}</a>}
                                 </div>
                             )}
                         </Card>

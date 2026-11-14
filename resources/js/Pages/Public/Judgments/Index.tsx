@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { ChevronDown, FileText, Gavel, RotateCcw, Scale, Search } from 'lucide-react';
+import { ChevronDown, ExternalLink, FileText, Gavel, RotateCcw, Scale, Search } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button, DateTimePicker, Pagination } from '@/Components/ui';
 import { controlClasses } from '@/Components/ui/Field';
@@ -106,7 +106,7 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                                 </div>
                                 {(j.pdf_url || j.source_url) && (
                                     <a href={j.pdf_url ?? j.source_url ?? '#'} target="_blank" rel="noreferrer" className="hidden h-fit shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 ring-navy-200 hover:bg-navy-50 sm:inline-flex dark:ring-navy-700 dark:hover:bg-navy-800">
-                                        <FileText className="size-4 text-red-600" />{j.pdf_url ? 'PDF' : t('Source')}
+                                        {j.pdf_url ? <FileText className="size-4 text-red-600" /> : <ExternalLink className="size-4" />}{j.pdf_url ? 'PDF' : t('Open judgment')}
                                     </a>
                                 )}
                             </li>
