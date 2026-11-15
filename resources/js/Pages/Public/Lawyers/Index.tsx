@@ -3,18 +3,21 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import { useState } from 'react';
 import { LawyerTile, type TopLawyer } from '@/Components/home/TopLawyers';
 import { Button, Checkbox, EmptyState, Input, Pagination, Select } from '@/Components/ui';
+import AppLayout from '@/Layouts/AppLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n';
 import type { Option, Paginated } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
-type Props = { lawyers: Paginated<TopLawyer>; filters: Record<string, string>; options: { cities: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; courts: SelectOption[]; specializations: SelectOption[]; barCouncils: SelectOption[]; categories: Option[]; languages: string[] }; canonical: string };
+type Props = { lawyers: Paginated<TopLawyer>; filters: Record<string, string>; options: { cities: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; courts: SelectOption[]; specializations: SelectOption[]; barCouncils: SelectOption[]; categories: Option[]; languages: string[] }; canonical: string; embedded?: 'portal' | 'workspace' | null };
 
-export default function LawyersIndex({ lawyers, filters, options, canonical }: Props) {
+export default function LawyersIndex({ lawyers, filters, options, canonical, embedded = null }: Props) {
     const t = useT();
     const [open, setOpen] = useState(false);
-    const visit = (patch: Record<string, string | undefined>) => router.get(route('lawyers.index'), Object.fromEntries(Object.entries({ ...filters, ...patch, page: undefined }).filter(([, v]) => v)), { preserveState: true, preserveScroll: true, replace: true });
+    const indexRoute = embedded === 'portal' ? 'portal.lawyers.index' : 'lawyers.index';
+    const showRoute = embedded === 'portal' ? 'portal.lawyers.show' : 'lawyers.show';
+    const visit = (patch: Record<string, string | undefined>) => router.get(route(indexRoute), Object.fromEntries(Object.entries({ ...filters, ...patch, page: undefined }).filter(([, v]) => v)), { preserveState: true, preserveScroll: true, replace: true });
     const spec = options.specializations.find((s) => s.slug === filters.specialization);
     const city = options.cities.find((c) => c.slug === filters.city);
     const heading = [spec?.label, city ? t('in :city', { city: city.label }) : null].filter(Boolean).join(' ') || t('Lawyers in Pakistan');
@@ -34,14 +37,14 @@ export default function LawyersIndex({ lawyers, filters, options, canonical }: P
             <Select label={t('Max. consultation fee')} value={filters.fee_max ?? ''} onChange={(e) => visit({ fee_max: e.target.value || undefined })} options={['2000', '5000', '10000', '25000'].map((f) => ({ value: f, label: `PKR ${Number(f).toLocaleString()}` }))} placeholder={t('Any')} />
             <Checkbox label={t('Online consultation')} checked={filters.online === '1'} onChange={(e) => visit({ online: e.target.checked ? '1' : undefined })} />
             <Checkbox label={t('Verified only')} checked={filters.verified === '1'} onChange={(e) => visit({ verified: e.target.checked ? '1' : undefined })} />
-            {Object.keys(filters).length > 0 && <Button variant="ghost" size="sm" onClick={() => router.get(route('lawyers.index'))}>{t('Clear filters')}</Button>}
+            {Object.keys(filters).length > 0 && <Button variant="ghost" size="sm" onClick={() => router.get(route(indexRoute))}>{t('Clear filters')}</Button>}
         </div>
     );
 
-    return (
-        <PublicLayout seo={{ title: heading, description: t('Search advocates by city, court, practice area, experience and Bar Council. Verified credentials are clearly marked.'), canonical }}>
+    const content = (
+        <>
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-                <nav aria-label="Breadcrumb" className="mb-2 text-xs text-navy-500"><a href={route('home')}>{t('Home')}</a> / {t('Find a Lawyer')}</nav>
+                <nav aria-label="Breadcrumb" className="mb-2 text-xs text-navy-500"><a href={route(embedded === 'portal' ? 'portal.dashboard' : 'home')}>{t(embedded === 'portal' ? 'Dashboard' : 'Home')}</a> / {t('Find a Lawyer')}</nav>
                 <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
                     <div><h1 className="text-3xl font-semibold">{heading}</h1><p className="text-sm text-navy-600 dark:text-navy-300">{t(':count lawyers found', { count: lawyers.total })}</p></div>
                     <div className="flex items-center gap-2">
@@ -53,7 +56,7 @@ export default function LawyersIndex({ lawyers, filters, options, canonical }: P
                     <aside className="hidden lg:block">{panel}</aside>
                     <div>
                         {lawyers.data.length === 0 ? <EmptyState title={t('No lawyers match these filters')} description={t('Try widening your search.')} /> : (
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{lawyers.data.map((l) => <LawyerTile key={l.slug} lawyer={l} rank={null} />)}</div>
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{lawyers.data.map((l) => <LawyerTile key={l.slug} lawyer={l} rank={null} showRoute={showRoute} />)}</div>
                         )}
                         <div className="mt-6"><Pagination meta={lawyers} /></div>
                         <p className="mt-6 text-xs text-navy-500">{t('Listing order is not a ranking of competence. “Verified” means Bar enrollment evidence was reviewed by our team; other details are reported by the lawyer.')}</p>
@@ -67,6 +70,16 @@ export default function LawyersIndex({ lawyers, filters, options, canonical }: P
                     {panel}
                 </div>
             </div>
+        </>
+    );
+
+    if (embedded) {
+        return <AppLayout area="portal" title={heading} wide>{content}</AppLayout>;
+    }
+
+    return (
+        <PublicLayout seo={{ title: heading, description: t('Search advocates by city, court, practice area, experience and Bar Council. Verified credentials are clearly marked.'), canonical }}>
+            {content}
         </PublicLayout>
     );
 }

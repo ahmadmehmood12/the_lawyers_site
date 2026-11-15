@@ -29,7 +29,7 @@ class LawyerDirectoryController extends Controller
 {
     public const LANGUAGES = ['English', 'Urdu', 'Punjabi', 'Sindhi', 'Pashto', 'Balochi', 'Saraiki', 'Hindko', 'Arabic'];
 
-    public function index(Request $request): Response
+    public function index(Request $request, ?string $embedded = null): Response
     {
         $filters = $request->only(['search', 'city', 'province', 'district', 'court', 'specialization', 'experience', 'bar_council', 'category', 'language', 'online', 'fee_max', 'verified', 'sort']);
 
@@ -86,10 +86,11 @@ class LawyerDirectoryController extends Controller
                 'languages' => self::LANGUAGES,
             ],
             'canonical' => route('lawyers.index'),
+            'embedded' => $embedded,
         ]);
     }
 
-    public function show(Request $request, LawyerProfile $lawyer): Response
+    public function show(Request $request, LawyerProfile $lawyer, ?string $embedded = null): Response
     {
         abort_unless(LawyerProfile::query()->listed()->whereKey($lawyer->id)->exists(), 404);
 
@@ -141,6 +142,7 @@ class LawyerDirectoryController extends Controller
             'isFavourite' => $user ? $user->favouriteLawyers()->whereKey($lawyer->id)->exists() : false,
             'canBook' => $lawyer->accepting_clients,
             'canonical' => route('lawyers.show', $lawyer),
+            'embedded' => $embedded,
         ]);
     }
 

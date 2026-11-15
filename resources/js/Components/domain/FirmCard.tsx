@@ -15,11 +15,11 @@ export type FirmCardData = {
     focus: string[];
 };
 
-export function FirmCard({ firm: f }: { firm: FirmCardData }) {
+export function FirmCard({ firm: f, showRoute = 'firms.show' }: { firm: FirmCardData; showRoute?: string }) {
     const t = useT();
     const [logoFailed, setLogoFailed] = useState(false);
     return (
-        <Link href={route('firms.show', f.slug)} className="group flex h-full flex-col rounded-card border border-navy-100 bg-white p-5 shadow-card transition hover:border-navy-300 hover:shadow-pop dark:border-navy-800 dark:bg-navy-900">
+        <Link href={route(showRoute, f.slug)} className="group flex h-full flex-col rounded-card border border-navy-100 bg-white p-5 shadow-card transition hover:border-navy-300 hover:shadow-pop dark:border-navy-800 dark:bg-navy-900">
             <div className="flex items-center gap-3">
                 {f.logo_url && !logoFailed ? (
                     <img src={f.logo_url} alt="" loading="lazy" onError={() => setLogoFailed(true)} className="size-14 rounded-lg border border-navy-100 bg-white object-contain p-1 dark:border-navy-700" />
@@ -45,15 +45,17 @@ export function FirmCard({ firm: f }: { firm: FirmCardData }) {
                 </div>
             )}
 
-            <div className="mt-auto flex items-center justify-between gap-2 border-t border-navy-100 pt-3 text-xs dark:border-navy-800">
-                <span className="inline-flex items-center gap-1.5 font-medium text-navy-700 dark:text-navy-200">
-                    <Users className="size-3.5" aria-hidden />
-                    {f.members ? t(':count advocates', { count: f.members }) : t('Advocate team')}
-                </span>
-                <span className="inline-flex items-center gap-1 text-navy-500">
-                    <Building2 className="size-3.5" aria-hidden />
-                    {t('View firm')}
-                </span>
+            <div className="mt-auto pt-4">
+                <div className="flex items-center justify-between gap-2 border-t border-navy-100 pt-3 text-xs dark:border-navy-800">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-navy-700 dark:text-navy-200">
+                        <Users className="size-3.5" aria-hidden />
+                        {f.members ? t(':count advocates', { count: f.members }) : t('Advocate team')}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-navy-500">
+                        <Building2 className="size-3.5" aria-hidden />
+                        {t('View firm')}
+                    </span>
+                </div>
             </div>
         </Link>
     );

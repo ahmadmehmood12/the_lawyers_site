@@ -6,6 +6,7 @@ use App\Enums\ReviewStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\ArticleCategory;
+use App\Models\Tag;
 use App\Support\HtmlSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,9 +26,27 @@ class ArticleController extends Controller
             ->orderByDesc('likes_count')->latest('published_at')->paginate(12)->withQueryString()
             ->through(fn (Article $a) => $a->toCard());
 
+        $categories = ArticleCategory::query()
+            ->withCount(['articles' => fn ($q) => $q->published()])
+            ->orderByDesc('articles_count')->orderBy('name')->get(['id', 'name', 'slug'])
+            ->filter(fn (ArticleCategory $category) => $category->articles_count > 0)->values()
+            ->map(fn (ArticleCategory $category) => ['name' => $category->name, 'slug' => $category->slug, 'count' => $category->articles_count]);
+
+        $topArticles = fn (string $column) => Article::query()->published()
+            ->with(['author:id,name', 'category:id,name,slug'])
+            ->orderByDesc($column)->orderByDesc('id')->limit(5)->get()
+            ->map(fn (Article $article) => $article->toCard());
+
         return Inertia::render('Public/Articles/Index', [
             'articles' => $articles,
-            'categories' => ArticleCategory::query()->orderBy('name')->get(['name', 'slug']),
+            'categories' => $categories,
+            'tags' => Tag::query()
+                ->whereHas('articles', fn ($q) => $q->published())
+                ->withCount(['articles' => fn ($q) => $q->published()])
+                ->orderByDesc('articles_count')->orderBy('name')->limit(40)->get(['id', 'name', 'slug'])
+                ->map(fn (Tag $tag) => ['name' => $tag->name, 'slug' => $tag->slug, 'count' => $tag->articles_count]),
+            'topViewed' => $topArticles('views'),
+            'topLiked' => $topArticles('likes_count'),
             'filters' => $request->only(['category', 'tag', 'search']),
             'canonical' => route('articles.index'),
         ]);

@@ -44,7 +44,7 @@ export function TopLawyers({ data }: { data: TopLawyersData | undefined }) {
 }
 
 /** Lawyer card shared by the homepage and the /lawyers directory. */
-export function LawyerTile({ lawyer: l, rank }: { lawyer: TopLawyer; rank: number | null }) {
+export function LawyerTile({ lawyer: l, rank, showRoute = 'lawyers.show' }: { lawyer: TopLawyer; rank: number | null; showRoute?: string }) {
     const t = useT();
     const { locale } = useLocale();
     const { auth } = usePage<SharedProps>().props;
@@ -87,7 +87,7 @@ export function LawyerTile({ lawyer: l, rank }: { lawyer: TopLawyer; rank: numbe
             </ul>
 
             <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                <LinkButton href={route('lawyers.show', l.slug)} variant="secondary" size="sm">{t('View profile')}</LinkButton>
+                <LinkButton href={route(showRoute, l.slug)} variant="secondary" size="sm">{t('View profile')}</LinkButton>
                 {l.accepting_clients && (isClient
                     ? <LinkButton href={route('portal.book', l.slug)} size="sm" icon={<CalendarClock className="size-3.5" />}>{t('Book appointment')}</LinkButton>
                     : !auth.user && <LinkButton href={route('register', { type: 'client' })} size="sm" icon={<CalendarClock className="size-3.5" />}>{t('Sign up to book')}</LinkButton>)}

@@ -44,6 +44,7 @@ class CaseRequest extends FormRequest
             'jurisdiction' => ['nullable', Rule::in(['original', 'appellate', 'revisional', 'writ', 'execution'])],
             'province_id' => ['nullable', 'integer', 'exists:provinces,id'],
             'district_id' => ['nullable', 'integer', 'exists:districts,id'],
+            'tehsil_id' => ['nullable', 'integer', 'exists:tehsils,id'],
             'judge_id' => ['nullable', 'integer', Rule::exists('judges', 'id')->where('court_id', $this->input('court_id'))],
             'judge_name' => ['nullable', 'string', 'max:160'],
             'courtroom' => ['nullable', 'string', 'max:50'],

@@ -195,7 +195,10 @@ function OrganizationSwitcher() {
                     wrapperClassName="mt-2"
                     className="w-full rounded-md bg-navy-900 px-2 py-1.5 text-xs text-navy-100 ring-1 ring-inset ring-navy-700 hover:bg-navy-800"
                     value=""
-                    onChange={(event) => event.target.value && router.post(route('organizations.switch', Number(event.target.value)))}
+                    onChange={(event) => {
+                        if (!event.target.value) return;
+                        router.post(route('organizations.switch', Number(event.target.value)), {}, { onSuccess: () => window.location.reload() });
+                    }}
                     placeholder={t('Switch organization…')}
                     options={others.map((o) => ({ value: o.id, label: o.name }))}
                     aria-label={t('Switch organization')}

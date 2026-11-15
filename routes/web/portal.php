@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Portal\DirectoryController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Shared\ConversationController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,11 @@ Route::middleware(['auth', 'verified', 'account:client'])->prefix('portal')->nam
     Route::post('book/{lawyer:slug}', [PortalController::class, 'storeBooking'])->middleware('throttle:10,1')->name('book.store');
     Route::post('lawyers/{lawyer:slug}/reviews', [PortalController::class, 'review'])->middleware('throttle:5,1')->name('reviews.store');
     Route::get('favourites', [PortalController::class, 'favourites'])->name('favourites');
+
+    Route::get('lawyers', [DirectoryController::class, 'lawyers'])->name('lawyers.index');
+    Route::get('lawyers/{lawyer:slug}', [DirectoryController::class, 'lawyer'])->name('lawyers.show');
+    Route::get('law-firms', [DirectoryController::class, 'firms'])->name('firms.index');
+    Route::get('law-firms/{firm:slug}', [DirectoryController::class, 'firm'])->name('firms.show');
 
     Route::get('messages', [ConversationController::class, 'index'])->name('messages.index');
     Route::post('messages', [ConversationController::class, 'store'])->name('messages.store');

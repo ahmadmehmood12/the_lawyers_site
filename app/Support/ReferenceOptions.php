@@ -10,6 +10,7 @@ use App\Models\Judge;
 use App\Models\Organization;
 use App\Models\Province;
 use App\Models\Specialization;
+use App\Models\Tehsil;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -60,6 +61,13 @@ class ReferenceOptions
         return self::localized('districts', fn () => District::query()->orderBy('name')->get()->map(fn ($d) => ['value' => $d->id, 'label' => self::label($d), 'province_id' => $d->province_id])->all());
     }
 
+    /** @return list<array{value:int,label:string,district_id:int}> */
+    public static function tehsils(): array
+    {
+        return self::localized('tehsils', fn () => Tehsil::query()->with('district:id')->orderBy('name')->get()
+            ->map(fn (Tehsil $tehsil) => ['value' => $tehsil->id, 'label' => self::label($tehsil), 'district_id' => $tehsil->district_id])->all());
+    }
+
     public static function cities(): array
     {
         return self::localized('cities', fn () => City::query()->with('district:id,province_id')->orderBy('name')->get()
@@ -88,7 +96,7 @@ class ReferenceOptions
 
     public static function flush(): void
     {
-        foreach (['courts', 'judges', 'specializations', 'provinces', 'districts', 'cities', 'bar-councils'] as $key) {
+        foreach (['courts', 'judges', 'specializations', 'provinces', 'districts', 'tehsils', 'cities', 'bar-councils'] as $key) {
             foreach (['en', 'ur'] as $locale) {
                 Cache::forget("ref:{$key}:{$locale}");
             }

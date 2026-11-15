@@ -146,6 +146,7 @@ function Overview({ c, can, onTeam }: { c: CaseData; can: Record<string, boolean
                                 { label: t('Courtroom'), value: c.courtroom },
                                 { label: t('Jurisdiction'), value: c.jurisdiction && t(c.jurisdiction.charAt(0).toUpperCase() + c.jurisdiction.slice(1)) },
                                 { label: t('District'), value: [c.district, c.province].filter(Boolean).join(', ') },
+                                { label: t('Tehsil'), value: c.tehsil },
                                 { label: t('Practice area'), value: c.specialization },
                                 { label: t('Filing date'), value: c.filing_date && formatDate(c.filing_date, locale) },
                                 { label: t('Filing year'), value: c.filing_year },

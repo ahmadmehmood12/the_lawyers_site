@@ -3,6 +3,7 @@ import { ChevronDown, ExternalLink, FileText, Gavel, RotateCcw, Scale, Search } 
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button, DateTimePicker, Pagination, Select } from '@/Components/ui';
 import { controlClasses } from '@/Components/ui/Field';
+import AppLayout from '@/Layouts/AppLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { cn } from '@/lib/cn';
 import { formatDate } from '@/lib/format';
@@ -14,20 +15,22 @@ type Court = { key: string; name: string; short: string; province: string; count
 type Filters = Partial<Record<'court' | 'year' | 'judge' | 'citation' | 'case' | 'title' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
 
 /** Judgments approved for reporting, High Court wise (Public\ReportedJudgmentController). */
-export default function JudgmentsIndex({ judgments, courts, judges, years, filters, canonical }: { judgments: Paginated<Judgment>; courts: Court[]; judges: string[]; years: number[]; filters: Filters; canonical: string }) {
+export default function JudgmentsIndex({ judgments, courts, judges, years, filters, canonical, embedded = null }: { judgments: Paginated<Judgment>; courts: Court[]; judges: string[]; years: number[]; filters: Filters; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
     const { locale } = useLocale();
     const [form, setForm] = useState<Filters>(filters);
     const [more, setMore] = useState(Boolean(filters.decided_from || filters.decided_to || filters.uploaded_from || filters.uploaded_to));
     const active = courts.find((c) => c.key === filters.court);
+    const indexRoute = embedded === 'workspace' ? 'judgments.workspace.index' : 'judgments.index';
+    const showRoute = embedded === 'workspace' ? 'judgments.workspace.show' : 'judgments.show';
     const set = (key: keyof Filters, value: string) => setForm((f) => ({ ...f, [key]: value }));
-    const apply = (next: Filters) => router.get(route('judgments.index'), Object.fromEntries(Object.entries(next).filter(([, v]) => v)), { preserveScroll: true, preserveState: true });
+    const apply = (next: Filters) => router.get(route(indexRoute), Object.fromEntries(Object.entries(next).filter(([, v]) => v)), { preserveScroll: true, preserveState: true });
     const submit = (e: FormEvent) => { e.preventDefault(); apply(form); };
     const anyFilter = Object.entries(filters).some(([k, v]) => k !== 'court' && v);
     const total = courts.reduce((n, c) => n + c.count, 0);
 
-    return (
-        <PublicLayout seo={{ title: active ? `${t('Reported judgments')}, ${active.name}` : t('Reported judgments'), description: t('Judgments approved for reporting by the High Courts of Pakistan, searchable by judge, citation, case number, title and date.'), canonical }}>
+    const content = (
+        <>
             <section className="border-b border-navy-100 bg-white dark:border-navy-800 dark:bg-navy-950">
                 <div className="mx-auto max-w-7xl px-4 pb-6 pt-10 sm:px-6">
                     <p className="inline-flex items-center gap-2 text-sm font-medium text-gold-700 dark:text-gold-300"><Scale className="size-4" />{t('Legal research')}</p>
@@ -88,7 +91,7 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                             <li key={j.id} className="group flex gap-4 px-5 py-4 transition hover:bg-navy-50/60 dark:hover:bg-navy-800/40">
                                 <span className="w-8 shrink-0 pt-0.5 text-end text-sm font-semibold tabular-nums text-navy-400">{(judgments.from ?? 1) + i}.</span>
                                 <div className="min-w-0 flex-1">
-                                    <Link href={route('judgments.show', j.slug)} className="block">
+                                    <Link href={route(showRoute, j.slug)} className="block">
                                         <p className="text-[15px] leading-snug text-navy-900 group-hover:underline dark:text-white">
                                             <span className="font-semibold">{j.case_type} {j.case_number}</span> <span>({j.title})</span>
                                         </p>
@@ -109,6 +112,16 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                 )}
                 <div className="mt-4"><Pagination meta={judgments} /></div>
             </div>
+        </>
+    );
+
+    if (embedded) {
+        return <AppLayout area="workspace" title={t('Reported judgments')} wide>{content}</AppLayout>;
+    }
+
+    return (
+        <PublicLayout seo={{ title: active ? `${t('Reported judgments')}, ${active.name}` : t('Reported judgments'), description: t('Judgments approved for reporting by the High Courts of Pakistan, searchable by judge, citation, case number, title and date.'), canonical }}>
+            {content}
         </PublicLayout>
     );
 }

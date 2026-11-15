@@ -1,23 +1,26 @@
 import { Link } from '@inertiajs/react';
 import { ArrowLeft, Download, ExternalLink, FileText } from 'lucide-react';
 import { Card, CardHeader } from '@/Components/ui';
+import AppLayout from '@/Layouts/AppLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Judgment } from './Index';
 
 /** One reported judgment: details, the PDF and more from the same bench. */
-export default function JudgmentShow({ judgment: j, related, canonical }: { judgment: Judgment; related: Judgment[]; canonical: string }) {
+export default function JudgmentShow({ judgment: j, related, canonical, embedded = null }: { judgment: Judgment; related: Judgment[]; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
     const { locale } = useLocale();
+    const indexRoute = embedded === 'workspace' ? 'judgments.workspace.index' : 'judgments.index';
+    const showRoute = embedded === 'workspace' ? 'judgments.workspace.show' : 'judgments.show';
     const rows: [string, string | null][] = [
         [t('Court'), j.court_name], [t('Case'), `${j.case_type} ${j.case_number}`], [t('Bench'), j.judges], [t('Citation'), j.citation],
         [t('Decision date'), j.decision_date ? formatDate(j.decision_date, locale) : null], [t('Uploaded on'), formatDate(j.uploaded_on, locale)],
     ];
-    return (
-        <PublicLayout seo={{ title: `${j.case_type} ${j.case_number} (${j.title})`, description: j.tag_line ?? `${j.court_name}, ${j.judges}`, canonical }}>
+    const content = (
+        <>
             <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-                <Link href={route('judgments.index', { court: j.court })} className="inline-flex items-center gap-1.5 text-sm text-navy-600 hover:underline dark:text-navy-300"><ArrowLeft className="size-4 rtl:rotate-180" />{j.court_name}</Link>
+                <Link href={route(indexRoute, { court: j.court })} className="inline-flex items-center gap-1.5 text-sm text-navy-600 hover:underline dark:text-navy-300"><ArrowLeft className="size-4 rtl:rotate-180" />{j.court_name}</Link>
                 <h1 className="mt-3 font-serif text-3xl font-semibold leading-tight sm:text-4xl">{j.title}</h1>
                 <p className="mt-2 text-lg text-navy-600 dark:text-navy-300">{j.case_type} {j.case_number} · {t('by')} {j.judges}</p>
                 <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -55,13 +58,23 @@ export default function JudgmentShow({ judgment: j, related, canonical }: { judg
                             <Card>
                                 <CardHeader title={t('More from this bench')} />
                                 <ul className="divide-y divide-navy-100 dark:divide-navy-800">
-                                    {related.map((r) => <li key={r.id}><Link href={route('judgments.show', r.slug)} className="block px-5 py-3 text-sm hover:bg-navy-50 dark:hover:bg-navy-800"><span className="font-medium">{r.case_type} {r.case_number}</span><span className="block truncate text-navy-500">{r.title}</span></Link></li>)}
+                                    {related.map((r) => <li key={r.id}><Link href={route(showRoute, r.slug)} className="block px-5 py-3 text-sm hover:bg-navy-50 dark:hover:bg-navy-800"><span className="font-medium">{r.case_type} {r.case_number}</span><span className="block truncate text-navy-500">{r.title}</span></Link></li>)}
                                 </ul>
                             </Card>
                         )}
                     </div>
                 </div>
             </div>
+        </>
+    );
+
+    if (embedded) {
+        return <AppLayout area="workspace" title={j.title} wide>{content}</AppLayout>;
+    }
+
+    return (
+        <PublicLayout seo={{ title: `${j.case_type} ${j.case_number} (${j.title})`, description: j.tag_line ?? `${j.court_name}, ${j.judges}`, canonical }}>
+            {content}
         </PublicLayout>
     );
 }

@@ -22,7 +22,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 #[Fillable([
     'organization_id', 'reference', 'title', 'case_number', 'case_type', 'specialization_id', 'description', 'filing_date',
-    'filing_year', 'court_id', 'jurisdiction', 'province_id', 'district_id', 'judge_id', 'judge_name', 'courtroom', 'status',
+    'filing_year', 'court_id', 'jurisdiction', 'province_id', 'district_id', 'tehsil_id', 'judge_id', 'judge_name', 'courtroom', 'status',
     'stage', 'priority', 'professional_fee', 'fee_type', 'fir_number', 'police_station', 'fir_date', 'legal_sections',
     'bail_status', 'investigation_notes', 'strategy_notes', 'client_summary', 'share_with_client', 'decided_on', 'outcome', 'created_by',
 ])]
@@ -87,6 +87,11 @@ class LegalCase extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    public function tehsil(): BelongsTo
+    {
+        return $this->belongsTo(Tehsil::class);
     }
 
     public function creator(): BelongsTo

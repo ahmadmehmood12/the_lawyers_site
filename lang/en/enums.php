@@ -110,6 +110,7 @@ return [
         'not_required' => 'Not required',
     ],
     'task_status' => [
+        'backlog' => 'Backlog',
         'open' => 'Open',
         'in_progress' => 'In progress',
         'done' => 'Done',

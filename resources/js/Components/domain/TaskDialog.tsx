@@ -29,7 +29,7 @@ export function TaskDialog({ open, onClose, task, caseId, hearingId, members, pr
                 <Select label={t('Assign to')} value={form.data.assigned_to} onChange={(e) => form.setData('assigned_to', e.target.value)} options={members} placeholder={t('Unassigned')} error={form.errors.assigned_to} />
                 <Input label={t('Due date')} type="date" value={form.data.due_date} onChange={(e) => form.setData('due_date', e.target.value)} />
                 <Select label={t('Priority')} value={form.data.priority} onChange={(e) => form.setData('priority', e.target.value)} options={priorities} />
-                {task && statuses && <Select label={t('Status')} value={form.data.status} onChange={(e) => form.setData('status', e.target.value)} options={statuses} />}
+                {statuses && <Select label={t('Status')} value={form.data.status} onChange={(e) => form.setData('status', e.target.value)} options={statuses} />}
                 {!caseId && cases && <Select wrapperClassName="sm:col-span-2" label={t('Case')} value={form.data.legal_case_id} onChange={(e) => form.setData('legal_case_id', e.target.value)} options={cases} placeholder={t('Not linked')} error={form.errors.legal_case_id} />}
                 <Textarea wrapperClassName="sm:col-span-2" label={t('Details')} rows={3} value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} />
             </div>

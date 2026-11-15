@@ -19,6 +19,7 @@ use App\Http\Controllers\Workspace\InvoiceController;
 use App\Http\Controllers\Workspace\LawyerProfileController;
 use App\Http\Controllers\Workspace\LegalFormController;
 use App\Http\Controllers\Workspace\OrganizationSettingsController;
+use App\Http\Controllers\Workspace\ReportedJudgmentController;
 use App\Http\Controllers\Workspace\TaskController;
 use App\Http\Controllers\Workspace\TeamController;
 use App\Http\Controllers\Workspace\TimeEntryController;
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'verified', 'account:lawyer,staff', 'workspace'])->gr
     Route::get('activity', [ActivityController::class, 'index'])->name('activity.index');
     Route::get('activity/recent', [ActivityController::class, 'recent'])->name('activity.recent');
 
+    Route::post('clients/quick', [ClientController::class, 'quickStore'])->name('clients.quick-store');
     Route::resource('clients', ClientController::class);
     Route::post('clients/{client}/portal-invite', [ClientController::class, 'invitePortal'])->middleware('throttle:10,1')->name('clients.portal-invite');
 
@@ -173,4 +175,6 @@ Route::middleware(['auth', 'verified', 'account:lawyer', 'workspace'])->group(fu
     Route::post('my-articles', [ArticleController::class, 'save'])->name('lawyer.articles.store');
     Route::put('my-articles/{article:id}', [ArticleController::class, 'save'])->name('lawyer.articles.update');
     Route::post('reviews/{review}/respond', [ArticleController::class, 'respond'])->name('lawyer.reviews.respond');
+    Route::get('judgments', [ReportedJudgmentController::class, 'index'])->name('judgments.workspace.index');
+    Route::get('judgments/{judgment:slug}', [ReportedJudgmentController::class, 'show'])->name('judgments.workspace.show');
 });

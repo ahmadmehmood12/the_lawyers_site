@@ -8,6 +8,7 @@ enum TaskStatus: string
 {
     use HasOptions;
 
+    case Backlog = 'backlog';
     case Open = 'open';
     case InProgress = 'in_progress';
     case Done = 'done';

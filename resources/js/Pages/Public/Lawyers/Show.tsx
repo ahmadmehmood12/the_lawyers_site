@@ -3,6 +3,7 @@ import { BadgeCheck, Building2, CalendarClock, GraduationCap, Heart, Mail, MapPi
 import { useState } from 'react';
 import { ArticleCard, type ArticleCardData } from '@/Components/domain/ArticleCard';
 import { Alert, Avatar, Badge, Button, Card, CardBody, CardHeader, LinkButton, Provenance } from '@/Components/ui';
+import AppLayout from '@/Layouts/AppLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatDate, formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
@@ -11,12 +12,14 @@ import type { LawyerCardData } from '@/Components/domain/LawyerCard';
 
 type Lawyer = LawyerCardData & { bio: string | null; enrollment_number: string | null; enrollment_date: string | null; chamber_address: string | null; public_phone: string | null; public_email: string | null; bar_council: string | null; district: string | null; province: string | null; courts: string[]; languages: string[]; offers_in_person: boolean; fee_max: number | null; educations: { degree: string; institution: string; year: number | null }[]; experiences: { position: string; organization: string; start_year: number | null; end_year: number | null; is_current?: boolean; description: string | null }[]; credentials: { type: string; title: string; issuer: string | null; year: number | null; url: string | null }[]; verified_at: string | null; firms: { name: string; slug: string }[]; reviews: { id: number; rating: number; title: string | null; comment: string | null; author: string; response: string | null; created_at: string }[] };
 
-export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, canBook, canonical }: { lawyer: Lawyer; articles: ArticleCardData[]; stats: { cases_recorded: number; active_cases: number; courts_represented: number }; isFavourite: boolean; canBook: boolean; canonical: string }) {
+export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, canBook, canonical, embedded = null }: { lawyer: Lawyer; articles: ArticleCardData[]; stats: { cases_recorded: number; active_cases: number; courts_represented: number }; isFavourite: boolean; canBook: boolean; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
     const { locale } = useLocale();
     const { auth } = usePage<SharedProps>().props;
     const [copied, setCopied] = useState(false);
     const isClient = auth.user?.account_type === 'client';
+    const indexRoute = embedded === 'portal' ? 'portal.lawyers.index' : 'lawyers.index';
+    const firmRoute = embedded === 'portal' ? 'portal.firms.show' : 'firms.show';
 
     const share = async () => {
         try {
@@ -25,10 +28,10 @@ export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, ca
         } catch { /* cancelled */ }
     };
 
-    return (
-        <PublicLayout seo={{ title: `${l.name} — ${l.specializations[0]?.name ?? t('Advocate')}${l.city ? `, ${l.city}` : ''}`, description: l.headline ?? l.bio?.slice(0, 155) ?? undefined, canonical, image: l.photo_url ?? undefined, type: 'profile', jsonLd: { '@context': 'https://schema.org', '@type': 'Attorney', name: l.name, url: canonical, image: l.photo_url ?? undefined, address: l.city ? { '@type': 'PostalAddress', addressLocality: l.city, addressRegion: l.province, addressCountry: 'PK' } : undefined, knowsLanguage: l.languages, ...(l.rating ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: l.rating, reviewCount: l.rating_count } } : {}) } }}>
+    const content = (
+        <>
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-                <nav aria-label="Breadcrumb" className="mb-4 text-xs text-navy-500"><Link href={route('home')}>{t('Home')}</Link> / <Link href={route('lawyers.index')}>{t('Find a Lawyer')}</Link> / {l.name}</nav>
+                <nav aria-label="Breadcrumb" className="mb-4 text-xs text-navy-500"><Link href={route(embedded === 'portal' ? 'portal.dashboard' : 'home')}>{t(embedded === 'portal' ? 'Dashboard' : 'Home')}</Link> / <Link href={route(indexRoute)}>{t('Find a Lawyer')}</Link> / {l.name}</nav>
                 <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
                     <div className="space-y-6">
                         <Card>
@@ -42,7 +45,7 @@ export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, ca
                                         {l.years_experience !== null && <span>{t(':count years in practice', { count: l.years_experience })}</span>}
                                         {l.rating !== null && <span className="inline-flex items-center gap-1"><Star className="size-4 fill-gold-400 text-gold-400" />{l.rating.toFixed(1)}, {t(':count reviews', { count: l.rating_count })}</span>}
                                     </div>
-                                    <div className="mt-3 flex flex-wrap gap-1.5">{l.specializations.map((s) => <Link key={s.slug} href={route('lawyers.index', { specialization: s.slug })}><Badge>{s.name}</Badge></Link>)}</div>
+                                    <div className="mt-3 flex flex-wrap gap-1.5">{l.specializations.map((s) => <Link key={s.slug} href={route(indexRoute, { specialization: s.slug })}><Badge>{s.name}</Badge></Link>)}</div>
                                 </div>
                             </CardBody>
                         </Card>
@@ -120,7 +123,7 @@ export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, ca
                                 {l.chamber_address && <p className="flex gap-2"><MapPin className="size-4 shrink-0 text-navy-400" />{l.chamber_address}</p>}
                                 {l.public_phone && <p className="flex gap-2"><Phone className="size-4 text-navy-400" /><a href={`tel:${l.public_phone}`} className="ltr-nums underline">{l.public_phone}</a></p>}
                                 {l.public_email && <p className="flex gap-2"><Mail className="size-4 text-navy-400" /><a href={`mailto:${l.public_email}`} className="underline">{l.public_email}</a></p>}
-                                {l.firms.map((f) => <Link key={f.slug} href={route('firms.show', f.slug)} className="flex gap-2 font-medium hover:underline"><Building2 className="size-4 text-navy-400" />{f.name}</Link>)}
+                                {l.firms.map((f) => <Link key={f.slug} href={route(firmRoute, f.slug)} className="flex gap-2 font-medium hover:underline"><Building2 className="size-4 text-navy-400" />{f.name}</Link>)}
                             </CardBody>
                         </Card>
                         <p className="text-xs text-navy-500">{t('Information here is provided for finding a lawyer and is not legal advice.')}</p>
@@ -142,6 +145,16 @@ export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, ca
                     </section>
                 )}
             </div>
+        </>
+    );
+
+    if (embedded) {
+        return <AppLayout area="portal" title={l.name} wide>{content}</AppLayout>;
+    }
+
+    return (
+        <PublicLayout seo={{ title: `${l.name} — ${l.specializations[0]?.name ?? t('Advocate')}${l.city ? `, ${l.city}` : ''}`, description: l.headline ?? l.bio?.slice(0, 155) ?? undefined, canonical, image: l.photo_url ?? undefined, type: 'profile', jsonLd: { '@context': 'https://schema.org', '@type': 'Attorney', name: l.name, url: canonical, image: l.photo_url ?? undefined, address: l.city ? { '@type': 'PostalAddress', addressLocality: l.city, addressRegion: l.province, addressCountry: 'PK' } : undefined, knowsLanguage: l.languages, ...(l.rating ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: l.rating, reviewCount: l.rating_count } } : {}) } }}>
+            {content}
         </PublicLayout>
     );
 }

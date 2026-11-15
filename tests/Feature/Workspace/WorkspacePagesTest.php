@@ -74,6 +74,7 @@ class WorkspacePagesTest extends TestCase
             'analytics' => ['analytics.index'],
             'settings' => ['settings.organization'],
             'my articles' => ['lawyer.articles.index'],
+            'reported judgments' => ['judgments.workspace.index'],
             'billing' => ['billing.index'],
             'activity' => ['activity.index'],
             'tasks board' => ['tasks.index', ['view' => 'board']],

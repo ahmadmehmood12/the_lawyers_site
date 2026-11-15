@@ -14,6 +14,6 @@ class OrganizationSwitchController extends Controller
     {
         abort_unless($current->switchTo($request->user(), $organization), 404);
 
-        return redirect()->route('dashboard')->with('success', __('Switched to :name.', ['name' => $organization->name]));
+        return redirect()->back()->with('success', __('Switched to :name.', ['name' => $organization->name]));
     }
 }

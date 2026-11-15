@@ -116,7 +116,7 @@ class CaseController extends Controller
         $user = $request->user();
         $can = fn (string $permission) => $access->allows($user, $case->organization_id, $permission);
 
-        $case->load(['court:id,name', 'judge:id,name', 'specialization:id,name', 'district:id,name', 'province:id,name', 'clients:id,name,phone,user_id', 'lawyers:id,name', 'nextHearing']);
+        $case->load(['court:id,name', 'judge:id,name', 'specialization:id,name', 'district:id,name', 'tehsil:id,name', 'province:id,name', 'clients:id,name,phone,user_id', 'lawyers:id,name', 'nextHearing']);
 
         return Inertia::render('Workspace/Cases/Show', [
             'tab' => $tab,
@@ -127,7 +127,7 @@ class CaseController extends Controller
                 'priority' => $case->priority->value, 'priority_label' => $case->priority->label(),
                 'filing_date' => $case->filing_date?->toDateString(), 'fir_date' => $case->fir_date?->toDateString(),
                 'court' => $case->court?->name, 'court_id' => $case->court_id, 'judge' => $case->judge?->name ?? $case->judge_name, 'judge_id' => $case->judge_id,
-                'specialization' => $case->specialization?->name, 'district' => $case->district?->name, 'province' => $case->province?->name,
+                'specialization' => $case->specialization?->name, 'district' => $case->district?->name, 'tehsil' => $case->tehsil?->name, 'tehsil_id' => $case->tehsil_id, 'province' => $case->province?->name,
                 'is_criminal' => $case->case_type === CaseType::Criminal,
                 'investigation_notes' => $case->investigation_notes,
                 'strategy_notes' => $case->strategy_notes,
@@ -180,7 +180,7 @@ class CaseController extends Controller
 
         return Inertia::render('Workspace/Cases/Form', [
             'legalCase' => [
-                ...$case->only(['id', 'reference', 'title', 'case_number', 'description', 'filing_year', 'court_id', 'jurisdiction', 'province_id', 'district_id', 'judge_id', 'judge_name', 'courtroom', 'stage', 'professional_fee', 'fee_type', 'fir_number', 'police_station', 'legal_sections', 'bail_status', 'client_summary', 'share_with_client', 'specialization_id']),
+                ...$case->only(['id', 'reference', 'title', 'case_number', 'description', 'filing_year', 'court_id', 'jurisdiction', 'province_id', 'district_id', 'tehsil_id', 'judge_id', 'judge_name', 'courtroom', 'stage', 'professional_fee', 'fee_type', 'fir_number', 'police_station', 'legal_sections', 'bail_status', 'client_summary', 'share_with_client', 'specialization_id']),
                 'case_type' => $case->case_type->value, 'status' => $case->status->value, 'priority' => $case->priority->value,
                 'filing_date' => $case->filing_date?->toDateString(), 'fir_date' => $case->fir_date?->toDateString(),
                 'investigation_notes' => $case->investigation_notes, 'strategy_notes' => $case->strategy_notes,
@@ -243,6 +243,7 @@ class CaseController extends Controller
                 'specializations' => ReferenceOptions::specializations(),
                 'provinces' => ReferenceOptions::provinces(),
                 'districts' => ReferenceOptions::districts(),
+                'tehsils' => ReferenceOptions::tehsils(),
                 'clients' => ReferenceOptions::clients($organization),
                 'lawyers' => ReferenceOptions::members($organization, true),
             ],

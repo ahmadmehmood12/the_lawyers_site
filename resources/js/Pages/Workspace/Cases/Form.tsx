@@ -1,14 +1,16 @@
 import { useForm } from '@inertiajs/react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, UserPlus } from 'lucide-react';
 import type { FormEvent } from 'react';
-import { Button, Card, CardBody, CardHeader, Checkbox, Input, LinkButton, PageHeader, Select, Textarea } from '@/Components/ui';
+import { useState } from 'react';
+import { Button, Card, CardBody, CardHeader, Checkbox, Input, LinkButton, Modal, PageHeader, Select, Textarea } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
-import { useT } from '@/lib/i18n';
+import { postJson } from '@/lib/http';
+import { useLocale, useT } from '@/lib/i18n';
 import type { Option } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
 type Party = { role: string; name: string; father_name: string; address: string; counsel_name: string; is_our_side: boolean };
-type Options = { types: Option[]; statuses: Option[]; priorities: Option[]; partyRoles: Option[]; courts: SelectOption[]; judges: SelectOption[]; specializations: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; clients: SelectOption[]; lawyers: SelectOption[] };
+type Options = { types: Option[]; statuses: Option[]; priorities: Option[]; partyRoles: Option[]; courts: SelectOption[]; judges: SelectOption[]; specializations: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; tehsils: SelectOption[]; clients: SelectOption[]; lawyers: SelectOption[] };
 
 export default function CaseForm({ legalCase, preselectedClientId, options }: { legalCase: Record<string, any> | null; preselectedClientId: number | null; options: Options }) {
     const t = useT();
@@ -16,7 +18,7 @@ export default function CaseForm({ legalCase, preselectedClientId, options }: { 
     const form = useForm({
         title: s(legalCase?.title), case_number: s(legalCase?.case_number), case_type: legalCase?.case_type ?? 'civil', specialization_id: s(legalCase?.specialization_id),
         description: s(legalCase?.description), filing_date: s(legalCase?.filing_date), court_id: s(legalCase?.court_id), jurisdiction: s(legalCase?.jurisdiction),
-        province_id: s(legalCase?.province_id), district_id: s(legalCase?.district_id), judge_id: s(legalCase?.judge_id), judge_name: s(legalCase?.judge_name), courtroom: s(legalCase?.courtroom),
+        province_id: s(legalCase?.province_id), district_id: s(legalCase?.district_id), tehsil_id: s(legalCase?.tehsil_id), judge_id: s(legalCase?.judge_id), judge_name: s(legalCase?.judge_name), courtroom: s(legalCase?.courtroom),
         status: legalCase?.status ?? 'filed', stage: s(legalCase?.stage), priority: legalCase?.priority ?? 'normal', professional_fee: s(legalCase?.professional_fee), fee_type: s(legalCase?.fee_type),
         fir_number: s(legalCase?.fir_number), police_station: s(legalCase?.police_station), fir_date: s(legalCase?.fir_date), legal_sections: s(legalCase?.legal_sections), bail_status: s(legalCase?.bail_status),
         investigation_notes: s(legalCase?.investigation_notes), strategy_notes: s(legalCase?.strategy_notes), client_summary: s(legalCase?.client_summary), share_with_client: legalCase?.share_with_client ?? true,
@@ -24,8 +26,11 @@ export default function CaseForm({ legalCase, preselectedClientId, options }: { 
         lawyer_ids: [] as string[], lead_lawyer_id: '',
         parties: (legalCase?.parties ?? []) as Party[],
     });
+    const [clients, setClients] = useState(options.clients);
+    const [quickClientOpen, setQuickClientOpen] = useState(false);
     const judges = options.judges.filter((j) => String(j.court_id) === form.data.court_id);
     const districts = options.districts.filter((d) => !form.data.province_id || String(d.province_id) === form.data.province_id);
+    const tehsils = options.tehsils.filter((t) => !form.data.district_id || String(t.district_id) === form.data.district_id);
     const isCriminal = form.data.case_type === 'criminal';
     const set = (key: keyof typeof form.data) => (e: { target: { value: string } }) => form.setData(key, e.target.value as never);
     const err = (key: string) => (form.errors as Record<string, string>)[key];
@@ -35,13 +40,19 @@ export default function CaseForm({ legalCase, preselectedClientId, options }: { 
         form.transform((d) => {
             const payload: Record<string, unknown> = { ...d, client_ids: d.client_ids.map(Number), lawyer_ids: d.lawyer_ids.map(Number) };
             if (!d.lawyer_ids.length) { delete payload.lawyer_ids; delete payload.lead_lawyer_id; } else payload.lead_lawyer_id = Number(d.lead_lawyer_id || d.lawyer_ids[0]);
-            for (const k of ['specialization_id', 'court_id', 'province_id', 'district_id', 'judge_id', 'professional_fee', 'filing_date', 'fir_date', 'fee_type', 'jurisdiction', 'bail_status']) if (payload[k] === '') payload[k] = null;
+            for (const k of ['specialization_id', 'court_id', 'province_id', 'district_id', 'tehsil_id', 'judge_id', 'professional_fee', 'filing_date', 'fir_date', 'fee_type', 'jurisdiction', 'bail_status']) if (payload[k] === '') payload[k] = null;
             return payload;
         });
         legalCase?.id ? form.put(route('cases.update', legalCase.id)) : form.post(route('cases.store'));
     }
 
     const updateParty = (index: number, patch: Partial<Party>) => form.setData('parties', form.data.parties.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+
+    function addClient(client: SelectOption) {
+        setClients((current) => current.some((item) => String(item.value) === String(client.value)) ? current : [...current, client].sort((a, b) => a.label.localeCompare(b.label)));
+        form.setData('client_ids', [...form.data.client_ids, String(client.value)]);
+        setQuickClientOpen(false);
+    }
 
     return (
         <AppLayout title={legalCase ? t('Edit case') : t('New case')}>
@@ -63,11 +74,15 @@ export default function CaseForm({ legalCase, preselectedClientId, options }: { 
                 </Card>
 
                 <Card>
-                    <CardHeader title={t('Clients')} description={t('Select one or more clients. The first is the primary client.')} />
+                    <CardHeader
+                        title={t('Clients')}
+                        description={t('Select one or more clients. The first is the primary client.')}
+                        actions={<Button size="sm" variant="secondary" icon={<UserPlus className="size-4" />} onClick={() => setQuickClientOpen(true)}>{t('New client')}</Button>}
+                    />
                     <CardBody>
                         <div className="flex flex-wrap gap-2">
-                            {options.clients.length === 0 && <p className="text-sm text-navy-500">{t('No clients yet.')} <LinkButton href={route('clients.create')} variant="ghost" size="sm">{t('Add a client')}</LinkButton></p>}
-                            {options.clients.map((c) => {
+                            {clients.length === 0 && <p className="text-sm text-navy-500">{t('No clients yet.')} <Button variant="ghost" size="sm" onClick={() => setQuickClientOpen(true)}>{t('Create a client now')}</Button> <LinkButton href={route('clients.create')} variant="ghost" size="sm">{t('Open full form')}</LinkButton></p>}
+                            {clients.map((c) => {
                                 const selected = form.data.client_ids.includes(String(c.value));
                                 return (
                                     <button key={c.value} type="button" onClick={() => form.setData('client_ids', selected ? form.data.client_ids.filter((id) => id !== String(c.value)) : [...form.data.client_ids, String(c.value)])}
@@ -92,8 +107,9 @@ export default function CaseForm({ legalCase, preselectedClientId, options }: { 
                         )}
                         <Input label={t('Courtroom')} value={form.data.courtroom} onChange={set('courtroom')} />
                         <Select label={t('Jurisdiction')} value={form.data.jurisdiction} onChange={set('jurisdiction')} placeholder={t('Select')} options={[{ value: 'original', label: t('Original') }, { value: 'appellate', label: t('Appellate') }, { value: 'revisional', label: t('Revisional') }, { value: 'writ', label: t('Writ') }, { value: 'execution', label: t('Execution') }]} />
-                        <Select label={t('Province')} value={form.data.province_id} onChange={(e) => form.setData((d) => ({ ...d, province_id: e.target.value, district_id: '' }))} options={options.provinces} placeholder={t('Select')} />
-                        <Select label={t('District')} value={form.data.district_id} onChange={set('district_id')} options={districts} placeholder={t('Select')} />
+                        <Select label={t('Province')} value={form.data.province_id} onChange={(e) => form.setData((d) => ({ ...d, province_id: e.target.value, district_id: '', tehsil_id: '' }))} options={options.provinces} placeholder={t('Select')} />
+                        <Select label={t('District')} value={form.data.district_id} onChange={(e) => form.setData((d) => ({ ...d, district_id: e.target.value, tehsil_id: '' }))} options={districts} placeholder={t('Select')} />
+                        <Select label={t('Tehsil')} value={form.data.tehsil_id} onChange={set('tehsil_id')} options={tehsils} placeholder={t('Select')} />
                     </CardBody>
                 </Card>
 
@@ -161,6 +177,63 @@ export default function CaseForm({ legalCase, preselectedClientId, options }: { 
                     <Button type="submit" loading={form.processing}>{legalCase ? t('Save changes') : t('Create case')}</Button>
                 </div>
             </form>
+            <QuickClientDialog open={quickClientOpen} onClose={() => setQuickClientOpen(false)} onCreated={addClient} />
         </AppLayout>
+    );
+}
+
+function QuickClientDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (client: SelectOption) => void }) {
+    const t = useT();
+    const { locale } = useLocale();
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [message, setMessage] = useState<string | null>(null);
+    const [data, setData] = useState({ type: 'individual', name: '', company_name: '', phone: '', email: '', preferred_locale: locale });
+
+    const set = (key: keyof typeof data) => (event: { target: { value: string } }) => setData((current) => ({ ...current, [key]: event.target.value }));
+
+    function close() {
+        setErrors({});
+        setMessage(null);
+        onClose();
+    }
+
+    async function submit() {
+        setProcessing(true);
+        setErrors({});
+        setMessage(null);
+
+        const response = await postJson<{ client?: SelectOption; message?: string; errors?: Record<string, string> }>(route('clients.quick-store'), data);
+
+        if (response.ok && response.data.client) {
+            setData({ type: 'individual', name: '', company_name: '', phone: '', email: '', preferred_locale: locale });
+            setProcessing(false);
+            onCreated(response.data.client);
+            return;
+        }
+
+        setErrors(response.data.errors ?? {});
+        setMessage(response.data.message ?? t('Could not create the client.'));
+        setProcessing(false);
+    }
+
+    return (
+        <Modal
+            open={open}
+            onClose={close}
+            title={t('New client')}
+            description={t('Add a client without leaving this case.')}
+            footer={<><Button variant="secondary" onClick={close}>{t('Cancel')}</Button><Button onClick={submit} loading={processing}>{t('Save client')}</Button></>}
+        >
+            <div className="grid gap-4 sm:grid-cols-2">
+                {message && Object.keys(errors).length === 0 && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:col-span-2 dark:bg-red-900/20 dark:text-red-300">{message}</p>}
+                <Select label={t('Client type')} value={data.type} onChange={set('type')} options={[{ value: 'individual', label: t('Individual') }, { value: 'business', label: t('Business') }]} />
+                <Input label={t('Name')} value={data.name} onChange={set('name')} error={errors.name} required autoFocus />
+                {data.type === 'business' && <Input wrapperClassName="sm:col-span-2" label={t('Company name')} value={data.company_name} onChange={set('company_name')} error={errors.company_name} required />}
+                <Input label={t('Phone')} value={data.phone} onChange={set('phone')} error={errors.phone} placeholder="0300 1234567" />
+                <Input label={t('Email')} type="email" value={data.email} onChange={set('email')} error={errors.email} />
+                <p className="text-xs text-navy-500 sm:col-span-2 dark:text-navy-400">{t('You can add CNIC, address and portal access later from the client profile.')}</p>
+            </div>
+        </Modal>
     );
 }

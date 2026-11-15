@@ -15,6 +15,7 @@ use App\Services\Subscriptions\SubscriptionService;
 use App\Services\WhatsApp\WhatsAppConsent;
 use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -80,6 +81,22 @@ class ClientController extends Controller
         $this->applyConsent($client, $request->boolean('whatsapp_consent'));
 
         return redirect()->route('clients.show', $client)->with('success', __('Client added.'));
+    }
+
+    /** Quick create from the case form without leaving the page. */
+    public function quickStore(ClientRequest $request, SubscriptionService $subscriptions): JsonResponse
+    {
+        $organization = $this->organization();
+        $subscriptions->ensureCanAdd($organization, PlanFeature::MaxClients);
+
+        $client = $organization->clients()->create([...$request->clientData(), 'created_by' => $request->user()->id]);
+
+        return response()->json([
+            'client' => [
+                'value' => $client->id,
+                'label' => $client->name.($client->phone ? ', '.$client->phone : ''),
+            ],
+        ]);
     }
 
     public function show(Request $request, Client $client): Response

@@ -13,7 +13,7 @@ use Inertia\Response;
 /** Public: judgments approved for reporting, High Court wise, with the search filters courts use. */
 class ReportedJudgmentController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, ?string $embedded = null): Response
     {
         $court = array_key_exists((string) $request->query('court'), ReportedJudgment::COURTS) ? (string) $request->query('court') : null;
         $filters = $request->only(['court', 'year', 'judge', 'citation', 'case', 'title', 'decided_from', 'decided_to', 'uploaded_from', 'uploaded_to']);
@@ -34,10 +34,11 @@ class ReportedJudgmentController extends Controller
             'years' => ReportedJudgment::query()->where('is_published', true)->selectRaw('DISTINCT YEAR(COALESCE(decision_date, uploaded_on)) as y')->orderByDesc('y')->pluck('y'),
             'filters' => $filters,
             'canonical' => route('judgments.index'),
+            'embedded' => $embedded,
         ]);
     }
 
-    public function show(ReportedJudgment $judgment): Response
+    public function show(ReportedJudgment $judgment, ?string $embedded = null): Response
     {
         abort_unless($judgment->is_published, 404);
         $judgment->increment('views');
@@ -47,6 +48,7 @@ class ReportedJudgmentController extends Controller
             'related' => ReportedJudgment::query()->where('is_published', true)->where('court', $judgment->court)->whereKeyNot($judgment->id)
                 ->where('judges', $judgment->judges)->latest('uploaded_on')->limit(5)->get()->map->toListItem(),
             'canonical' => route('judgments.show', $judgment),
+            'embedded' => $embedded,
         ]);
     }
 

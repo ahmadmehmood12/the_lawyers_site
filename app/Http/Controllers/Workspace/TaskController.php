@@ -21,6 +21,9 @@ use Inertia\Response;
 
 class TaskController extends Controller
 {
+    /** How long a completed task stays on the live board after it is resolved. */
+    private const RESOLVED_BOARD_DAYS = 7;
+
     public function index(Request $request, OrganizationAccess $access): Response
     {
         $organization = $this->organization();
@@ -36,6 +39,7 @@ class TaskController extends Controller
             ->when($status, function ($q, string $status): void {
                 $status === 'active' ? $q->whereIn('status', [TaskStatus::Open->value, TaskStatus::InProgress->value]) : ($status === 'all' ? null : $q->where('status', $status));
             })
+            ->when($view === 'board', fn ($q) => $q->where(fn ($w) => $w->whereNull('completed_at')->orWhere('completed_at', '>=', now()->subDays(self::RESOLVED_BOARD_DAYS))))
             ->when($request->string('search')->trim()->toString(), fn ($q, $s) => $q->where('title', 'like', "%{$s}%"));
 
         $tasks = (clone $query)->orderByRaw('due_date IS NULL, due_date')->orderByDesc('id')
@@ -66,7 +70,15 @@ class TaskController extends Controller
         abort_unless($access->allows($request->user(), $organization, 'tasks.manage'), 403);
 
         $data = $this->scoped($request->validated(), $request);
-        Task::create([...$data, 'organization_id' => $organization->id, 'status' => TaskStatus::Open, 'created_by' => $request->user()->id]);
+        $status = TaskStatus::tryFrom((string) ($data['status'] ?? '')) ?? TaskStatus::Open;
+
+        Task::create([
+            ...$data,
+            'organization_id' => $organization->id,
+            'status' => $status,
+            'completed_at' => $status === TaskStatus::Done ? now() : null,
+            'created_by' => $request->user()->id,
+        ]);
 
         return back()->with('success', __('Task created.'));
     }

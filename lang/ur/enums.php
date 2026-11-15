@@ -110,6 +110,7 @@ return [
         'not_required' => 'ضرورت نہیں',
     ],
     'task_status' => [
+        'backlog' => 'بیک لاگ',
         'open' => 'کھلا',
         'in_progress' => 'جاری',
         'done' => 'مکمل',

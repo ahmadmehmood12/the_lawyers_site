@@ -15,7 +15,7 @@ use Inertia\Response;
 
 class FirmDirectoryController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, ?string $embedded = null): Response
     {
         $firms = Organization::query()->where('type', OrganizationType::Firm->value)->where('is_public', true)->where('status', 'active')
             ->with('city:id,name,name_ur,slug')->withCount('activeMembers')
@@ -29,10 +29,11 @@ class FirmDirectoryController extends Controller
             'filters' => $request->only(['search', 'city']),
             'cities' => ReferenceOptions::cities(),
             'canonical' => route('firms.index'),
+            'embedded' => $embedded,
         ]);
     }
 
-    public function show(Organization $firm): Response
+    public function show(Organization $firm, ?string $embedded = null): Response
     {
         abort_unless($firm->type === OrganizationType::Firm && $firm->is_public && $firm->status === 'active', 404);
         $firm->load('city:id,name,name_ur');
@@ -46,6 +47,7 @@ class FirmDirectoryController extends Controller
             'firm' => [...DirectoryPresenter::firm($firm), 'description' => app()->getLocale() === 'ur' && $firm->description_ur ? $firm->description_ur : $firm->description, 'address' => $firm->address, 'phone' => $firm->phone, 'email' => $firm->email, 'website' => $firm->website, 'founded_year' => $firm->founded_year],
             'lawyers' => $lawyers,
             'canonical' => route('firms.show', $firm),
+            'embedded' => $embedded,
         ]);
     }
 }
