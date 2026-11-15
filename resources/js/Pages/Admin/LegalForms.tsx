@@ -102,13 +102,8 @@ function FormEditor({ form: row, placeholders, categories, labels, onCreated }: 
                             <span className="hidden text-center text-xs font-semibold tabular-nums text-navy-400 lg:block">{i + 1}</span>
                             <input aria-label={t('Key')} value={f.key} onChange={(e) => setField(i, { key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })} placeholder="client_name" className={cn(controlClasses(!!errorAt(`fields.${i}.key`)), 'font-mono text-xs')} />
                             <input aria-label={t('Label')} value={f.label} onChange={(e) => setField(i, { label: e.target.value })} placeholder={t('Client full name')} className={controlClasses(!!errorAt(`fields.${i}.label`))} />
-                            <select aria-label={t('Type')} value={f.type} onChange={(e) => setField(i, { type: e.target.value as Field['type'] })} className={controlClasses(false)}>
-                                <option value="text">{t('Short text')}</option><option value="textarea">{t('Long text')}</option><option value="date">{t('Date')}</option>
-                            </select>
-                            <select aria-label={t('Prefill from')} value={f.source} onChange={(e) => setField(i, { source: e.target.value })} className={controlClasses(false)}>
-                                <option value="">{t('Nothing')}</option>
-                                {placeholders.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-                            </select>
+                            <Select aria-label={t('Type')} value={f.type} onChange={(e) => setField(i, { type: e.target.value as Field['type'] })} options={[{ value: 'text', label: t('Short text') }, { value: 'textarea', label: t('Long text') }, { value: 'date', label: t('Date') }]} />
+                            <Select aria-label={t('Prefill from')} value={f.source} onChange={(e) => setField(i, { source: e.target.value })} placeholder={t('Nothing')} options={placeholders.map((p) => ({ value: p.key, label: p.label }))} />
                             <label className="flex items-center justify-center gap-1.5 text-sm"><input type="checkbox" checked={f.required} onChange={(e) => setField(i, { required: e.target.checked })} className="size-4 accent-navy-900" /><span className="lg:sr-only">{t('Required')}</span></label>
                             <div className="flex justify-end gap-0.5">
                                 <button type="button" disabled={i === 0} onClick={() => move(i, -1)} aria-label={t('Move up')} className="rounded p-1 text-navy-400 hover:text-navy-800 disabled:opacity-30"><ArrowUp className="size-4" /></button>

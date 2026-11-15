@@ -3,7 +3,7 @@ import { AnimatePresence, motion, MotionConfig, useReducedMotion, useScroll, use
 import { Plus, Search } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ArticleCard, type ArticleCardData } from '@/Components/domain/ArticleCard';
-import { LinkButton } from '@/Components/ui';
+import { LinkButton, Select } from '@/Components/ui';
 import { controlClasses } from '@/Components/ui/Field';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { cn } from '@/lib/cn';
@@ -93,14 +93,8 @@ export default function Home({ specializations, cities, articles, plans, showcas
                                     className="grid gap-2 rounded-xl border border-navy-100 bg-white p-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] dark:border-navy-800 dark:bg-navy-900"
                                 >
                                     <input value={query.search} onChange={(e) => setQuery({ ...query, search: e.target.value })} placeholder={t('Name or keyword')} className={controlClasses(false, 'h-11')} aria-label={t('Search')} />
-                                    <select value={query.city} onChange={(e) => setQuery({ ...query, city: e.target.value })} className={controlClasses(false, 'h-11')} aria-label={t('City')}>
-                                        <option value="">{t('Any city')}</option>
-                                        {cities.map((c) => <option key={c.value} value={String(c.slug)}>{c.label}</option>)}
-                                    </select>
-                                    <select value={query.specialization} onChange={(e) => setQuery({ ...query, specialization: e.target.value })} className={controlClasses(false, 'h-11')} aria-label={t('Practice area')}>
-                                        <option value="">{t('Any practice area')}</option>
-                                        {specializations.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-                                    </select>
+                                    <Select value={query.city} onChange={(e) => setQuery({ ...query, city: e.target.value })} className="h-11" aria-label={t('City')} placeholder={t('Any city')} options={cities.map((c) => ({ value: String(c.slug), label: c.label }))} />
+                                    <Select value={query.specialization} onChange={(e) => setQuery({ ...query, specialization: e.target.value })} className="h-11" aria-label={t('Practice area')} placeholder={t('Any practice area')} options={specializations.map((s) => ({ value: s.slug, label: s.name }))} />
                                     <button type="submit" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-navy-900 px-5 font-semibold text-white hover:bg-navy-800 active:bg-navy-950 disabled:opacity-50 dark:bg-gold-400 dark:text-navy-950 dark:hover:bg-gold-300">
                                         <Search className="size-4" aria-hidden />
                                         {t('Search')}

@@ -1,7 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { ChevronDown, ExternalLink, FileText, Gavel, RotateCcw, Scale, Search } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { Button, DateTimePicker, Pagination } from '@/Components/ui';
+import { Button, DateTimePicker, Pagination, Select } from '@/Components/ui';
 import { controlClasses } from '@/Components/ui/Field';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { cn } from '@/lib/cn';
@@ -44,17 +44,11 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
                 <form onSubmit={submit} className="rounded-card border border-navy-100 bg-white p-5 shadow-card dark:border-navy-800 dark:bg-navy-900">
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <FilterField label={t('Select year')}>
-                            <select value={form.year ?? ''} onChange={(e) => set('year', e.target.value)} className={controlClasses(false)}>
-                                <option value="">{t('Any year')}</option>
-                                {years.map((y) => <option key={y} value={y}>{y}</option>)}
-                            </select>
+                        <FilterField label={t('Select year')} labelElement="div">
+                            <Select value={form.year ?? ''} onChange={(e) => set('year', e.target.value)} aria-label={t('Select year')} placeholder={t('Any year')} options={years.map((y) => ({ value: y, label: String(y) }))} />
                         </FilterField>
-                        <FilterField label={t('Hon’ble Judge')}>
-                            <select value={form.judge ?? ''} onChange={(e) => set('judge', e.target.value)} className={controlClasses(false)}>
-                                <option value="">{t('All judges')}</option>
-                                {judges.map((j) => <option key={j} value={j}>{j}</option>)}
-                            </select>
+                        <FilterField label={t('Hon’ble Judge')} labelElement="div">
+                            <Select value={form.judge ?? ''} onChange={(e) => set('judge', e.target.value)} aria-label={t('Hon’ble Judge')} placeholder={t('All judges')} options={judges.map((j) => ({ value: j, label: j }))} />
                         </FilterField>
                         <FilterField label={t('Citation or tag line')}><input value={form.citation ?? ''} onChange={(e) => set('citation', e.target.value)} placeholder={t('e.g. 2026 LHC 1234 or waqf')} className={controlClasses(false)} /></FilterField>
                         <FilterField label={t('Case number')}><input value={form.case ?? ''} onChange={(e) => set('case', e.target.value)} placeholder={t('e.g. 21229/26 or Civil Revision')} className={controlClasses(false)} /></FilterField>
@@ -128,6 +122,7 @@ function CourtTab({ active, onClick, label, sub, count }: { active: boolean; onC
     );
 }
 
-function FilterField({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
-    return <label className={cn('block', className)}><span className="mb-1.5 block text-sm font-medium text-navy-800 dark:text-navy-100">{label}</span>{children}</label>;
+function FilterField({ label, children, className, labelElement = 'label' }: { label: string; children: ReactNode; className?: string; labelElement?: 'label' | 'div' }) {
+    const Wrapper = labelElement;
+    return <Wrapper className={cn('block', className)}><span className="mb-1.5 block text-sm font-medium text-navy-800 dark:text-navy-100">{label}</span>{children}</Wrapper>;
 }

@@ -4,7 +4,7 @@ import { motion, MotionConfig } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { UpgradeModal } from '@/Components/domain/UpgradeModal';
-import { Avatar, Dropdown, Flash } from '@/Components/ui';
+import { Avatar, Dropdown, Flash, Select } from '@/Components/ui';
 import { ActivityBell } from '@/Components/shell/ActivityBell';
 import { AppointmentsMenu } from '@/Components/shell/AppointmentsMenu';
 import { RunningTimerPill } from '@/Components/domain/CaseTime';
@@ -190,19 +190,16 @@ function OrganizationSwitcher() {
                 </div>
             </div>
             {others.length > 0 && (
-                <select
-                    className="mt-2 w-full rounded-md border-0 bg-navy-900 px-2 py-1 text-xs text-navy-100 ring-1 ring-navy-700"
+                <Select
+                    bare
+                    wrapperClassName="mt-2"
+                    className="w-full rounded-md bg-navy-900 px-2 py-1.5 text-xs text-navy-100 ring-1 ring-inset ring-navy-700 hover:bg-navy-800"
                     value=""
                     onChange={(event) => event.target.value && router.post(route('organizations.switch', Number(event.target.value)))}
+                    placeholder={t('Switch organization…')}
+                    options={others.map((o) => ({ value: o.id, label: o.name }))}
                     aria-label={t('Switch organization')}
-                >
-                    <option value="">{t('Switch organization…')}</option>
-                    {others.map((o) => (
-                        <option key={o.id} value={o.id}>
-                            {o.name}
-                        </option>
-                    ))}
-                </select>
+                />
             )}
         </div>
     );

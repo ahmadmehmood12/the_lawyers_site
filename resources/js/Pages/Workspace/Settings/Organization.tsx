@@ -1,7 +1,6 @@
 import { router, useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, Input, LinkButton, PageHeader, Select, Textarea } from '@/Components/ui';
-import { controlClasses } from '@/Components/ui/Field';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
@@ -117,8 +116,8 @@ export default function OrganizationSettings({ organization: o, canManage, remin
                                         const status = duplicate ? { tone: 'amber' as const, label: t('Duplicate') } : !sends ? { tone: 'neutral' as const, label: t('Not sent automatically yet') } : !r.notify_lawyer && !r.notify_client ? { tone: 'neutral' as const, label: t('Off') } : { tone: 'green' as const, label: t('Active') };
                                         return (
                                             <tr key={i} className="align-middle">
-                                                <td className="px-3 py-2"><select disabled={!canManage} value={r.event} onChange={(e) => setRem(i, { event: e.target.value })} className={controlClasses(false, 'h-9 min-w-36 py-1')} aria-label={t('Event')}><option value="hearing">{t('Hearing')}</option><option value="appointment">{t('Appointment')}</option><option value="payment">{t('Payment')}</option></select></td>
-                                                <td className="px-3 py-2"><select disabled={!canManage} value={r.days_before} onChange={(e) => setRem(i, { days_before: Number(e.target.value) })} className={controlClasses(false, 'h-9 min-w-40 py-1')} aria-label={t('When')}>{[0, 1, 2, 3, 5, 7, 14].map((d) => <option key={d} value={d}>{d === 0 ? t('Same day') : t(':count days before', { count: d })}</option>)}</select></td>
+                                                <td className="px-3 py-2"><Select disabled={!canManage} value={r.event} onChange={(e) => setRem(i, { event: e.target.value })} className="h-9 min-w-36" aria-label={t('Event')} options={[{ value: 'hearing', label: t('Hearing') }, { value: 'appointment', label: t('Appointment') }, { value: 'payment', label: t('Payment') }]} /></td>
+                                                <td className="px-3 py-2"><Select disabled={!canManage} value={r.days_before} onChange={(e) => setRem(i, { days_before: Number(e.target.value) })} className="h-9 min-w-40" aria-label={t('When')} options={[0, 1, 2, 3, 5, 7, 14].map((d) => ({ value: d, label: d === 0 ? t('Same day') : t(':count days before', { count: d }) }))} /></td>
                                                 <td className="px-3 py-2 text-center"><input type="checkbox" disabled={!canManage} checked={r.notify_lawyer} onChange={(e) => setRem(i, { notify_lawyer: e.target.checked })} className="size-4 rounded border-navy-300" aria-label={t('Notify lawyer')} /></td>
                                                 <td className="px-3 py-2 text-center"><input type="checkbox" disabled={!canManage} checked={r.notify_client} onChange={(e) => setRem(i, { notify_client: e.target.checked })} className="size-4 rounded border-navy-300" aria-label={t('Notify client')} /></td>
                                                 <td className="px-3 py-2 text-xs whitespace-nowrap text-navy-600 dark:text-navy-300">{t('In-app, email')}{whatsappConfigured ? t(', WhatsApp (with consent)') : ''}</td>

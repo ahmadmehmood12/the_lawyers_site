@@ -2,7 +2,6 @@ import { router, useForm } from '@inertiajs/react';
 import { CalendarClock, Check, MapPin, Phone, Plus, Trash2, UserRound, Video, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Card, CardBody, CardHeader, DateTimePicker, EmptyState, Input, Modal, PageHeader, Pagination, Select, StatusBadge, Tabs, Textarea } from '@/Components/ui';
-import { controlClasses } from '@/Components/ui/Field';
 import { cn } from '@/lib/cn';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -66,7 +65,7 @@ function WorkingHours({ availability }: { availability: Slot[] }) {
                 {form.data.slots.map((s, i) => (
                     <div key={i} className="rounded-lg bg-navy-50/60 p-2 dark:bg-navy-800/40">
                         <div className="grid grid-cols-2 items-center gap-2 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_2rem]">
-                            <select value={s.weekday} onChange={(e) => update(i, { weekday: Number(e.target.value) })} className={cn(controlClasses(false), 'col-span-2 sm:col-span-1')} aria-label={t('Day')}>{days.map((d, n) => <option key={n} value={n}>{d}</option>)}</select>
+                            <Select wrapperClassName="col-span-2 sm:col-span-1" value={s.weekday} onChange={(e) => update(i, { weekday: Number(e.target.value) })} aria-label={t('Day')} options={days.map((d, n) => ({ value: n, label: d }))} />
                             <DateTimePicker type="time" required value={s.starts_at} onChange={(e) => update(i, { starts_at: e.target.value })} aria-label={t('From')} step={900} />
                             <DateTimePicker type="time" required value={s.ends_at} onChange={(e) => update(i, { ends_at: e.target.value })} aria-label={t('To')} step={900} />
                             <button type="button" onClick={() => form.setData('slots', form.data.slots.filter((_, j) => j !== i))} aria-label={t('Remove')} className="col-span-2 grid h-10 place-items-center rounded-lg text-navy-400 hover:bg-red-50 hover:text-red-600 sm:col-span-1 dark:hover:bg-red-500/10"><Trash2 className="size-4" /></button>
