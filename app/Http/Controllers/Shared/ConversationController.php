@@ -217,7 +217,7 @@ class ConversationController extends Controller
         $profiles = LawyerProfile::query()
             ->where(fn ($q) => $q->listed()->orWhereIn('user_id', $colleagueIds))
             ->where('user_id', '!=', $user->id)
-            ->with(['user:id,name,avatar_path', 'city:id,name', 'specializations:id,name', 'user.memberships' => fn ($q) => $q->where('status', 'active')->whereHas('organization', fn ($o) => $o->where('type', 'firm')), 'user.memberships.organization:id,name'])
+            ->with(['user:id,name,avatar_path', 'city:id,name,name_ur', 'tehsil:id,name,name_ur', 'district:id,name,name_ur', 'specializations:id,name', 'user.memberships' => fn ($q) => $q->where('status', 'active')->whereHas('organization', fn ($o) => $o->where('type', 'firm')), 'user.memberships.organization:id,name'])
             ->when($filters['q'] ?? null, fn ($q, $term) => $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$term}%")))
             ->when($filters['city'] ?? null, fn ($q, $city) => $q->whereHas('city', fn ($c) => $c->where('name', 'like', "%{$city}%")))
             ->when($filters['specialization'] ?? null, fn ($q, $spec) => $q->whereHas('specializations', fn ($s) => $s->where('name', 'like', "%{$spec}%")))
@@ -231,7 +231,7 @@ class ConversationController extends Controller
                 'name' => $p->user->name,
                 'avatar' => PublicFile::url($p->photo_path) ?? PublicFile::url($p->user->avatar_path),
                 'headline' => $p->headline,
-                'city' => $p->city?->name,
+                'city' => $p->locationLabel(),
                 'firm' => $p->user->memberships->first()?->organization?->name,
                 'specializations' => $p->specializations->pluck('name')->take(3)->values(),
                 'verified' => $p->isVerified(),

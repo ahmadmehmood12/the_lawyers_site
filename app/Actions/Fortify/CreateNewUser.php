@@ -12,8 +12,10 @@ use App\Rules\Cnic;
 use App\Rules\PakistaniPhone;
 use App\Services\Lawyers\LawyerProfileService;
 use App\Services\Organizations\OrganizationProvisioner;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -26,6 +28,8 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
  *
  * Advocates and firms must supply their CNIC, Bar Council and enrollment number.
  * Referral and coupon codes are optional and validated against active promo codes.
+ * The email must have a mail server (DNS) and not be a throwaway address. After "Continue with
+ * Google" (Auth\GoogleController) the confirmed Google email needs no password and is verified.
  */
 class CreateNewUser implements CreatesNewUsers
 {
@@ -42,11 +46,13 @@ class CreateNewUser implements CreatesNewUsers
     {
         $type = $input['registration_type'] ?? '';
         $professional = in_array($type, ['lawyer', 'firm'], true);
+        $google = request()->hasSession() ? request()->session()->get('google_signup') : null;
+        $viaGoogle = is_array($google) && strtolower(trim((string) ($input['email'] ?? ''))) === $google['email'];
 
         $validator = Validator::make($input, [
             'registration_type' => ['required', Rule::in(['lawyer', 'firm', 'client'])],
             'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
+            'email' => ['required', 'string', 'max:255', 'email:rfc,dns', 'indisposable', Rule::unique(User::class)],
             'phone' => ['required', 'string', new PakistaniPhone],
             'firm_name' => ['required_if:registration_type,firm', 'nullable', 'string', 'max:160'],
             'firm_registration_number' => ['required_if:registration_type,firm', 'nullable', 'string', 'max:60'],
@@ -58,8 +64,10 @@ class CreateNewUser implements CreatesNewUsers
             'referral_code' => ['nullable', 'string', 'max:40'],
             'coupon_code' => ['nullable', 'string', 'max:40'],
             'firm_invite_code' => ['nullable', 'string', 'max:20'],
-            'password' => $this->passwordRules(),
+            'password' => $viaGoogle ? ['nullable'] : $this->passwordRules(),
             'terms' => ['accepted'],
+        ], [
+            'email.email' => __('Enter a real email address that can receive mail. We could not find a mail server for this one.'),
         ]);
 
         $validator->after(function ($validator) use ($input, $type): void {
@@ -82,7 +90,7 @@ class CreateNewUser implements CreatesNewUsers
 
         $validator->validate();
 
-        return DB::transaction(function () use ($input, $type): User {
+        $user = DB::transaction(function () use ($input, $type, $viaGoogle, $google): User {
             $referral = PromoCode::findUsable($input['referral_code'] ?? null, 'referral');
             $coupon = PromoCode::findUsable($input['coupon_code'] ?? null, 'coupon');
 
@@ -90,7 +98,7 @@ class CreateNewUser implements CreatesNewUsers
                 'name' => $input['name'],
                 'email' => strtolower($input['email']),
                 'phone' => PakistaniPhone::normalize($input['phone']),
-                'password' => $input['password'],
+                'password' => $viaGoogle ? Str::random(48) : $input['password'],
                 'account_type' => $type === 'client' ? AccountType::Client : AccountType::Lawyer,
                 'locale' => in_array(app()->getLocale(), ['en', 'ur'], true) ? app()->getLocale() : 'en',
                 'referral_code' => $referral?->code,
@@ -128,8 +136,19 @@ class CreateNewUser implements CreatesNewUsers
             $referral?->redeem();
             $coupon?->redeem();
 
+            if ($viaGoogle) {
+                $user->forceFill(['google_id' => $google['id'], 'email_verified_at' => now()])->save();
+            }
+
             return $user;
         });
+
+        if ($viaGoogle) {
+            request()->session()->forget(['google_signup', 'google_signup_type']);
+            event(new Verified($user));
+        }
+
+        return $user;
     }
 
     private function firmForInviteCode(?string $code): ?Organization

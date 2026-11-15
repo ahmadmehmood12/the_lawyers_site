@@ -50,10 +50,20 @@ export default function JudgmentShow({ judgment: j, related, canonical, embedded
                             {(j.pdf_url || j.source_url) && (
                                 <div className="flex gap-2 border-t border-navy-100 p-4 dark:border-navy-800">
                                     {j.pdf_url && <a href={j.pdf_url} download className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-white dark:bg-gold-500 dark:text-navy-950"><Download className="size-4" />PDF</a>}
-                                    {j.source_url && <a href={j.source_url} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-navy-200 dark:ring-navy-700"><ExternalLink className="size-4" />{t('Open judgment')}</a>}
+                                    {j.source_url && <a href={j.source_url} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-navy-200 dark:ring-navy-700"><ExternalLink className="size-4" />{j.pdf_url ? t('Source page') : t('Open judgment')}</a>}
                                 </div>
                             )}
                         </Card>
+                        {j.cited_citations.length > 0 && (
+                            <Card>
+                                <CardHeader title={t('Case law cited')} description={t('Read from the judgment text. Open one to see other judgments that cite it.')} />
+                                <div className="flex flex-wrap gap-1.5 px-5 pb-5">
+                                    {j.cited_citations.map((c) => (
+                                        <Link key={c} href={route(indexRoute, { citation: c })} className="rounded bg-navy-50 px-2 py-1 font-mono text-xs font-medium text-navy-700 hover:bg-gold-50 hover:text-gold-700 dark:bg-navy-800 dark:text-navy-200 dark:hover:bg-gold-500/10 dark:hover:text-gold-300">{c}</Link>
+                                    ))}
+                                </div>
+                            </Card>
+                        )}
                         {related.length > 0 && (
                             <Card>
                                 <CardHeader title={t('More from this bench')} />

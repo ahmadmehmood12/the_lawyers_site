@@ -22,7 +22,9 @@ type Branding = {
 
 const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-800 hover:file:bg-navy-200 dark:text-navy-200 dark:file:bg-navy-800 dark:file:text-navy-100';
 
-export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia, typography }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia; typography: TypographyPayload }) {
+type GoogleSettings = { enabled: boolean; client_id: string; has_secret: boolean; configured: boolean; redirect_url: string };
+
+export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia, google, typography }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia; google: GoogleSettings; typography: TypographyPayload }) {
     const t = useT();
     const { auth } = usePage<SharedProps>().props;
     const brand = useForm<{ site_name: string; site_tagline: string; logo: File | null; favicon: File | null; remove_logo: boolean; remove_favicon: boolean; contact_email: string; contact_phone: string; contact_address: string } & Record<`social_${keyof Branding['social']}`, string>>({
@@ -54,6 +56,7 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
         clear_password: false,
     });
     const testMail = useForm({ to: auth.user?.email ?? '' });
+    const googleForm = useForm({ enabled: google.enabled ? '1' : '0', client_id: google.client_id, client_secret: '', clear_secret: false });
     const media = useForm<{ enabled: string; mode: string; heading: string; description: string; heading_ur: string; description_ur: string; image: File | null; video: File | null; poster: File | null; remove_image: boolean; remove_video: boolean; remove_poster: boolean }>({
         enabled: authMedia.enabled ? '1' : '0',
         mode: authMedia.mode,
@@ -226,6 +229,23 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
             )}
             {tab === 'signin' && (
                 <div className="grid gap-6">
+                <Card>
+                    <CardHeader title={t('Sign in with Google')} description={t('Adds “Continue with Google” to the sign in and sign up pages. New advocates still add their Bar Council details after Google.')}
+                        actions={<Badge tone={google.configured ? 'green' : 'amber'}>{google.configured ? t('Showing on sign in') : t('Hidden')}</Badge>} />
+                    <CardBody className="space-y-4">
+                        <Alert tone="info">{t('In Google Cloud console, APIs & Services, Credentials: create an OAuth client ID of type Web application, add the redirect address below under Authorized redirect URIs, then paste the client ID and secret here.')}</Alert>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Select label={t('Google sign in')} value={googleForm.data.enabled} onChange={(e) => googleForm.setData('enabled', e.target.value)} options={[{ value: '1', label: t('On') }, { value: '0', label: t('Off') }]} />
+                            <Input label={t('Authorized redirect URI')} value={google.redirect_url} readOnly onFocus={(e) => e.currentTarget.select()} hint={t('Copy this exactly into Google Cloud.')} />
+                            <Input label={t('Client ID')} value={googleForm.data.client_id} onChange={(e) => googleForm.setData('client_id', e.target.value)} error={googleForm.errors.client_id} placeholder="1234567890-abc.apps.googleusercontent.com" />
+                            <Input label={t('Client secret')} type="password" autoComplete="new-password" value={googleForm.data.client_secret} onChange={(e) => googleForm.setData('client_secret', e.target.value)} error={googleForm.errors.client_secret} hint={google.has_secret ? t('Saved. Leave blank to keep it.') : t('Not saved yet.')} />
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            {google.has_secret ? <Checkbox label={t('Remove the saved secret')} checked={googleForm.data.clear_secret} onChange={(e) => googleForm.setData('clear_secret', e.target.checked)} /> : <span />}
+                            <Button loading={googleForm.processing} onClick={() => googleForm.put(route('admin.google-settings.update'), { preserveScroll: true, onSuccess: () => googleForm.reset('client_secret', 'clear_secret') })}>{t('Save Google sign in')}</Button>
+                        </div>
+                    </CardBody>
+                </Card>
                 <Card>
                     <CardHeader title={t('Sign-in page')} description={t('The panel beside the sign-in and sign-up forms on large screens. Use a professional image, or a short looping video with no sound.')} />
                     <CardBody className="space-y-5">

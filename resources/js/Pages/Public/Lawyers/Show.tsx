@@ -10,7 +10,7 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
 import type { LawyerCardData } from '@/Components/domain/LawyerCard';
 
-type Lawyer = LawyerCardData & { bio: string | null; enrollment_number: string | null; enrollment_date: string | null; chamber_address: string | null; public_phone: string | null; public_email: string | null; bar_council: string | null; district: string | null; province: string | null; courts: string[]; languages: string[]; offers_in_person: boolean; fee_max: number | null; educations: { degree: string; institution: string; year: number | null }[]; experiences: { position: string; organization: string; start_year: number | null; end_year: number | null; is_current?: boolean; description: string | null }[]; credentials: { type: string; title: string; issuer: string | null; year: number | null; url: string | null }[]; verified_at: string | null; firms: { name: string; slug: string }[]; reviews: { id: number; rating: number; title: string | null; comment: string | null; author: string; response: string | null; created_at: string }[] };
+type Lawyer = LawyerCardData & { bio: string | null; enrollment_number: string | null; enrollment_date: string | null; chamber_address: string | null; public_phone: string | null; public_email: string | null; bar_council: string | null; district: string | null; tehsil: string | null; province: string | null; courts: string[]; languages: string[]; offers_in_person: boolean; fee_max: number | null; educations: { degree: string; institution: string; year: number | null }[]; experiences: { position: string; organization: string; start_year: number | null; end_year: number | null; is_current?: boolean; description: string | null }[]; credentials: { type: string; title: string; issuer: string | null; year: number | null; url: string | null }[]; verified_at: string | null; firms: { name: string; slug: string }[]; reviews: { id: number; rating: number; title: string | null; comment: string | null; author: string; response: string | null; created_at: string }[] };
 
 export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, canBook, canonical, embedded = null }: { lawyer: Lawyer; articles: ArticleCardData[]; stats: { cases_recorded: number; active_cases: number; courts_represented: number }; isFavourite: boolean; canBook: boolean; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
@@ -120,7 +120,11 @@ export default function LawyerShow({ lawyer: l, articles, stats, isFavourite, ca
                         <Card>
                             <CardHeader title={t('Chambers')} />
                             <CardBody className="space-y-2 text-sm">
-                                {l.chamber_address && <p className="flex gap-2"><MapPin className="size-4 shrink-0 text-navy-400" />{l.chamber_address}</p>}
+                                {(l.chamber_address || l.district) && (
+                                    <p className="flex gap-2"><MapPin className="size-4 shrink-0 text-navy-400" />
+                                        <span>{l.chamber_address}{l.district && <span className="block text-navy-500 dark:text-navy-400">{[l.tehsil ? `${t('Tehsil')} ${l.tehsil}` : null, `${t('District')} ${l.district}`].filter(Boolean).join(', ')}</span>}</span>
+                                    </p>
+                                )}
                                 {l.public_phone && <p className="flex gap-2"><Phone className="size-4 text-navy-400" /><a href={`tel:${l.public_phone}`} className="ltr-nums underline">{l.public_phone}</a></p>}
                                 {l.public_email && <p className="flex gap-2"><Mail className="size-4 text-navy-400" /><a href={`mailto:${l.public_email}`} className="underline">{l.public_email}</a></p>}
                                 {l.firms.map((f) => <Link key={f.slug} href={route(firmRoute, f.slug)} className="flex gap-2 font-medium hover:underline"><Building2 className="size-4 text-navy-400" />{f.name}</Link>)}

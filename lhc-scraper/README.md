@@ -1,8 +1,10 @@
 # LHC reported judgments scraper
 
 Daily metadata importer for the Lahore High Court **Latest Reported Judgments**
-listing. It uses Requests + BeautifulSoup, never downloads PDFs, and POSTs each
-row to the Laravel endpoint `POST /api/judgments/import` with a bearer token.
+listing. It uses Requests + BeautifulSoup, reads each judgment PDF in memory
+with pypdf to find its citation and the case law it cites (cached in
+`storage/pdf_citations.json`; `--skip-pdf` to turn off), and POSTs each row to
+the Laravel endpoint `POST /api/judgments/import` with a bearer token.
 
 ## Quick start
 

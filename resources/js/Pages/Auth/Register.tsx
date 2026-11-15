@@ -2,7 +2,8 @@ import { Link, useForm } from '@inertiajs/react';
 import { Briefcase, Building2, ChevronDown, Gift, TicketPercent, User } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { useState } from 'react';
-import { Button, Checkbox, Input, Select } from '@/Components/ui';
+import { GoogleButton } from '@/Components/domain/GoogleButton';
+import { Alert, Button, Checkbox, Input, Select } from '@/Components/ui';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { cn } from '@/lib/cn';
 import { useT } from '@/lib/i18n';
@@ -10,12 +11,12 @@ import { useT } from '@/lib/i18n';
 type RegistrationType = 'lawyer' | 'firm' | 'client';
 type Option = { value: number; label: string };
 
-export default function Register({ type, barCouncils }: { type: RegistrationType; barCouncils: Option[] }) {
+export default function Register({ type, barCouncils, google = false, googleProfile = null }: { type: RegistrationType; barCouncils: Option[]; google?: boolean; googleProfile?: { name: string; email: string } | null }) {
     const t = useT();
     const form = useForm({
         registration_type: type,
-        name: '',
-        email: '',
+        name: googleProfile?.name ?? '',
+        email: googleProfile?.email ?? '',
         phone: '',
         firm_name: '',
         firm_registration_number: '',
@@ -72,6 +73,9 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
                     </button>
                 ))}
             </div>
+            {googleProfile
+                ? <Alert tone="success" className="mb-5">{t('Signed in with Google as :email. Add the remaining details below; no password is needed.', { email: googleProfile.email })}</Alert>
+                : google && <GoogleButton label={t('Sign up with Google')} type={form.data.registration_type} />}
             <form onSubmit={submit} className="space-y-4">
                 {/* 1. Personal / business information */}
                 {form.data.registration_type === 'firm' && (
@@ -82,7 +86,7 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
                 )}
                 <div className={cn('grid gap-4', professional && 'sm:grid-cols-2')}>
                     <Input wrapperClassName={professional ? 'sm:col-span-2' : undefined} label={form.data.registration_type === 'firm' ? t('Your full name') : t('Full name')} autoComplete="name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} required />
-                    <Input label={t('Email')} type="email" autoComplete="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} required />
+                    <Input label={t('Email')} type="email" autoComplete="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} readOnly={!!googleProfile} hint={googleProfile ? t('Confirmed by Google') : undefined} required />
                     <Input label={t('Mobile number')} type="tel" autoComplete="tel" placeholder="03XX XXXXXXX" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} required />
                 </div>
 
@@ -126,10 +130,10 @@ export default function Register({ type, barCouncils }: { type: RegistrationType
                 )}
 
                 {/* 3-4. Password before the optional codes. */}
-                <div className="grid gap-4 sm:grid-cols-2">
+                {!googleProfile && <div className="grid gap-4 sm:grid-cols-2">
                     <Input label={t('Password')} type="password" autoComplete="new-password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} error={form.errors.password} required />
                     <Input label={t('Confirm password')} type="password" autoComplete="new-password" value={form.data.password_confirmation} onChange={(e) => form.setData('password_confirmation', e.target.value)} required />
-                </div>
+                </div>}
 
                 {/* 5-7. Optional codes: each opens its own field when asked for. */}
                 {professional && (

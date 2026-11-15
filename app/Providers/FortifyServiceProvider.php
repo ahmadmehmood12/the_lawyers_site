@@ -9,6 +9,7 @@ use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Enums\UserStatus;
 use App\Models\BarCouncil;
 use App\Models\User;
+use App\Services\Auth\GoogleSignIn;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -68,9 +69,12 @@ class FortifyServiceProvider extends ServiceProvider
             return $user;
         });
 
-        Fortify::loginView(fn () => Inertia::render('Auth/Login', ['canResetPassword' => true]));
+        Fortify::loginView(fn () => Inertia::render('Auth/Login', ['canResetPassword' => true, 'google' => app(GoogleSignIn::class)->isEnabled()]));
         Fortify::registerView(fn (Request $request) => Inertia::render('Auth/Register', [
             'type' => in_array($request->query('type'), ['lawyer', 'firm', 'client'], true) ? $request->query('type') : 'client',
+            'google' => app(GoogleSignIn::class)->isEnabled(),
+            // Set after "Continue with Google" for a new email: name and email are filled, no password.
+            'googleProfile' => ($profile = $request->session()->get('google_signup')) ? ['name' => $profile['name'], 'email' => $profile['email']] : null,
             'barCouncils' => BarCouncil::query()->orderBy('name')->get(['id', 'name', 'name_ur'])
                 ->map(fn (BarCouncil $council) => ['value' => $council->id, 'label' => app()->getLocale() === 'ur' ? $council->name_ur : $council->name])
                 ->all(),

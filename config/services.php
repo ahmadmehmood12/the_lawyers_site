@@ -102,4 +102,11 @@ return [
         'import_token' => env('JUDGMENTS_IMPORT_TOKEN'),
     ],
 
+    // Sign in with Google (Socialite). Admin, Settings, Sign-in page overrides these when filled.
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+    ],
+
 ];

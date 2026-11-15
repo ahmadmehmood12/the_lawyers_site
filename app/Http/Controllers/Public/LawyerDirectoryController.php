@@ -46,7 +46,7 @@ class LawyerDirectoryController extends Controller
                 'user.memberships' => fn ($q) => $q->where('status', 'active')
                     ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
                 'user.memberships.organization:id,name,slug',
-                'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code',
+                'tehsil:id,name,name_ur', 'district:id,name,name_ur', 'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code',
                 'educations', 'courts:id,name,name_ur', 'languages',
             ])
             ->when($filters['search'] ?? null, fn (Builder $q, $s) => $q->where(fn ($w) => $w->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%"))->orWhere('headline', 'like', "%{$s}%")))
@@ -99,7 +99,7 @@ class LawyerDirectoryController extends Controller
             'user.memberships' => fn ($q) => $q->where('status', 'active')
                 ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
             'user.memberships.organization:id,name,slug',
-            'city:id,name,name_ur', 'province:id,name', 'district:id,name', 'barCouncil:id,name,code',
+            'city:id,name,name_ur', 'province:id,name', 'district:id,name,name_ur', 'tehsil:id,name,name_ur', 'barCouncil:id,name,code',
             'specializations:id,name,name_ur,slug', 'courts:id,name,name_ur', 'languages', 'educations', 'experiences', 'credentials',
             'approvedReviews' => fn ($q) => $q->with('author:id,name')->latest()->limit(20),
         ]);
@@ -127,6 +127,7 @@ class LawyerDirectoryController extends Controller
                 'public_phone' => $lawyer->public_phone,
                 'public_email' => $lawyer->public_email,
                 'district' => $lawyer->district?->name,
+                'tehsil' => $lawyer->tehsil?->name,
                 'province' => $lawyer->province?->name,
                 'courts' => $lawyer->courts->map(fn ($c) => app()->getLocale() === 'ur' && $c->name_ur ? $c->name_ur : $c->name),
                 'educations' => $lawyer->educations->map->only(['degree', 'institution', 'year']),

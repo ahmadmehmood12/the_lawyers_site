@@ -9,7 +9,7 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
-type Row = { id: number; slug: string; court: string; court_name: string; case_type: string; case_number: string; title: string; judges: string; citation: string | null; tag_line: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; source_url: string | null; is_published: boolean; views: number };
+type Row = { id: number; slug: string; court: string; court_name: string; case_type: string; case_number: string; title: string; judges: string; citation: string | null; tag_line: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; pdf_is_link: boolean; cited_citations: string[]; source_url: string | null; is_published: boolean; views: number };
 
 const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-800 hover:file:bg-navy-200 dark:text-navy-200 dark:file:bg-navy-800 dark:file:text-navy-100';
 
@@ -62,14 +62,15 @@ export default function Judgments({ rows, courts, counts, filters, csvColumns }:
 
 function JudgmentDialog({ row, courts, defaultCourt, onClose }: { row: Row | null; courts: SelectOption[]; defaultCourt?: string; onClose: () => void }) {
     const t = useT();
-    const form = useForm<{ court: string; case_type: string; case_number: string; title: string; judges: string; citation: string; tag_line: string; decision_date: string; uploaded_on: string; source_url: string; is_published: boolean; pdf: File | null; remove_pdf: boolean; text_mode: 'pdf' | 'link' }>({
-        text_mode: row?.pdf_url ? 'pdf' : row?.source_url ? 'link' : 'link',
+    const form = useForm<{ court: string; case_type: string; case_number: string; title: string; judges: string; citation: string; tag_line: string; decision_date: string; uploaded_on: string; pdf_link: string; source_url: string; is_published: boolean; pdf: File | null; remove_pdf: boolean; text_mode: 'pdf' | 'link' }>({
+        text_mode: row?.pdf_url && !row.pdf_is_link ? 'pdf' : 'link',
+        pdf_link: row?.pdf_is_link ? row.pdf_url ?? '' : '',
         court: row?.court ?? defaultCourt ?? 'lhc', case_type: row?.case_type ?? '', case_number: row?.case_number ?? '', title: row?.title ?? '', judges: row?.judges ?? '',
         citation: row?.citation ?? '', tag_line: row?.tag_line ?? '', decision_date: row?.decision_date ?? '', uploaded_on: row?.uploaded_on ?? new Date().toISOString().slice(0, 10),
         source_url: row?.source_url ?? '', is_published: row?.is_published ?? true, pdf: null, remove_pdf: false,
     });
     function submit() {
-        form.transform((d) => ({ ...d, citation: d.citation || null, tag_line: d.tag_line || null, decision_date: d.decision_date || null, source_url: d.source_url || null }));
+        form.transform((d) => ({ ...d, citation: d.citation || null, tag_line: d.tag_line || null, decision_date: d.decision_date || null, pdf_link: d.pdf_link || null, source_url: d.source_url || null }));
         const options = { forceFormData: true, preserveScroll: true, onSuccess: onClose };
         if (row) form.post(route('admin.judgments.update', row.id), options);
         else form.post(route('admin.judgments.store'), options);
@@ -97,17 +98,25 @@ function JudgmentDialog({ row, courts, defaultCourt, onClose }: { row: Row | nul
                         ))}
                     </div>
                     {form.data.text_mode === 'link' ? (
-                        <Input label={t('Link to the judgment')} type="url" value={form.data.source_url} onChange={(e) => form.setData('source_url', e.target.value)} error={form.errors.source_url} placeholder="https://" required
-                            hint={t('Paste the address of the judgment on the court website or any public PDF link.')} />
+                        <Input label={t('PDF link')} type="url" value={form.data.pdf_link} onChange={(e) => form.setData('pdf_link', e.target.value)} error={form.errors.pdf_link} placeholder="https://sys.lhc.gov.pk/appjudgments/2026LHC1234.pdf"
+                            hint={t('Direct link to the judgment PDF on the court website. An empty citation fills itself from an LHC file name.')} />
                     ) : (
                         <div className="space-y-1.5">
-                            {row?.pdf_url && <p className="flex items-center gap-3 text-sm"><a href={row.pdf_url} target="_blank" rel="noreferrer" className="underline">{t('Current PDF')}</a><span className="text-navy-500">{t('Choose a new file only to replace it.')}</span></p>}
+                            {row?.pdf_url && !row.pdf_is_link && <p className="flex items-center gap-3 text-sm"><a href={row.pdf_url} target="_blank" rel="noreferrer" className="underline">{t('Current PDF')}</a><span className="text-navy-500">{t('Choose a new file only to replace it.')}</span></p>}
                             <input type="file" accept="application/pdf" className={fileClasses} onChange={(e) => form.setData('pdf', e.target.files?.[0] ?? null)} aria-label={t('Judgment PDF')} />
                             {form.errors.pdf ? <p className="text-xs text-red-600">{form.errors.pdf}</p> : <p className="text-xs text-navy-500">{t('PDF up to 20 MB.')}</p>}
                         </div>
                     )}
-                    {row && ((form.data.text_mode === 'link' && row.pdf_url) || (form.data.text_mode === 'pdf' && row.source_url)) && (
-                        <p className="text-xs text-gold-700 dark:text-gold-300">{form.data.text_mode === 'link' ? t('Saving replaces the uploaded PDF with this link.') : t('Saving replaces the link with the uploaded PDF.')}</p>
+                    <Input label={t('Source page link')} type="url" value={form.data.source_url} onChange={(e) => form.setData('source_url', e.target.value)} error={form.errors.source_url} placeholder="https://"
+                        hint={form.data.text_mode === 'link' ? t('Optional. The court page where the judgment is listed. Add the PDF link, this page, or both.') : t('Optional. The court page where the judgment is listed.')} />
+                    {row && ((form.data.text_mode === 'link' && row.pdf_url && !row.pdf_is_link) || (form.data.text_mode === 'pdf' && row.pdf_is_link)) && (
+                        <p className="text-xs text-gold-700 dark:text-gold-300">{form.data.text_mode === 'link' ? t('Saving removes the uploaded PDF and uses the link instead.') : t('Saving replaces the PDF link with the uploaded file.')}</p>
+                    )}
+                    {row && row.cited_citations.length > 0 && (
+                        <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-navy-500">{t('Case law cited in the PDF (:count)', { count: row.cited_citations.length })}</p>
+                            <div className="flex flex-wrap gap-1.5">{row.cited_citations.map((c) => <Badge key={c}>{c}</Badge>)}</div>
+                        </div>
                     )}
                 </fieldset>
                 <Checkbox label={t('Show on the public page')} checked={form.data.is_published} onChange={(e) => form.setData('is_published', e.target.checked)} />

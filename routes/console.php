@@ -11,3 +11,4 @@ Schedule::command('subscriptions:expire')->hourly()->withoutOverlapping();
 Schedule::command('subscriptions:remind')->dailyAt('10:00')->timezone('Asia/Karachi')->withoutOverlapping();
 Schedule::command('queue:prune-failed --hours=720')->daily();
 Schedule::command('activitylog:clean')->monthly();
+Schedule::command('disposable:update')->weekly();

@@ -1,10 +1,11 @@
 import { Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
+import { GoogleButton } from '@/Components/domain/GoogleButton';
 import { Button, Checkbox, Input } from '@/Components/ui';
 import AuthLayout from '@/Layouts/AuthLayout';
 import { useT } from '@/lib/i18n';
 
-export default function Login({ canResetPassword }: { canResetPassword: boolean }) {
+export default function Login({ canResetPassword, google = false }: { canResetPassword: boolean; google?: boolean }) {
     const t = useT();
     const form = useForm({ email: '', password: '', remember: false });
 
@@ -15,6 +16,7 @@ export default function Login({ canResetPassword }: { canResetPassword: boolean 
 
     return (
         <AuthLayout demo="hero" title={t('Sign in')} description={t('Welcome back. Sign in to your diary.')}>
+            {google && <GoogleButton label={t('Sign in with Google')} />}
             <form onSubmit={submit} className="space-y-4">
                 <Input label={t('Email')} type="email" autoComplete="username" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} required autoFocus />
                 <Input label={t('Password')} type="password" autoComplete="current-password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} error={form.errors.password} required />

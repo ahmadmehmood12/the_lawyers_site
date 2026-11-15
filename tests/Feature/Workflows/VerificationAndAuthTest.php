@@ -8,6 +8,7 @@ use App\Models\BarCouncil;
 use App\Models\Organization;
 use App\Models\PromoCode;
 use App\Models\User;
+use App\Notifications\VerificationStatusChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -152,6 +153,8 @@ class VerificationAndAuthTest extends TestCase
 
         $this->assertTrue($lawyer->lawyerProfile->fresh()->isVerified());
         $this->assertSame(['submitted', 'approved'], $request->events()->pluck('to_status')->all());
+        Notification::assertSentTo($lawyer, VerificationStatusChanged::class, fn (VerificationStatusChanged $notification) => $notification->status === VerificationStatus::Approved
+            && $notification->mailTemplateKey() === 'verification_approved');
     }
 
     public function test_approved_lawyer_cannot_be_rejected_directly(): void

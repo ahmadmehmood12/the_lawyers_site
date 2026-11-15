@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'user_id', 'slug', 'title', 'cnic', 'bar_council_id', 'enrollment_number', 'advocate_category', 'enrollment_date',
-    'practice_since', 'headline', 'bio', 'bio_ur', 'photo_path', 'province_id', 'district_id', 'city_id',
+    'practice_since', 'headline', 'bio', 'bio_ur', 'photo_path', 'province_id', 'district_id', 'tehsil_id', 'city_id',
     'chamber_address', 'public_phone', 'public_email', 'consultation_fee_min', 'consultation_fee_max',
     'offers_online', 'offers_in_person', 'accepting_clients', 'is_public', 'onboarding_step',
 ])]
@@ -73,6 +73,27 @@ class LawyerProfile extends Model
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class);
+    }
+
+    public function tehsil(): BelongsTo
+    {
+        return $this->belongsTo(Tehsil::class);
+    }
+
+    /**
+     * Chamber place for cards and the profile: "Tehsil, District" when a tehsil is set, otherwise the city.
+     * Uses the relations already loaded, so callers eager load tehsil and district.
+     */
+    public function locationLabel(): ?string
+    {
+        $ur = app()->getLocale() === 'ur';
+        $name = fn ($place) => $place ? ($ur && $place->name_ur ? $place->name_ur : $place->name) : null;
+
+        if ($this->tehsil_id && $this->relationLoaded('tehsil') && $this->tehsil) {
+            return implode(', ', array_filter([$name($this->tehsil), $this->relationLoaded('district') ? $name($this->district) : null]));
+        }
+
+        return $this->relationLoaded('city') ? $name($this->city) : null;
     }
 
     public function city(): BelongsTo

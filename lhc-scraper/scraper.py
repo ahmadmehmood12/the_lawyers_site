@@ -2,8 +2,9 @@
 """Daily scraper for Lahore High Court reported judgments.
 
 It reads ``#latestJudgments`` from the LHC listing page, extracts metadata for
-each row (never the PDF itself), and POSTs it to the Laravel import endpoint at
-``/api/judgments/import`` using a bearer token.
+each row, reads each judgment PDF (in memory, never saved) to find its own
+citation and the case law it cites, and POSTs it to the Laravel import endpoint
+at ``/api/judgments/import`` using a bearer token.
 
 See ``docs/judgment-automation.md`` for setup and deployment.
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import io
 import json
 import logging
 import os
@@ -20,7 +22,7 @@ import sys
 import time
 import unicodedata
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -29,6 +31,7 @@ from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
+from pypdf import PdfReader
 from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -37,6 +40,10 @@ BASE_DIR = Path(__file__).resolve().parent
 STORAGE_DIR = BASE_DIR / "storage"
 LOG_FILE = STORAGE_DIR / "scraper.log"
 LOCK_FILE = STORAGE_DIR / "scraper.lock"
+CITATION_CACHE_FILE = STORAGE_DIR / "pdf_citations.json"
+MAX_PDF_BYTES = 25 * 1024 * 1024
+MAX_PDF_PAGES = 80
+MAX_CITED = 150
 DEFAULT_LISTING_URL = (
     "https://data.lhc.gov.pk/reported_judgments/judgments_approved_for_reporting"
 )
@@ -76,7 +83,7 @@ class JudgmentRecord:
     case_number: str
     title: str
     judges: str
-    citation: None
+    citation: str | None
     tag_line: str | None
     decision_date: None
     uploaded_on: str
@@ -84,9 +91,13 @@ class JudgmentRecord:
     source_url: str
     slug: str
     is_published: bool
+    cited_citations: tuple[str, ...] = ()
 
     def as_payload(self) -> dict[str, object]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["cited_citations"] = list(self.cited_citations)
+
+        return payload
 
 
 def configure_logging(verbose: bool = False) -> None:
@@ -336,7 +347,7 @@ def parse_judgments(
                 case_number=case_number,
                 title=title,
                 judges=judge,
-                citation=None,
+                citation=citation_from_pdf_url(pdf_url),
                 tag_line=extract_tag_line(cell),
                 decision_date=None,
                 uploaded_on=uploaded_on,
@@ -348,6 +359,183 @@ def parse_judgments(
         )
 
     return records, len(rows), skipped
+
+
+# --- Citations -------------------------------------------------------------
+#
+# Pakistani law reports: "PLD 2026 Lahore 172" (reporter, year, court, page) and
+# "2026 CLC 1150" / "2021 SCMR 1234" / "2026 LHC 8777" (year, reporter, page).
+# Text from PDFs often has broken spacing, so matching tolerates extra spaces.
+
+PLD_COURTS = {
+    "supremecourt": "SC", "sc": "SC",
+    "lahore": "Lahore", "lah": "Lahore",
+    "karachi": "Karachi", "kar": "Karachi", "sindh": "Sindh",
+    "peshawar": "Peshawar", "pesh": "Peshawar",
+    "quetta": "Quetta", "balochistan": "Balochistan", "bal": "Balochistan",
+    "islamabad": "Islamabad", "isl": "Islamabad",
+    "federalshariatcourt": "FSC", "fsc": "FSC",
+    "ajk": "AJ&K", "aj&k": "AJ&K", "azadj&k": "AJ&K",
+    "gb": "GB", "gilgitbaltistan": "GB",
+}
+
+YEAR_FIRST_REPORTERS = {
+    "scmr": "SCMR", "clc": "CLC", "ylr": "YLR", "mld": "MLD", "cld": "CLD", "ptd": "PTD",
+    "plc": "PLC", "plc(cs)": "PLC (C.S.)", "pcrlj": "PCr.LJ", "nlr": "NLR", "ptcl": "PTCL",
+    "klr": "KLR", "gblr": "GBLR", "lhc": "LHC", "scp": "SCP", "ihc": "IHC",
+    "phc": "PHC", "shc": "SHC", "bhc": "BHC",
+}
+
+PLD_PATTERN = re.compile(
+    r"\bP\s*L\s*D\s+((?:19|20)\d{2})\s+"
+    r"(Supreme\s+Court|Federal\s+Shariat\s+Court|Gilgit[-\s]*Baltistan|Azad\s+J\s*&\s*K|AJ\s*&\s*K|"
+    r"Lahore|Lah|Karachi|Kar|Sindh|Peshawar|Pesh|Quetta|Balochistan|Bal|Islamabad|Isl|FSC|SC|GB)"
+    r"\.?\s+(\d{1,5})\b",
+    flags=re.IGNORECASE,
+)
+
+YEAR_FIRST_PATTERN = re.compile(
+    r"\b((?:19|20)\d{2})\s+"
+    r"(SCMR|CLC|YLR|MLD|CLD|PTD|PLC\s*\(\s*C\s*\.?\s*S\s*\.?\s*\)|PLC|P\s*\.?\s*Cr\s*\.?\s*L\s*\.?\s*J|"
+    r"NLR|PTCL|KLR|GBLR|LHC|SCP|IHC|PHC|SHC|BHC)"
+    r"\.?\s+(\d{1,6})\b",
+)
+
+OWN_CITATION_IN_URL = re.compile(
+    r"((?:19|20)\d{2})[\s_-]*(LHC|SHC|PHC|BHC|IHC|SCP)[\s_-]*(\d{1,6})\.pdf$", flags=re.IGNORECASE
+)
+
+
+def citation_from_pdf_url(url: str) -> str | None:
+    """LHC names reported PDFs after their citation: 2026LHC8777.pdf -> "2026 LHC 8777"."""
+    match = OWN_CITATION_IN_URL.search(urlparse(url).path.rsplit("/", 1)[-1])
+    if not match:
+        return None
+
+    year, reporter, page = match.groups()
+
+    return f"{year} {reporter.upper()} {int(page)}"
+
+
+def _key(value: str) -> str:
+    return re.sub(r"[\s.]+", "", value).lower()
+
+
+def extract_citations(text: str) -> list[str]:
+    """Return every distinct law report citation in ``text``, in order of appearance."""
+    text = clean_text(text)
+    found: list[tuple[int, str]] = []
+
+    for match in PLD_PATTERN.finditer(text):
+        year, court, page = match.groups()
+        court_name = PLD_COURTS.get(_key(court).replace("-", ""), court.title())
+        found.append((match.start(), f"PLD {year} {court_name} {int(page)}"))
+
+    for match in YEAR_FIRST_PATTERN.finditer(text):
+        year, reporter, page = match.groups()
+        name = YEAR_FIRST_REPORTERS.get(_key(reporter))
+        if name:
+            found.append((match.start(), f"{year} {name} {int(page)}"))
+
+    seen: set[str] = set()
+    citations: list[str] = []
+    for _, citation in sorted(found):
+        if _key(citation) not in seen:
+            seen.add(_key(citation))
+            citations.append(citation)
+
+    return citations
+
+
+def read_pdf_text(content: bytes) -> str:
+    reader = PdfReader(io.BytesIO(content))
+    pages = reader.pages[:MAX_PDF_PAGES]
+
+    return "\n".join((page.extract_text() or "") for page in pages)
+
+
+def download_pdf(session: requests.Session, config: Config, url: str) -> bytes:
+    """Download a court PDF into memory, refusing anything that is not a PDF or is too large."""
+    with session.get(url, timeout=config.timeout, stream=True) as response:
+        response.raise_for_status()
+        chunks: list[bytes] = []
+        size = 0
+        for chunk in response.iter_content(chunk_size=65536):
+            size += len(chunk)
+            if size > MAX_PDF_BYTES:
+                raise ValueError(f"PDF larger than {MAX_PDF_BYTES // (1024 * 1024)} MB")
+            chunks.append(chunk)
+
+    content = b"".join(chunks)
+    if not content.startswith(b"%PDF"):
+        raise ValueError("response is not a PDF")
+
+    return content
+
+
+def load_citation_cache() -> dict[str, dict[str, object]]:
+    try:
+        data = json.loads(CITATION_CACHE_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_citation_cache(cache: dict[str, dict[str, object]]) -> None:
+    STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    temporary = CITATION_CACHE_FILE.with_suffix(".tmp")
+    temporary.write_text(json.dumps(cache, ensure_ascii=False, indent=0), encoding="utf-8")
+    temporary.replace(CITATION_CACHE_FILE)
+
+
+def add_pdf_citations(
+    session: requests.Session,
+    config: Config,
+    records: list[JudgmentRecord],
+) -> list[JudgmentRecord]:
+    """Read each judgment PDF once (results are cached) and attach its citations.
+
+    The judgment's own citation comes from the PDF file name, or from the top of
+    the first page when the name does not carry it. Everything else found in the
+    text is case law the judgment cites. A PDF that cannot be read is logged and
+    the record is still imported without cited case law.
+    """
+    cache = load_citation_cache()
+    enriched: list[JudgmentRecord] = []
+    downloaded = 0
+
+    for record in records:
+        cached = cache.get(record.pdf_path)
+
+        if cached is None:
+            if downloaded:
+                time.sleep(0.5)  # be polite to the court server
+            try:
+                text = read_pdf_text(download_pdf(session, config, record.pdf_path))
+                downloaded += 1
+            except Exception as exc:  # noqa: BLE001 - one unreadable PDF must not stop the run
+                logger.warning("Could not read PDF %s: %s", record.pdf_path, exc)
+                enriched.append(record)
+                continue
+
+            own = record.citation
+            if own is None:
+                header = [c for c in extract_citations(text[:600]) if re.search(r"\b(LHC|SHC|PHC|BHC|IHC|SCP)\b", c)]
+                own = header[0] if header else None
+
+            cited = [c for c in extract_citations(text) if own is None or _key(c) != _key(own)]
+            cached = {"citation": own, "cited": cited[:MAX_CITED]}
+            cache[record.pdf_path] = cached
+
+        citation = record.citation or cached.get("citation")
+        cited = tuple(str(c) for c in (cached.get("cited") or []))
+        enriched.append(replace(record, citation=citation, cited_citations=cited))
+        logger.debug("Citations for %s: %s; cites %d", record.pdf_path, citation, len(cited))
+
+    save_citation_cache(cache)
+    logger.info("Citations read: %d PDFs downloaded, %d from cache.", downloaded, len(records) - downloaded)
+
+    return enriched
 
 
 def fetch_listing(session: requests.Session, config: Config) -> bytes:
@@ -418,8 +606,10 @@ def post_record(
     return "failed", last_error
 
 
-def run(config: Config, *, dry_run: bool, limit: int | None) -> int:
-    logger.info("Scraper started (dry_run=%s, limit=%s).", dry_run, limit or "none")
+def run(config: Config, *, dry_run: bool, limit: int | None, read_pdfs: bool = True) -> int:
+    logger.info(
+        "Scraper started (dry_run=%s, limit=%s, read_pdfs=%s).", dry_run, limit or "none", read_pdfs
+    )
     logger.info("Fetching listing: %s", config.listing_url)
 
     session = build_session(config)
@@ -454,6 +644,9 @@ def run(config: Config, *, dry_run: bool, limit: int | None) -> int:
     if limit:
         records = records[:limit]
         logger.info("Limiting this run to %d records.", limit)
+
+    if read_pdfs:
+        records = add_pdf_citations(session, config, records)
 
     if dry_run:
         for record in records:
@@ -536,6 +729,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Override LHC_LISTING_URL for this run.",
     )
+    parser.add_argument(
+        "--skip-pdf",
+        action="store_true",
+        help="Do not download PDFs; citations then come only from the PDF file names.",
+    )
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging.")
 
     return parser.parse_args(argv)
@@ -563,7 +761,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         try:
-            return run(config, dry_run=args.dry_run, limit=args.limit)
+            return run(config, dry_run=args.dry_run, limit=args.limit, read_pdfs=not args.skip_pdf)
         except Exception:
             logger.exception("Unhandled scraper error.")
             logger.info("Scraper completed with an unhandled error.")

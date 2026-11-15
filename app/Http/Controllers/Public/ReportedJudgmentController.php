@@ -19,6 +19,8 @@ class ReportedJudgmentController extends Controller
         $filters = $request->only(['court', 'year', 'judge', 'citation', 'case', 'title', 'decided_from', 'decided_to', 'uploaded_from', 'uploaded_to']);
 
         $judgments = self::filtered(ReportedJudgment::query()->where('is_published', true), $filters)
+            // Searching a citation shows that judgment first, then the judgments that cite it.
+            ->when(filled($filters['citation'] ?? null), fn ($q) => $q->orderByRaw(self::compactColumn('citation').' = ? DESC', [self::compactCitation((string) $filters['citation'])]))
             ->orderByDesc('uploaded_on')->orderByDesc('id')
             ->paginate(25)->withQueryString()
             ->through(fn (ReportedJudgment $j) => $j->toListItem());
@@ -65,12 +67,42 @@ class ReportedJudgmentController extends Controller
             ->when(array_key_exists((string) ($f['court'] ?? ''), ReportedJudgment::COURTS), fn ($q) => $q->where('court', $f['court']))
             ->when(is_numeric($f['year'] ?? null), fn ($q) => $q->whereRaw('YEAR(COALESCE(decision_date, uploaded_on)) = ?', [(int) $f['year']]))
             ->when(filled($f['judge'] ?? null), fn ($q) => $q->where('judges', 'like', $like($f['judge'])))
-            ->when(filled($f['citation'] ?? null), fn ($q) => $q->where(fn ($w) => $w->where('citation', 'like', $like($f['citation']))->orWhere('tag_line', 'like', $like($f['citation']))))
+            ->when(filled($f['citation'] ?? null), function ($q) use ($f, $like) {
+                // "2026 LHC 8777", "2026LHC8777" and "PLD 2026 Lahore 172" all match; case law cited inside a judgment counts too.
+                $compact = '%'.self::compactCitation((string) $f['citation']).'%';
+
+                $q->where(fn ($w) => $w->whereRaw(self::compactColumn('citation').' LIKE ?', [$compact])
+                    ->orWhereRaw(self::compactColumn('cited_citations').' LIKE ?', [$compact])
+                    ->orWhere('tag_line', 'like', $like($f['citation'])));
+            })
             ->when(filled($f['case'] ?? null), fn ($q) => $q->where(fn ($w) => $w->where('case_number', 'like', $like($f['case']))->orWhere('case_type', 'like', $like($f['case']))))
             ->when(filled($f['title'] ?? null), fn ($q) => $q->where('title', 'like', $like($f['title'])))
             ->when(filled($f['decided_from'] ?? null), fn ($q) => $q->whereDate('decision_date', '>=', $f['decided_from']))
             ->when(filled($f['decided_to'] ?? null), fn ($q) => $q->whereDate('decision_date', '<=', $f['decided_to']))
             ->when(filled($f['uploaded_from'] ?? null), fn ($q) => $q->whereDate('uploaded_on', '>=', $f['uploaded_from']))
             ->when(filled($f['uploaded_to'] ?? null), fn ($q) => $q->whereDate('uploaded_on', '<=', $f['uploaded_to']));
+    }
+
+    /** Court names in law report citations, compared in their short form ("PLD 2026 Lahore 172" = "PLD 2026 Lah. 172"). */
+    private const COURT_SHORT = ['supremecourt' => 'sc', 'lahore' => 'lah', 'karachi' => 'kar', 'peshawar' => 'pesh', 'islamabad' => 'isl', 'balochistan' => 'bal'];
+
+    /** Lower case, without spaces, dots or commas, short court names: "PLD 2026 Lahore 172" -> "pld2026lah172". */
+    public static function compactCitation(string $value): string
+    {
+        $compact = strtr(preg_replace('/[\s.,]+/', '', mb_strtolower(trim($value))) ?? '', self::COURT_SHORT);
+
+        return str_replace(['%', '_'], ['\\%', '\\_'], $compact);
+    }
+
+    /** SQL for the same normalisation on a fixed column name (never user input). */
+    private static function compactColumn(string $column): string
+    {
+        $sql = "LOWER(REPLACE(REPLACE(REPLACE(COALESCE({$column}, ''), ' ', ''), '.', ''), ',', ''))";
+
+        foreach (self::COURT_SHORT as $long => $short) {
+            $sql = "REPLACE({$sql}, '{$long}', '{$short}')";
+        }
+
+        return $sql;
     }
 }

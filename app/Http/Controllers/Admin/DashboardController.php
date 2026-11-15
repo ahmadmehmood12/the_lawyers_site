@@ -58,7 +58,7 @@ class DashboardController extends Controller
                         'user.memberships' => fn ($q) => $q->where('status', 'active')
                             ->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
                         'user.memberships.organization:id,name,slug',
-                        'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code',
+                        'tehsil:id,name,name_ur', 'district:id,name,name_ur', 'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code',
                         'educations', 'courts:id,name,name_ur', 'languages',
                     ])
                     ->orderByDesc('rating_average')->limit(3)->get()

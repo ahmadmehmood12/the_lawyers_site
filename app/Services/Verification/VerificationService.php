@@ -115,7 +115,7 @@ class VerificationService
             activity('verification')->causedBy($actor)->performedOn($profile)->withProperties(['from' => $from->value, 'to' => $to->value])->log('verification_'.$to->value);
 
             if ($isReviewer) {
-                $profile->user->notify(new VerificationStatusChanged($to, $note));
+                $profile->user->notify(new VerificationStatusChanged($to, $note, $profile));
             }
 
             return $request;

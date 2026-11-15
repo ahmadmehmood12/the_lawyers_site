@@ -28,7 +28,8 @@ class DirectoryPresenter
             'name' => trim(($p->title ? $p->title.' ' : '').$p->user->name),
             'headline' => $p->headline,
             'photo_url' => PublicFile::url($p->photo_path) ?? PublicFile::url($p->user->avatar_path),
-            'city' => $p->city ? ($ur && $p->city->name_ur ? $p->city->name_ur : $p->city->name) : null,
+            // "Tehsil, District" when the chamber has a tehsil, otherwise the city.
+            'city' => $p->locationLabel(),
             'specializations' => $p->specializations->map(fn ($s) => ['slug' => $s->slug, 'name' => $ur && $s->name_ur ? $s->name_ur : $s->name])->values(),
             'bar_council' => $p->barCouncil?->name,
             'category' => $p->advocate_category?->value,

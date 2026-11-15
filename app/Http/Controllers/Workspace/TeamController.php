@@ -6,15 +6,16 @@ use App\Enums\MembershipStatus;
 use App\Enums\OrgRole;
 use App\Enums\PlanFeature;
 use App\Http\Controllers\Controller;
-use App\Mail\OrganizationInvitationMail;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMember;
+use App\Models\User;
+use App\Notifications\TeamInvitation;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Subscriptions\SubscriptionService;
 use App\Support\PublicFile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -74,7 +75,10 @@ class TeamController extends Controller
             'expires_at' => now()->addDays(config('legal.invitation_ttl_days')),
         ]);
 
-        Mail::to($email)->queue(new OrganizationInvitationMail($invitation, $token));
+        // Branded notification email (and the bell for an existing account), in the invitee's language.
+        $existing = User::query()->where('email', $email)->first();
+        $notification = (new TeamInvitation($invitation->load('organization', 'inviter'), $token))->locale($existing?->locale ?: app()->getLocale());
+        $existing ? $existing->notify($notification) : Notification::route('mail', $email)->notify($notification);
 
         return back()->with('success', __('Invitation sent to :email.', ['email' => $email]));
     }

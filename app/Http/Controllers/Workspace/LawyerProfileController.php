@@ -45,7 +45,7 @@ class LawyerProfileController extends Controller
             'step' => $step,
             'steps' => self::STEPS,
             'profile' => [
-                ...$profile->only(['slug', 'title', 'bar_council_id', 'enrollment_number', 'practice_since', 'headline', 'bio', 'bio_ur', 'province_id', 'district_id', 'city_id', 'chamber_address', 'public_phone', 'public_email', 'consultation_fee_min', 'consultation_fee_max', 'offers_online', 'offers_in_person', 'accepting_clients', 'is_public', 'onboarding_step']),
+                ...$profile->only(['slug', 'title', 'bar_council_id', 'enrollment_number', 'practice_since', 'headline', 'bio', 'bio_ur', 'province_id', 'district_id', 'tehsil_id', 'city_id', 'chamber_address', 'public_phone', 'public_email', 'consultation_fee_min', 'consultation_fee_max', 'offers_online', 'offers_in_person', 'accepting_clients', 'is_public', 'onboarding_step']),
                 'cnic' => $profile->cnic,
                 'advocate_category' => $profile->advocate_category?->value,
                 'enrollment_date' => $profile->enrollment_date?->toDateString(),
@@ -68,6 +68,7 @@ class LawyerProfileController extends Controller
                 'courts' => ReferenceOptions::courts(),
                 'provinces' => ReferenceOptions::provinces(),
                 'districts' => ReferenceOptions::districts(),
+                'tehsils' => ReferenceOptions::tehsils(),
                 'cities' => ReferenceOptions::cities(),
                 'languages' => LawyerDirectoryController::LANGUAGES,
             ],
@@ -126,6 +127,7 @@ class LawyerProfileController extends Controller
             'chamber' => [
                 'province_id' => ['required', 'integer', 'exists:provinces,id'],
                 'district_id' => ['required', 'integer', Rule::exists('districts', 'id')->where('province_id', $request->input('province_id'))],
+                'tehsil_id' => ['nullable', 'integer', Rule::exists('tehsils', 'id')->where('district_id', $request->input('district_id'))],
                 'city_id' => ['required', 'integer', Rule::exists('cities', 'id')->where('district_id', $request->input('district_id'))],
                 'chamber_address' => ['required', 'string', 'max:255'],
                 'public_phone' => ['nullable', new PakistaniPhone],

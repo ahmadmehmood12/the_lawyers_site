@@ -89,7 +89,7 @@ class HomepageShowcase
                     'user:id,name,avatar_path',
                     'user.memberships' => fn ($q) => $q->where('status', 'active')->whereHas('organization', fn ($o) => $o->where('type', 'firm')->where('is_public', true)),
                     'user.memberships.organization:id,name,slug',
-                    'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code', 'educations', 'courts:id,name,name_ur', 'languages',
+                    'tehsil:id,name,name_ur', 'district:id,name,name_ur', 'city:id,name,name_ur', 'specializations:id,name,name_ur,slug', 'barCouncil:id,name,code', 'educations', 'courts:id,name,name_ur', 'languages',
                 ])
                 ->addSelect([
                     'cases_handled' => DB::table('case_lawyer')->selectRaw('COUNT(DISTINCT case_lawyer.legal_case_id)')->whereColumn('case_lawyer.user_id', 'lawyer_profiles.user_id'),

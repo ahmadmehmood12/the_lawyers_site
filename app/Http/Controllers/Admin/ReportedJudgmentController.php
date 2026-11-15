@@ -17,7 +17,7 @@ use Inertia\Response;
 /** Admin, Reported judgments: add, edit, upload the PDF, or import many rows from CSV. */
 class ReportedJudgmentController extends Controller
 {
-    public const CSV_COLUMNS = ['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'tag_line', 'decision_date', 'uploaded_on', 'source_url'];
+    public const CSV_COLUMNS = ['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'tag_line', 'decision_date', 'uploaded_on', 'pdf_url', 'source_url'];
 
     public function index(Request $request): Response
     {
@@ -51,7 +51,7 @@ class ReportedJudgmentController extends Controller
 
     public function destroy(ReportedJudgment $judgment): RedirectResponse
     {
-        if ($judgment->pdf_path) {
+        if ($judgment->pdf_path && ! $judgment->pdfIsLink()) {
             Storage::disk('public')->delete($judgment->pdf_path);
         }
         $judgment->delete();
@@ -80,13 +80,15 @@ class ReportedJudgmentController extends Controller
             }
 
             $date = fn ($v) => filled($v) ? rescue(fn () => Carbon::parse($v)->toDateString(), null, false) : null;
+            $pdfUrl = filter_var($data['pdf_url'] ?? null, FILTER_VALIDATE_URL) ?: null;
             ReportedJudgment::query()->updateOrCreate(
                 ['court' => $court, 'case_number' => trim($data['case_number']), 'title' => trim($data['title'])],
                 [
                     'case_type' => trim((string) ($data['case_type'] ?? '')) ?: 'Case', 'judges' => trim((string) ($data['judges'] ?? '')) ?: '—',
-                    'citation' => ($data['citation'] ?? null) ?: null, 'tag_line' => ($data['tag_line'] ?? null) ?: null,
+                    'citation' => ($data['citation'] ?? null) ?: ReportedJudgment::citationFromPdfUrl($pdfUrl), 'tag_line' => ($data['tag_line'] ?? null) ?: null,
                     'decision_date' => $date($data['decision_date'] ?? null), 'uploaded_on' => $date($data['uploaded_on'] ?? null) ?? today()->toDateString(),
                     'source_url' => filter_var($data['source_url'] ?? null, FILTER_VALIDATE_URL) ?: null, 'is_published' => true,
+                    ...($pdfUrl ? ['pdf_path' => $pdfUrl] : []),
                 ],
             );
             $added++;
@@ -99,6 +101,9 @@ class ReportedJudgmentController extends Controller
 
     private function fill(Request $request, ReportedJudgment $judgment): void
     {
+        $link = $request->input('text_mode') === 'link';
+        $hasUploadedPdf = $judgment->pdf_path && ! $judgment->pdfIsLink();
+
         $data = $request->validate([
             'court' => ['required', Rule::in(array_keys(ReportedJudgment::COURTS))],
             'case_type' => ['required', 'string', 'max:160'],
@@ -110,33 +115,37 @@ class ReportedJudgmentController extends Controller
             'decision_date' => ['nullable', 'date'],
             'uploaded_on' => ['required', 'date'],
             'text_mode' => ['required', Rule::in(['pdf', 'link'])],
-            'source_url' => ['nullable', 'required_if:text_mode,link', 'url:https,http', 'max:500'],
+            'pdf_link' => [Rule::requiredIf($link && blank($request->input('source_url'))), 'nullable', 'url:https,http', 'max:500'],
+            'source_url' => ['nullable', 'url:https,http', 'max:500'],
             'is_published' => ['boolean'],
-            'pdf' => [$request->input('text_mode') === 'pdf' && ! $judgment->pdf_path ? 'required' : 'nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'pdf' => [! $link && ! $hasUploadedPdf ? 'required' : 'nullable', 'file', 'mimes:pdf', 'max:20480'],
             'remove_pdf' => ['boolean'],
-        ]);
+        ], ['pdf_link.required' => __('Add the PDF link, the source page link, or both.')]);
 
-        // The judgment text is either an uploaded PDF or a link; choosing one clears the other.
-        if ($data['text_mode'] === 'link' && $judgment->pdf_path) {
-            Storage::disk('public')->delete($judgment->pdf_path);
-            $judgment->pdf_path = null;
-        }
-        if ($data['text_mode'] === 'pdf') {
-            $data['source_url'] = null;
-        }
-
-        if ($request->boolean('remove_pdf') && $judgment->pdf_path) {
-            Storage::disk('public')->delete($judgment->pdf_path);
-            $judgment->pdf_path = null;
-        }
-        if ($request->hasFile('pdf')) {
-            if ($judgment->pdf_path) {
+        $deleteUploaded = function () use ($judgment): void {
+            if ($judgment->pdf_path && ! $judgment->pdfIsLink()) {
                 Storage::disk('public')->delete($judgment->pdf_path);
             }
+            $judgment->pdf_path = null;
+        };
+
+        // Link mode: the PDF lives on the court website (pdf_link) and/or a source page; an uploaded file is removed.
+        if ($link) {
+            if ($hasUploadedPdf || blank($data['pdf_link'] ?? null)) {
+                $deleteUploaded();
+            }
+            $judgment->pdf_path = $data['pdf_link'] ?? null;
+        } elseif ($request->hasFile('pdf')) {
+            $deleteUploaded();
             $judgment->pdf_path = $request->file('pdf')->store('judgments', 'public');
+        } elseif ($request->boolean('remove_pdf')) {
+            $deleteUploaded();
         }
 
-        $judgment->fill(collect($data)->except(['pdf', 'remove_pdf', 'text_mode'])->all())->save();
+        // A court PDF named after its citation (2026LHC8777.pdf) fills an empty citation.
+        $data['citation'] = filled($data['citation'] ?? null) ? trim($data['citation']) : ReportedJudgment::citationFromPdfUrl($data['pdf_link'] ?? null);
+
+        $judgment->fill(collect($data)->except(['pdf', 'pdf_link', 'remove_pdf', 'text_mode'])->all())->save();
         Cache::forget('judgment-counts');
     }
 }

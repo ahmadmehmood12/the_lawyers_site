@@ -9,7 +9,7 @@ import type { Option, SharedProps } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
 type Profile = Record<string, any>;
-type Options = { barCouncils: SelectOption[]; categories: Option[]; specializations: SelectOption[]; courts: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; cities: SelectOption[]; languages: string[] };
+type Options = { barCouncils: SelectOption[]; categories: Option[]; specializations: SelectOption[]; courts: SelectOption[]; provinces: SelectOption[]; districts: SelectOption[]; tehsils: SelectOption[]; cities: SelectOption[]; languages: string[] };
 
 const labels: Record<string, string> = { identity: 'Identity & introduction', enrollment: 'Bar enrollment', qualifications: 'Education & experience', practice: 'Practice areas & courts', chamber: 'Chamber & consultations', publish: 'Publish' };
 
@@ -198,13 +198,15 @@ function Practice({ profile, options }: { profile: Profile; options: Options }) 
 function Chamber({ profile, options }: { profile: Profile; options: Options }) {
     const t = useT();
     const s = (v: unknown) => (v === null || v === undefined ? '' : String(v));
-    const form = useForm({ province_id: s(profile.province_id), district_id: s(profile.district_id), city_id: s(profile.city_id), chamber_address: s(profile.chamber_address), public_phone: s(profile.public_phone), public_email: s(profile.public_email), consultation_fee_min: s(profile.consultation_fee_min), consultation_fee_max: s(profile.consultation_fee_max), offers_online: !!profile.offers_online, offers_in_person: profile.offers_in_person ?? true, accepting_clients: profile.accepting_clients ?? true });
-    form.transform((d) => ({ ...d, consultation_fee_min: d.consultation_fee_min || null, consultation_fee_max: d.consultation_fee_max || null }));
+    const form = useForm({ province_id: s(profile.province_id), district_id: s(profile.district_id), tehsil_id: s(profile.tehsil_id), city_id: s(profile.city_id), chamber_address: s(profile.chamber_address), public_phone: s(profile.public_phone), public_email: s(profile.public_email), consultation_fee_min: s(profile.consultation_fee_min), consultation_fee_max: s(profile.consultation_fee_max), offers_online: !!profile.offers_online, offers_in_person: profile.offers_in_person ?? true, accepting_clients: profile.accepting_clients ?? true });
+    form.transform((d) => ({ ...d, tehsil_id: d.tehsil_id || null, consultation_fee_min: d.consultation_fee_min || null, consultation_fee_max: d.consultation_fee_max || null }));
     return (
         <StepForm step="chamber" form={form} title={t('Chamber & consultations')}>
-            <div className="grid gap-4 sm:grid-cols-3">
-                <Select label={t('Province')} value={form.data.province_id} onChange={(e) => form.setData((d) => ({ ...d, province_id: e.target.value, district_id: '', city_id: '' }))} options={options.provinces} placeholder={t('Select')} error={form.errors.province_id} required />
-                <Select label={t('District')} value={form.data.district_id} onChange={(e) => form.setData((d) => ({ ...d, district_id: e.target.value, city_id: '' }))} options={options.districts.filter((d) => String(d.province_id) === form.data.province_id)} placeholder={t('Select')} error={form.errors.district_id} required />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Select label={t('Province')} value={form.data.province_id} onChange={(e) => form.setData((d) => ({ ...d, province_id: e.target.value, district_id: '', tehsil_id: '', city_id: '' }))} options={options.provinces} placeholder={t('Select')} error={form.errors.province_id} required />
+                <Select label={t('District')} value={form.data.district_id} onChange={(e) => form.setData((d) => ({ ...d, district_id: e.target.value, tehsil_id: '', city_id: '' }))} options={options.districts.filter((d) => String(d.province_id) === form.data.province_id)} placeholder={t('Select')} error={form.errors.district_id} required />
+                <Select label={t('Tehsil')} value={form.data.tehsil_id} onChange={(e) => form.setData('tehsil_id', e.target.value)} options={options.tehsils.filter((x) => String(x.district_id) === form.data.district_id)} placeholder={t('Optional')} error={form.errors.tehsil_id} disabled={!form.data.district_id}
+                    hint={t('If your chamber is at a tehsil, your profile shows “Tehsil, District”.')} />
                 <Select label={t('City')} value={form.data.city_id} onChange={(e) => form.setData('city_id', e.target.value)} options={options.cities.filter((c) => String(c.district_id) === form.data.district_id)} placeholder={t('Select')} error={form.errors.city_id} required />
             </div>
             <Input label={t('Chamber address')} value={form.data.chamber_address} onChange={(e) => form.setData('chamber_address', e.target.value)} error={form.errors.chamber_address} required />

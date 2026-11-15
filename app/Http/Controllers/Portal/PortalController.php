@@ -254,8 +254,8 @@ class PortalController extends Controller
     public function favourites(Request $request): Response
     {
         return Inertia::render('Portal/Favourites', [
-            'lawyers' => $request->user()->favouriteLawyers()->listed()->with(['user:id,name', 'city:id,name'])->get()
-                ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->user->name, 'headline' => $p->headline, 'city' => $p->city?->name, 'verified' => $p->isVerified(), 'photo_url' => PublicFile::url($p->photo_path)]),
+            'lawyers' => $request->user()->favouriteLawyers()->listed()->with(['user:id,name', 'city:id,name,name_ur', 'tehsil:id,name,name_ur', 'district:id,name,name_ur'])->get()
+                ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->user->name, 'headline' => $p->headline, 'city' => $p->locationLabel(), 'verified' => $p->isVerified(), 'photo_url' => PublicFile::url($p->photo_path)]),
         ]);
     }
 

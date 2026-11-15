@@ -13,8 +13,9 @@ use Illuminate\Validation\Rule;
 /**
  * Receives judgment metadata from the Python LHC scraper and stores it in the
  * existing reported_judgments table. Duplicates are detected by PDF URL or by
- * normalized case details; empty pdf/source/tag-line fields on a duplicate are
- * backfilled without overwriting values an admin already saved.
+ * normalized case details; empty pdf/source/tag-line/citation fields on a duplicate
+ * are backfilled without overwriting values an admin already saved. The scraper reads
+ * citations from the PDF; without one, the citation comes from the PDF file name.
  */
 class JudgmentImportController extends Controller
 {
@@ -29,6 +30,8 @@ class JudgmentImportController extends Controller
             'title' => ['required', 'string', 'max:500'],
             'judges' => ['required', 'string', 'max:500'],
             'citation' => ['nullable', 'string', 'max:120'],
+            'cited_citations' => ['nullable', 'array', 'max:200'],
+            'cited_citations.*' => ['string', 'max:120'],
             'tag_line' => ['nullable', 'string', 'max:2000'],
             'decision_date' => ['nullable', 'date'],
             'uploaded_on' => ['required', 'date_format:Y-m-d'],
@@ -39,6 +42,8 @@ class JudgmentImportController extends Controller
         ]);
 
         $court = $data['court'] ?? 'lhc';
+        $data['citation'] = filled($data['citation'] ?? null) ? trim($data['citation']) : ReportedJudgment::citationFromPdfUrl($data['pdf_path']);
+        $data['cited_citations'] = array_values(array_unique(array_filter(array_map('trim', $data['cited_citations'] ?? [])))) ?: null;
         $existing = $this->findDuplicate($data, $court);
 
         if ($existing instanceof ReportedJudgment) {
@@ -59,7 +64,8 @@ class JudgmentImportController extends Controller
             'case_number' => $data['case_number'],
             'title' => $data['title'],
             'judges' => $data['judges'],
-            'citation' => $data['citation'] ?? null,
+            'citation' => $data['citation'],
+            'cited_citations' => $data['cited_citations'],
             'tag_line' => $data['tag_line'] ?? null,
             'decision_date' => null,
             'uploaded_on' => $data['uploaded_on'],
@@ -108,7 +114,7 @@ class JudgmentImportController extends Controller
                 "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(case_number, '-', ''), '/', ''), '.', ''), ' ', ''), '(', ''), ')', '')) = ?",
                 [$caseNumber],
             )
-            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line'])
+            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'cited_citations'])
             ->first(fn (ReportedJudgment $row) => $this->normalize($row->title) === $title);
     }
 
@@ -119,7 +125,7 @@ class JudgmentImportController extends Controller
     {
         $updates = [];
 
-        foreach (['pdf_path', 'source_url', 'tag_line'] as $field) {
+        foreach (['pdf_path', 'source_url', 'tag_line', 'citation', 'cited_citations'] as $field) {
             if (blank($judgment->getAttribute($field)) && filled($data[$field] ?? null)) {
                 $updates[$field] = $data[$field];
             }

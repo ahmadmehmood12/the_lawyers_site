@@ -11,6 +11,8 @@ use App\Models\NotificationDelivery;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\ReminderSetting;
+use App\Models\User;
+use App\Notifications\PlanChanged;
 use App\Rules\PakistaniPhone;
 use App\Services\Access\OrganizationAccess;
 use App\Services\Subscriptions\SubscriptionService;
@@ -190,7 +192,11 @@ class OrganizationSettingsController extends Controller
         $plan = Plan::query()->where('is_active', true)->where('slug', $request->validate(['plan' => ['required', 'string']])['plan'])->firstOrFail();
 
         if ($plan->price_monthly === 0) {
-            $subscriptions->start($this->organization(), $plan);
+            $previousPlan = $subscriptions->planFor($this->organization())?->name;
+            $subscription = $subscriptions->start($this->organization(), $plan);
+
+            collect([$request->user(), $this->organization()->owner])->filter()->unique('id')
+                ->each(fn (User $user) => $user->notify(new PlanChanged($subscription, $previousPlan)));
 
             return back()->with('success', __('Plan changed to :plan.', ['plan' => $plan->name]));
         }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Account\NotificationController;
 use App\Http\Controllers\Account\OnboardingController;
 use App\Http\Controllers\Account\OrganizationSwitchController;
 use App\Http\Controllers\Account\PreferenceController;
+use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\OneTimeCodeController;
 use App\Http\Controllers\Auth\PortalInvitationController;
 use App\Http\Controllers\Shared\CalendarController;
@@ -18,6 +19,9 @@ Route::post('locale', [PreferenceController::class, 'locale'])->middleware('thro
 Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 
 Route::middleware('guest')->group(function () {
+    // Sign in / sign up with Google (Socialite).
+    Route::get('auth/google', [GoogleController::class, 'redirect'])->middleware('throttle:20,1')->name('auth.google');
+    Route::get('auth/google/callback', [GoogleController::class, 'callback'])->middleware('throttle:20,1')->name('auth.google.callback');
     // Password reset by six-digit code (docs/Modules/Authentication.md).
     Route::get('forgot-password/code', [OneTimeCodeController::class, 'showReset'])->name('password.code');
     Route::post('forgot-password/code', [OneTimeCodeController::class, 'verifyReset'])->middleware('throttle:10,1')->name('password.code.verify');

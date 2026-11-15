@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\Subscription;
 use App\Models\WhatsAppTemplate;
 use App\Services\Ai\AiProvider;
+use App\Services\Auth\GoogleSignIn;
 use App\Services\Mail\MailSettings;
 use App\Services\WhatsApp\WhatsAppClient;
 use App\Support\ActivityPresenter;
@@ -109,6 +110,7 @@ class PlatformController extends Controller
             'mail' => app(MailSettings::class)->values(),
             'branding' => $this->brandingSettings(),
             'authMedia' => self::authMedia(),
+            'google' => $this->googleSettings(),
             'typography' => Typography::adminPayload(),
             'env' => [
                 'ai' => app(AiProvider::class)->isEnabled(),
@@ -365,6 +367,47 @@ class PlatformController extends Controller
         activity('admin')->causedBy($request->user())->withProperties(collect($validated)->except(['image', 'video', 'poster'])->all())->log('auth_media_changed');
 
         return back()->with('success', __('Sign-in page media saved.'));
+    }
+
+    /**
+     * Sign in with Google for the admin form. The secret is write only: the page only learns if one is saved.
+     *
+     * @return array{enabled: bool, client_id: string, has_secret: bool, configured: bool, redirect_url: string}
+     */
+    private function googleSettings(): array
+    {
+        $google = app(GoogleSignIn::class);
+
+        return [
+            'enabled' => Setting::get('google_signin_enabled', '1') === '1',
+            'client_id' => (string) Setting::get('google_client_id', ''),
+            'has_secret' => Setting::hasSecret('google_client_secret'),
+            'configured' => $google->isEnabled(),
+            'redirect_url' => $google->redirectUrl(),
+        ];
+    }
+
+    public function saveGoogleSettings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enabled' => ['required', Rule::in(['0', '1'])],
+            'client_id' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+$/'],
+            'client_secret' => ['nullable', 'string', 'max:255'],
+            'clear_secret' => ['boolean'],
+        ]);
+
+        Setting::put('google_signin_enabled', $validated['enabled']);
+        Setting::put('google_client_id', filled($validated['client_id'] ?? null) ? trim($validated['client_id']) : null);
+
+        if ($request->boolean('clear_secret')) {
+            Setting::putSecret('google_client_secret', null);
+        } elseif (filled($validated['client_secret'] ?? null)) {
+            Setting::putSecret('google_client_secret', trim($validated['client_secret']));
+        }
+
+        activity('admin')->causedBy($request->user())->withProperties(collect($validated)->except('client_secret')->all())->log('google_signin_changed');
+
+        return back()->with('success', __('Google sign in saved.'));
     }
 
     /** Saves SMTP settings; blank values fall back to the server environment. */
