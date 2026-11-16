@@ -19,11 +19,10 @@ use Illuminate\Database\Seeder;
  * One sign in per plan, for testing limits and the Upgrade window (docs/Modules/Administration.md).
  * Password "password". Safe to re-run: accounts are matched by email and their plan is reset.
  *
- *   plan.free@wakeel.test         Zainab Rauf        Free (already at 15 of 15 active cases)
- *   plan.basic@wakeel.test        Usman Tariq        Basic
+ *   plan.basic@wakeel.test        Usman Tariq        Basic (already at 2 of 2 active cases)
  *   plan.professional@wakeel.test Hira Javed         Professional
- *   plan.premium@wakeel.test      Hamza Iqbal        Premium
  *   plan.firm@wakeel.test         Saad Mirza         Law Firm (firm "Mirza & Partners")
+ * (plan.free and plan.premium from before 2026-11-17 are moved to Basic and Professional.)
  *
  * Local only: php artisan db:seed --class=PlanTestAccountsSeeder
  */
@@ -38,10 +37,10 @@ class PlanTestAccountsSeeder extends Seeder
         }
 
         $accounts = [
-            ['free', 'Zainab Rauf', 'plan.free@wakeel.test', '+923001110001', null],
             ['basic', 'Usman Tariq', 'plan.basic@wakeel.test', '+923001110002', null],
             ['professional', 'Hira Javed', 'plan.professional@wakeel.test', '+923001110003', null],
-            ['premium', 'Hamza Iqbal', 'plan.premium@wakeel.test', '+923001110004', null],
+            ['basic', 'Zainab Rauf', 'plan.free@wakeel.test', '+923001110001', null],
+            ['professional', 'Hamza Iqbal', 'plan.premium@wakeel.test', '+923001110004', null],
             ['law-firm', 'Saad Mirza', 'plan.firm@wakeel.test', '+923001110005', 'Mirza & Partners'],
         ];
 
@@ -70,9 +69,9 @@ class PlanTestAccountsSeeder extends Seeder
 
             $subscriptions->start($organization, $plan, 'monthly');
 
-            // The free account sits exactly at its active case limit, so "New case" opens the Upgrade window.
-            if ($slug === 'free') {
-                $limit = (int) ($plan->loadMissing('features')->limitFor(PlanFeature::MaxActiveCases) ?? 15);
+            // The Basic account sits exactly at its active case limit, so "New case" opens the Upgrade window.
+            if ($email === 'plan.basic@wakeel.test') {
+                $limit = (int) ($plan->loadMissing('features')->limitFor(PlanFeature::MaxActiveCases) ?? 2);
                 $open = LegalCase::query()->where('organization_id', $organization->id)->whereIn('status', CaseStatus::openValues())->count();
 
                 if ($open < $limit) {

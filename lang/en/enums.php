@@ -199,7 +199,7 @@ return [
         'max_active_cases' => 'Active cases',
         'max_clients' => 'Clients',
         'max_team_members' => 'Team members',
-        'storage_mb' => 'Storage (MB)',
+        'storage_mb' => 'Storage',
         'whatsapp_reminders' => 'WhatsApp reminders / month',
         'ai_assistant' => 'AI requests / month',
         'drafting_templates' => 'Drafting templates',

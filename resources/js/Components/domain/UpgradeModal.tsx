@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Check, Crown, Infinity as InfinityIcon, Lock, Sparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/cn';
-import { formatMoney, formatNumber } from '@/lib/format';
+import { formatMoney, formatNumber, formatStorage } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
 
@@ -60,7 +60,7 @@ export function UpgradeModal() {
         if (n === 0) return <span className="inline-flex items-center gap-1 text-navy-400"><Lock className="size-3.5" />{t('Not included')}</span>;
         if (key === 'analytics' || key === 'client_portal' || key === 'drafting_templates') return <span className="inline-flex items-center gap-1"><Check className="size-4 text-verdant-600" />{t('Included')}</span>;
         if (n === null) return <span className="inline-flex items-center gap-1"><InfinityIcon className="size-4" />{t('Unlimited')}</span>;
-        if (key === 'storage_mb') return n >= 1000 ? `${formatNumber(Math.round(n / 1000), locale)} GB` : `${formatNumber(n, locale)} MB`;
+        if (key === 'storage_mb') return formatStorage(n, locale);
         return formatNumber(n, locale);
     };
 

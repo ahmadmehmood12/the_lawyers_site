@@ -9,6 +9,7 @@ use App\Models\Court;
 use App\Models\CourtType;
 use App\Models\District;
 use App\Models\Judge;
+use App\Models\JudgeTransfer;
 use App\Models\Province;
 use App\Models\Specialization;
 use App\Models\Tehsil;
@@ -49,10 +50,12 @@ class ReferenceDataController extends Controller
                 ['name' => 'phone', 'label' => 'Phone', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:30']],
                 ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['boolean']],
             ]],
-            'judges' => ['model' => Judge::class, 'label' => 'Judges', 'search' => ['name'], 'with' => ['court:id,name'], 'fields' => [
+            'judges' => ['model' => Judge::class, 'label' => 'Judges', 'search' => ['name'], 'with' => ['court:id,name', 'district:id,name', 'tehsil:id,name'], 'fields' => [
                 ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                ['name' => 'designation', 'label' => 'Designation', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
                 ['name' => 'court_id', 'label' => 'Court', ...$select(ReferenceOptions::courts()), 'rules' => ['required', 'exists:courts,id'], 'display' => 'court.name'],
+                ['name' => 'district_id', 'label' => 'District', ...$select(ReferenceOptions::districts()), 'rules' => ['nullable', 'exists:districts,id'], 'display' => 'district.name'],
+                ['name' => 'tehsil_id', 'label' => 'Tehsil', ...$select(ReferenceOptions::tehsils()), 'rules' => ['nullable', 'exists:tehsils,id'], 'display' => 'tehsil.name'],
+                ['name' => 'designation', 'label' => 'Designation', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
                 ['name' => 'courtroom', 'label' => 'Courtroom', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:50']],
                 ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['boolean']],
             ]],
@@ -139,7 +142,33 @@ class ReferenceDataController extends Controller
             'fields' => collect($def['fields'])->map(fn ($f) => [...collect($f)->except(['rules', 'display', 'unique'])->all(), 'label' => __($f['label'])])->values(),
             'rows' => $rows,
             'filters' => $request->only('search'),
+            // Judges: transfer and swap tools with the latest moves of each listed judge.
+            'judgeTools' => $resource === 'judges' ? fn () => $this->judgeTools(collect($rows->items())->pluck('id')->all()) : null,
         ]);
+    }
+
+    /**
+     * @param  list<int>  $judgeIds
+     * @return array<string, mixed>
+     */
+    private function judgeTools(array $judgeIds): array
+    {
+        $place = fn ($court, $tehsil, $district) => implode(', ', array_filter([$court?->name, $tehsil?->name, $district?->name])) ?: '—';
+
+        return [
+            'courts' => ReferenceOptions::courts(),
+            'districts' => ReferenceOptions::districts(),
+            'tehsils' => ReferenceOptions::tehsils(),
+            'judges' => Judge::query()->with(['court:id,name', 'district:id,name', 'tehsil:id,name'])->orderBy('name')->get()
+                ->map(fn (Judge $j) => ['value' => $j->id, 'label' => $j->name.($j->designation ? ' ('.$j->designation.')' : ''), 'posting' => $place($j->court, $j->tehsil, $j->district), 'courtroom' => $j->courtroom])->all(),
+            'history' => JudgeTransfer::query()->whereIn('judge_id', $judgeIds)
+                ->with(['fromCourt:id,name', 'toCourt:id,name', 'fromDistrict:id,name', 'toDistrict:id,name', 'fromTehsil:id,name', 'toTehsil:id,name', 'swappedWith:id,name'])
+                ->latest('effective_on')->latest('id')->get()->groupBy('judge_id')
+                ->map(fn ($moves) => $moves->take(5)->map(fn (JudgeTransfer $m) => [
+                    'id' => $m->id, 'kind' => $m->kind, 'effective_on' => $m->effective_on->toDateString(), 'note' => $m->note, 'swapped_with' => $m->swappedWith?->name,
+                    'from' => $place($m->fromCourt, $m->fromTehsil, $m->fromDistrict), 'to' => $place($m->toCourt, $m->toTehsil, $m->toDistrict),
+                ])->values()),
+        ];
     }
 
     public function store(Request $request, string $resource): RedirectResponse

@@ -199,7 +199,7 @@ return [
         'max_active_cases' => 'فعال مقدمات',
         'max_clients' => 'موکلین',
         'max_team_members' => 'ٹیم اراکین',
-        'storage_mb' => 'اسٹوریج (ایم بی)',
+        'storage_mb' => 'اسٹوریج',
         'whatsapp_reminders' => 'واٹس ایپ یاد دہانیاں / ماہ',
         'ai_assistant' => 'اے آئی درخواستیں / ماہ',
         'drafting_templates' => 'مسودہ سانچے',

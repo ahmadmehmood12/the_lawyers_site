@@ -83,27 +83,35 @@ class ReferenceDataSeeder extends Seeder
             ]);
         };
 
+        // Urdu names of the cities used in court names below (every court gets an Urdu name).
+        $u = fn (string $city): string => [
+            'Lahore' => 'لاہور', 'Karachi' => 'کراچی', 'Islamabad' => 'اسلام آباد', 'Peshawar' => 'پشاور', 'Quetta' => 'کوئٹہ',
+            'Rawalpindi' => 'راولپنڈی', 'Multan' => 'ملتان', 'Bahawalpur' => 'بہاولپور', 'Faisalabad' => 'فیصل آباد',
+            'Hyderabad' => 'حیدرآباد', 'Sukkur' => 'سکھر', 'Larkana' => 'لاڑکانہ', 'Abbottabad' => 'ایبٹ آباد', 'Mingora' => 'مینگورہ',
+            'Dera Ismail Khan' => 'ڈیرہ اسماعیل خان', 'Bannu' => 'بنوں', 'Sibi' => 'سبی', 'Turbat' => 'تربت',
+        ][$city] ?? $city;
+
         $court('supreme-court', 'Supreme Court of Pakistan', 'سپریم کورٹ آف پاکستان', 'Islamabad', 'Islamabad');
         foreach (['Lahore' => 'Lahore', 'Karachi South' => 'Karachi', 'Peshawar' => 'Peshawar', 'Quetta' => 'Quetta'] as $district => $city) {
-            $court('supreme-court', "Supreme Court of Pakistan — {$city} Branch Registry", null, $district, $city, 'Supreme Court of Pakistan', $city);
+            $court('supreme-court', "Supreme Court of Pakistan — {$city} Branch Registry", "سپریم کورٹ آف پاکستان — برانچ رجسٹری {$u($city)}", $district, $city, 'Supreme Court of Pakistan', $city);
         }
         $court('federal-shariat-court', 'Federal Shariat Court', 'وفاقی شرعی عدالت', 'Islamabad', 'Islamabad');
         $court('high-court', 'Islamabad High Court', 'اسلام آباد ہائی کورٹ', 'Islamabad', 'Islamabad');
         $court('high-court', 'Lahore High Court', 'لاہور ہائی کورٹ', 'Lahore', 'Lahore');
         foreach (['Rawalpindi', 'Multan', 'Bahawalpur'] as $bench) {
-            $court('high-court', "Lahore High Court — {$bench} Bench", "لاہور ہائی کورٹ — {$bench} بینچ", $bench, $bench, 'Lahore High Court', $bench);
+            $court('high-court', "Lahore High Court — {$bench} Bench", "لاہور ہائی کورٹ — {$u($bench)} بینچ", $bench, $bench, 'Lahore High Court', $bench);
         }
         $court('high-court', 'Sindh High Court', 'سندھ ہائی کورٹ', 'Karachi South', 'Karachi');
         foreach (['Hyderabad', 'Sukkur', 'Larkana'] as $bench) {
-            $court('high-court', "Sindh High Court — {$bench} Bench", null, $bench, $bench, 'Sindh High Court', $bench);
+            $court('high-court', "Sindh High Court — {$bench} Bench", "سندھ ہائی کورٹ — {$u($bench)} بینچ", $bench, $bench, 'Sindh High Court', $bench);
         }
         $court('high-court', 'Peshawar High Court', 'پشاور ہائی کورٹ', 'Peshawar', 'Peshawar');
         foreach (['Abbottabad' => 'Abbottabad', 'Swat' => 'Mingora', 'Dera Ismail Khan' => 'Dera Ismail Khan', 'Bannu' => 'Bannu'] as $district => $city) {
-            $court('high-court', "Peshawar High Court — {$city} Bench", null, $district, $city, 'Peshawar High Court', $city);
+            $court('high-court', "Peshawar High Court — {$city} Bench", "پشاور ہائی کورٹ — {$u($city)} بینچ", $district, $city, 'Peshawar High Court', $city);
         }
         $court('high-court', 'Balochistan High Court', 'بلوچستان ہائی کورٹ', 'Quetta', 'Quetta');
         foreach (['Sibi' => 'Sibi', 'Kech' => 'Turbat'] as $district => $city) {
-            $court('high-court', "Balochistan High Court — {$city} Bench", null, $district, $city, 'Balochistan High Court', $city);
+            $court('high-court', "Balochistan High Court — {$city} Bench", "بلوچستان ہائی کورٹ — {$u($city)} بینچ", $district, $city, 'Balochistan High Court', $city);
         }
 
         foreach ($geo as $districts) {
@@ -111,24 +119,24 @@ class ReferenceDataSeeder extends Seeder
                 $city = $cities[0];
                 $court('district-sessions', "District & Sessions Court {$district}", "ضلعی و سیشن عدالت {$ur}", $district, $city);
                 $court('civil-court', "Civil Courts {$district}", "دیوانی عدالتیں {$ur}", $district, $city);
-                $court('magistrate', "Judicial Magistrate Courts {$district}", null, $district, $city);
+                $court('magistrate', "Judicial Magistrate Courts {$district}", "جوڈیشل مجسٹریٹ عدالتیں {$ur}", $district, $city);
                 $court('family-court', "Family Courts {$district}", "فیملی کورٹس {$ur}", $district, $city);
             }
         }
 
         foreach (['Lahore' => 'Lahore', 'Karachi South' => 'Karachi', 'Islamabad' => 'Islamabad', 'Peshawar' => 'Peshawar', 'Quetta' => 'Quetta', 'Rawalpindi' => 'Rawalpindi', 'Multan' => 'Multan'] as $district => $city) {
-            $court('banking-court', "Banking Court {$city}", null, $district, $city);
-            $court('anti-terrorism', "Anti-Terrorism Court {$city}", null, $district, $city);
-            $court('accountability', "Accountability Court {$city}", null, $district, $city);
-            $court('labour-court', "Labour Court {$city}", null, $district, $city);
+            $court('banking-court', "Banking Court {$city}", "بینکنگ کورٹ {$u($city)}", $district, $city);
+            $court('anti-terrorism', "Anti-Terrorism Court {$city}", "انسداد دہشت گردی عدالت {$u($city)}", $district, $city);
+            $court('accountability', "Accountability Court {$city}", "احتساب عدالت {$u($city)}", $district, $city);
+            $court('labour-court', "Labour Court {$city}", "لیبر کورٹ {$u($city)}", $district, $city);
         }
         foreach (['Lahore', 'Faisalabad', 'Multan', 'Rawalpindi'] as $city) {
-            $court('consumer-court', "District Consumer Court {$city}", null, $city, $city);
+            $court('consumer-court', "District Consumer Court {$city}", "ڈسٹرکٹ کنزیومر کورٹ {$u($city)}", $city, $city);
         }
         $court('tribunal', 'Federal Service Tribunal', 'وفاقی سروس ٹریبونل', 'Islamabad', 'Islamabad');
-        $court('tribunal', 'Appellate Tribunal Inland Revenue — Islamabad', null, 'Islamabad', 'Islamabad');
-        $court('special-court', 'Special Court (Customs, Taxation & Anti-Smuggling) Lahore', null, 'Lahore', 'Lahore');
-        $court('rent-tribunal', 'Rent Controller Islamabad', null, 'Islamabad', 'Islamabad');
+        $court('tribunal', 'Appellate Tribunal Inland Revenue — Islamabad', 'اپیلیٹ ٹریبونل ان لینڈ ریونیو — اسلام آباد', 'Islamabad', 'Islamabad');
+        $court('special-court', 'Special Court (Customs, Taxation & Anti-Smuggling) Lahore', 'خصوصی عدالت (کسٹمز، ٹیکسیشن و انسداد اسمگلنگ) لاہور', 'Lahore', 'Lahore');
+        $court('rent-tribunal', 'Rent Controller Islamabad', 'رینٹ کنٹرولر اسلام آباد', 'Islamabad', 'Islamabad');
 
         $specializations = [
             ['criminal-law', 'Criminal Law', 'فوجداری قانون', 'gavel', 'Bail, trials, appeals, FIR quashment and criminal defence.'],

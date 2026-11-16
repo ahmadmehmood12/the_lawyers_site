@@ -79,7 +79,7 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
         { key: 'x', label: 'X (Twitter)', placeholder: 'https://x.com/…' },
         { key: 'whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/92…' },
     ];
-    const form = useForm({ default_plan: settings.default_plan ?? 'free', support_email: settings.support_email ?? '', ai_enabled: settings.ai_enabled ?? '0', ai_redact_personal_data: settings.ai_redact_personal_data ?? '1', reviews_require_moderation: settings.reviews_require_moderation ?? '1', site_theme: settings.site_theme ?? 'navy-gold' });
+    const form = useForm({ default_plan: settings.default_plan ?? 'basic', support_email: settings.support_email ?? '', ai_enabled: settings.ai_enabled ?? '0', ai_redact_personal_data: settings.ai_redact_personal_data ?? '1', reviews_require_moderation: settings.reviews_require_moderation ?? '1', site_theme: settings.site_theme ?? 'navy-gold' });
     const yesNo = [{ value: '1', label: t('Yes') }, { value: '0', label: t('No') }];
     const themes = [
         { value: 'navy-gold', label: t('Navy & gold'), hint: t('Classic authority palette (default).'), swatches: ['#0f1e36', '#cfa33b', '#faf8f3'] },

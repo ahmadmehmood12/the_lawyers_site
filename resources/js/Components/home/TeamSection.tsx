@@ -8,12 +8,14 @@ export type TeamGroup = { designation: string; members: { id: number; name: stri
 const initials = (name: string) => name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 
 /**
- * Founders, patrons and legal team from Admin, Team, grouped by designation in the admin's order.
- * Large portrait cards: the photo eases in on hover, the bio rises from the bottom edge.
+ * Founders, patrons and legal team from Admin, Team, in one grid (designation order, then member
+ * order): 3 to 4 cards a row, then the next row. Each card names its own designation.
+ * Portrait cards: the photo eases in on hover, the bio rises from the bottom edge.
  */
 export function TeamSection({ groups }: { groups: TeamGroup[] | undefined }) {
     const t = useT();
-    if (!groups || groups.length === 0) return null;
+    const members = (groups ?? []).flatMap((group) => group.members.map((member) => ({ ...member, designation: member.designation ?? group.designation })));
+    if (members.length === 0) return null;
 
     return (
         <section className="border-t border-navy-100 bg-navy-950 py-20 text-white lg:py-28 dark:border-navy-800" aria-labelledby="hm-team">
@@ -22,15 +24,8 @@ export function TeamSection({ groups }: { groups: TeamGroup[] | undefined }) {
                     <h2 id="hm-team" className="text-4xl font-semibold sm:text-5xl">{t('The people behind it')}</h2>
                     <p className="mt-3 max-w-xl text-lg text-navy-200">{t('Advocates and builders who know the court corridor as well as the code.')}</p>
                 </Reveal>
-                <div className="mt-12 space-y-14">
-                    {groups.map((group) => (
-                        <div key={group.designation}>
-                            <h3 className="mb-6 flex items-center gap-3 font-sans text-sm font-semibold text-gold-300">
-                                {group.designation}
-                                <span className="h-px flex-1 bg-white/10" aria-hidden />
-                            </h3>
-                            <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                {group.members.map((member) => (
+                <Stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                {members.map((member) => (
                                     <StaggerItem key={member.id} as="article">
                                         <motion.div whileHover="hover" initial="rest" className="group relative overflow-hidden rounded-2xl bg-navy-900 ring-1 ring-white/10">
                                             <div className="relative aspect-[4/5] overflow-hidden">
@@ -51,7 +46,7 @@ export function TeamSection({ groups }: { groups: TeamGroup[] | undefined }) {
                                                 )}
                                             </div>
                                             <div className="space-y-1.5 p-5">
-                                                <p className="font-serif text-2xl font-semibold">{member.name}</p>
+                                                <p className="font-serif text-xl font-semibold">{member.name}</p>
                                                 {member.designation && <p className="text-sm text-gold-300">{member.designation}</p>}
                                                 {member.qualifications && <p className="flex items-start gap-1.5 text-sm text-navy-200"><GraduationCap className="mt-0.5 size-4 shrink-0" aria-hidden />{member.qualifications}</p>}
                                                 {member.experience && <p className="flex items-start gap-1.5 text-sm text-navy-200"><Briefcase className="mt-0.5 size-4 shrink-0" aria-hidden />{member.experience}</p>}
@@ -65,10 +60,7 @@ export function TeamSection({ groups }: { groups: TeamGroup[] | undefined }) {
                                         </motion.div>
                                     </StaggerItem>
                                 ))}
-                            </Stagger>
-                        </div>
-                    ))}
-                </div>
+                </Stagger>
             </div>
         </section>
     );

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CourtCalendarController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\Admin\JudgeTransferController;
 use App\Http\Controllers\Admin\LegalFormTemplateController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -52,6 +53,8 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::get('judges', [ReferenceDataController::class, 'index'])->defaults('resource', 'judges')->name('judges.index');
         Route::get('specializations', [ReferenceDataController::class, 'index'])->defaults('resource', 'specializations')->name('specializations.index');
         Route::get('geography', [ReferenceDataController::class, 'index'])->defaults('resource', 'provinces')->name('geography.index');
+        Route::post('judges/swap', [JudgeTransferController::class, 'swap'])->name('judges.swap');
+        Route::post('judges/{judge}/transfer', [JudgeTransferController::class, 'transfer'])->name('judges.transfer');
         Route::get('reference/{resource}', [ReferenceDataController::class, 'index'])->name('reference.index');
         Route::post('reference/{resource}', [ReferenceDataController::class, 'store'])->name('reference.store');
         Route::put('reference/{resource}/{id}', [ReferenceDataController::class, 'update'])->whereNumber('id')->name('reference.update');

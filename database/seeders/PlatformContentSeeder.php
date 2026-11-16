@@ -20,18 +20,19 @@ class PlatformContentSeeder extends Seeder
 {
     public function run(): void
     {
+        // Three plans (2026-11-17). Storage limits are stored in MB and shown in GB (500 MB = 0.5 GB).
+        // Basic is the free starter plan every new account gets (setting default_plan).
         $plans = [
-            ['free', 'Free', 'مفت', 'lawyer', 0, 0, 0, 'For getting started with your court diary.',
-                [F::MaxActiveCases->value => 15, F::MaxClients->value => 30, F::MaxTeamMembers->value => 1, F::StorageMb->value => 500, F::WhatsAppReminders->value => 0, F::AiAssistant->value => 0, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => 0]],
-            ['basic', 'Basic', 'بنیادی', 'lawyer', 1500, 15000, 14, 'For individual advocates with a growing practice.',
-                [F::MaxActiveCases->value => 75, F::MaxClients->value => 200, F::MaxTeamMembers->value => 2, F::StorageMb->value => 5000, F::WhatsAppReminders->value => 300, F::AiAssistant->value => 0, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null]],
+            ['basic', 'Basic', 'بنیادی', 'lawyer', 0, 0, 0, 'For getting started: your court diary with a few cases.',
+                [F::MaxActiveCases->value => 2, F::MaxClients->value => 2, F::MaxTeamMembers->value => 3, F::StorageMb->value => 500, F::WhatsAppReminders->value => 0, F::AiAssistant->value => 0, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => 0]],
             ['professional', 'Professional', 'پروفیشنل', 'lawyer', 3500, 35000, 14, 'Unlimited cases, WhatsApp reminders and AI drafting help.',
                 [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 4, F::StorageMb->value => 20000, F::WhatsAppReminders->value => 1500, F::AiAssistant->value => 150, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null]],
-            ['premium', 'Premium', 'پریمیم', 'lawyer', 6000, 60000, 14, 'For senior advocates with chambers staff.',
-                [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 8, F::StorageMb->value => 50000, F::WhatsAppReminders->value => null, F::AiAssistant->value => 500, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null]],
-            ['law-firm', 'Law Firm', 'لاء فرم', 'firm', 15000, 150000, 14, 'Multi-lawyer firms with shared diary and firm analytics.',
-                [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 40, F::StorageMb->value => 200000, F::WhatsAppReminders->value => null, F::AiAssistant->value => 2000, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null]],
+            ['law-firm', 'Law Firm', 'لاء فرم', 'firm', 10000, 100000, 14, 'Multi-lawyer firms with shared diary and firm analytics.',
+                [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 40, F::StorageMb->value => 100000, F::WhatsAppReminders->value => null, F::AiAssistant->value => 2000, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null]],
         ];
+
+        // Retired plans stay for existing subscriptions but are hidden from new sign ups and upgrades.
+        Plan::query()->whereIn('slug', ['free', 'premium'])->update(['is_active' => false]);
 
         foreach ($plans as $i => [$slug, $name, $ur, $audience, $monthly, $yearly, $trial, $description, $features]) {
             $plan = Plan::query()->updateOrCreate(['slug' => $slug], [
@@ -85,7 +86,7 @@ class PlatformContentSeeder extends Seeder
         }
 
         $settings = [
-            'default_plan' => 'free',
+            'default_plan' => 'basic',
             'support_email' => 'support@example.com',
             'ai_enabled' => '0',
             'ai_redact_personal_data' => '1',

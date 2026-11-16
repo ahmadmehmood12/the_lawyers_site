@@ -10,6 +10,12 @@ export function formatNumber(value: number | string | null | undefined, locale =
     return new Intl.NumberFormat(intlLocale(locale)).format(Number(value ?? 0));
 }
 
+/** Plan storage is stored in MB and always shown in GB: 500 -> "0.5 GB", 20000 -> "20 GB". */
+export function formatStorage(megabytes: number | null | undefined, locale = 'en'): string {
+    const gigabytes = Number(megabytes ?? 0) / 1000;
+    return `${new Intl.NumberFormat(intlLocale(locale), { maximumFractionDigits: 2 }).format(gigabytes)} GB`;
+}
+
 export function formatDate(value: string | null | undefined, locale = 'en', options?: Intl.DateTimeFormatOptions): string {
     if (!value) return '—';
     const date = value.length === 10 ? new Date(`${value}T00:00:00`) : new Date(value);

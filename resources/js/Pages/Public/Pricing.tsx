@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { LinkButton, Tabs } from '@/Components/ui';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { cn } from '@/lib/cn';
-import { formatMoney } from '@/lib/format';
+import { formatMoney, formatStorage } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 type Plan = { slug: string; name: string; description: string | null; audience: string; price_monthly: number; price_yearly: number; trial_days: number; features: { key: string; label: string; limit: number | null }[] };
@@ -17,7 +17,7 @@ export default function Pricing({ plans, canonical }: { plans: Plan[]; canonical
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
                 <div className="mb-8 text-center"><h1 className="text-4xl font-semibold">{t('Simple plans for every practice')}</h1><p className="mt-2 text-navy-600 dark:text-navy-300">{t('Your records stay yours — they remain accessible even if you stop paying.')}</p></div>
                 <div className="mb-8 flex justify-center"><Tabs className="border-0" active={cycle} onChange={setCycle} tabs={[{ key: 'monthly', label: t('Monthly') }, { key: 'yearly', label: t('Yearly') }]} /></div>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-3">
                     {plans.map((p) => {
                         const featured = p.slug === 'professional';
                         const price = cycle === 'yearly' ? p.price_yearly : p.price_monthly;
@@ -28,7 +28,7 @@ export default function Pricing({ plans, canonical }: { plans: Plan[]; canonical
                                 <p className="mt-4 text-3xl font-semibold">{price ? formatMoney(price, locale) : t('Free')}{price > 0 && <span className="text-sm font-normal text-navy-500">/{cycle === 'yearly' ? t('yr') : t('mo')}</span>}</p>
                                 {p.trial_days > 0 && price > 0 && <p className="text-xs text-verdant-700">{t(':count-day free trial', { count: p.trial_days })}</p>}
                                 <ul className="mt-5 space-y-2 text-sm">
-                                    {p.features.filter((f) => f.limit !== 0).map((f) => <li key={f.key} className="flex gap-2"><Check className="size-4 shrink-0 text-verdant-600" />{f.label}{f.limit !== null && ['max_active_cases', 'max_clients', 'max_team_members', 'storage_mb', 'whatsapp_reminders', 'ai_assistant'].includes(f.key) ? `: ${f.limit.toLocaleString()}` : ''}</li>)}
+                                    {p.features.filter((f) => f.limit !== 0).map((f) => <li key={f.key} className="flex gap-2"><Check className="size-4 shrink-0 text-verdant-600" />{f.label}{['max_active_cases', 'max_clients', 'max_team_members', 'storage_mb', 'whatsapp_reminders', 'ai_assistant'].includes(f.key) ? `: ${f.limit === null ? t('Unlimited') : f.key === 'storage_mb' ? formatStorage(f.limit, locale) : f.limit.toLocaleString()}` : ''}</li>)}
                                 </ul>
                                 <div className="mt-auto pt-6"><LinkButton href={route('register', { type: p.audience === 'firm' ? 'firm' : 'lawyer' })} variant={featured ? 'gold' : 'secondary'} className="w-full">{t('Get started')}</LinkButton></div>
                             </div>

@@ -15,13 +15,13 @@ use App\Models\Subscription;
 /**
  * Plan entitlements. Limits come from the plan_features table — never hardcoded.
  * Expiry never removes access to existing records; it only blocks creating
- * new ones beyond the free plan's limits. See docs/Modules/Administration.md.
+ * new ones beyond the default (Basic) plan's limits. See docs/Modules/Administration.md.
  */
 class SubscriptionService
 {
     public function startDefault(Organization $organization): ?Subscription
     {
-        $slug = Setting::get('default_plan', 'free');
+        $slug = Setting::get('default_plan', 'basic');
         $plan = Plan::query()->where('slug', $slug)->where('is_active', true)->first();
 
         if (! $plan) {
@@ -49,12 +49,12 @@ class SubscriptionService
         ]);
     }
 
-    /** The plan currently in force; falls back to the free plan when nothing is active. */
+    /** The plan currently in force; falls back to the default plan (Basic) when nothing is active. */
     public function planFor(Organization $organization): ?Plan
     {
         $plan = $organization->activeSubscription?->plan;
 
-        return ($plan ?? Plan::query()->where('slug', Setting::get('default_plan', 'free'))->first())?->loadMissing('features');
+        return ($plan ?? Plan::query()->where('slug', Setting::get('default_plan', 'basic'))->first())?->loadMissing('features');
     }
 
     public function limit(Organization $organization, PlanFeature $feature): ?int
