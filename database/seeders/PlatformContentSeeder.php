@@ -70,9 +70,9 @@ class PlatformContentSeeder extends Seeder
 
         $notice = '<p><em>This page is a starting draft and must be reviewed by the platform’s legal counsel before launch.</em></p>';
         $pages = [
-            'about' => ['About Wakeel Diary', 'ہمارے بارے میں', '<p>Wakeel Diary is a practice-management platform built for advocates and law firms in Pakistan: a court diary that works on the phone in the court corridor, complete case files, client communication, documents, drafting and billing — with Urdu and English throughout.</p><p>For clients, it is a directory of advocates where verified credentials are clearly distinguished from self-reported information.</p>'],
+            'about' => ['About Da Barrister', 'ہمارے بارے میں', '<p>Da Barrister is a practice-management platform built for advocates and law firms in Pakistan: a court diary that works on the phone in the court corridor, complete case files, client communication, documents, drafting and billing — with Urdu and English throughout.</p><p>For clients, it is a directory of advocates where verified credentials are clearly distinguished from self-reported information.</p>'],
             'faqs' => ['Frequently Asked Questions', 'عمومی سوالات', '<h2>Is a “Verified” badge a guarantee?</h2><p>The badge means our verification team reviewed the advocate’s submitted Bar enrollment evidence. It is not an endorsement of competence or a guarantee of any outcome.</p><h2>Who can see my case?</h2><p>Only members of your lawyer’s chambers who are permitted to, and you — for the information your lawyer chooses to share. Private notes are never shown to clients.</p><h2>Are WhatsApp reminders automatic?</h2><p>Reminders are sent through the official WhatsApp Business API only to people who have agreed to receive them.</p>'],
-            'terms' => ['Terms of Service', 'شرائط و ضوابط', $notice.'<p>By using Wakeel Diary you agree to use it lawfully and to keep your credentials confidential. Information on the public site is not legal advice. Lawyers remain solely responsible for their professional work, filings and advice. Wakeel Diary never files documents with any court.</p>'],
+            'terms' => ['Terms of Service', 'شرائط و ضوابط', $notice.'<p>By using Da Barrister you agree to use it lawfully and to keep your credentials confidential. Information on the public site is not legal advice. Lawyers remain solely responsible for their professional work, filings and advice. Da Barrister never files documents with any court.</p>'],
             'privacy' => ['Privacy Policy', 'رازداری کی پالیسی', $notice.'<p>We store case and client information encrypted where sensitive and accessible only to authorized members of the relevant chambers. We do not sell personal data. WhatsApp and email messages are sent only according to your preferences and consent. You may request export or deletion of your account data; legal and financial records may be retained where the law requires.</p>'],
             'legal-resources' => ['Legal Resources', 'قانونی وسائل', '<p>Official sources for Pakistani law:</p><ul><li><a href="https://pakistancode.gov.pk">Pakistan Code</a> — federal statutes</li><li><a href="https://www.supremecourt.gov.pk">Supreme Court of Pakistan</a></li><li><a href="https://pbc.org.pk">Pakistan Bar Council</a></li></ul><p>Always verify the current text of a law from an official source.</p>'],
         ];
@@ -87,15 +87,15 @@ class PlatformContentSeeder extends Seeder
 
         $settings = [
             'default_plan' => 'basic',
-            'support_email' => 'support@example.com',
+            'support_email' => config('seeding.support_email') ?: 'support@example.com',
             'ai_enabled' => '0',
             'ai_redact_personal_data' => '1',
             'reviews_require_moderation' => '1',
-            'site_theme' => 'navy-gold',
+            'site_theme' => 'white-green',
             'whatsapp_enabled' => '1',
-            'site_name' => 'WakeelDiary',
+            'site_name' => 'Da Barrister',
             'site_tagline' => 'Court diary, case files and verified lawyers for Pakistan.',
-            'whatsapp_display_name' => 'WakeelDiary',
+            'whatsapp_display_name' => 'Da Barrister',
             'whatsapp_api_version' => 'v21.0',
         ];
 

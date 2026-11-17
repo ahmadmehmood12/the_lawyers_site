@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Storage;
  * Sample video reviews so the homepage "Video reviews" section has something to play locally.
  * The clips are short walkthroughs of the product screens (database/seeders/media/videos),
  * labelled as sample entries: replace them with real client videos in Admin, Video reviews.
- * Local only (called from DatabaseSeeder in APP_ENV=local).
+ * Part of ProductionSeeder: outside local they are created hidden (the names are not real clients),
+ * so switch one on only after replacing it. Never changes a review an admin already edited.
  */
 class VideoReviewSeeder extends Seeder
 {
@@ -29,10 +30,10 @@ class VideoReviewSeeder extends Seeder
             Storage::disk('public')->put($video, (string) file_get_contents(database_path("seeders/media/videos/{$file}.mp4")));
             Storage::disk('public')->put($thumb, (string) file_get_contents(database_path("seeders/media/videos/{$file}.jpg")));
 
-            Testimonial::query()->updateOrCreate(['kind' => 'video', 'name' => $name], [
-                'designation' => 'Sample video (demo data)', 'body' => $body, 'rating' => $rating,
-                'video_path' => $video, 'thumbnail_path' => $thumb, 'is_verified_client' => $i < 2,
-                'is_featured' => $i === 0, 'is_active' => true, 'sort_order' => $i,
+            Testimonial::query()->firstOrCreate(['kind' => 'video', 'name' => $name], [
+                'designation' => 'Sample video (replace before publishing)', 'body' => $body, 'rating' => $rating,
+                'video_path' => $video, 'thumbnail_path' => $thumb, 'is_verified_client' => false,
+                'is_featured' => $i === 0, 'is_active' => app()->environment('local'), 'sort_order' => $i,
             ]);
         }
     }
