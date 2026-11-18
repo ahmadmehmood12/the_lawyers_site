@@ -52,6 +52,9 @@ DEFAULT_USER_AGENT = (
     "(KHTML, like Gecko) Chrome/120.0 Safari/537.36 WakeelDiaryLHCScraper/1.0"
 )
 
+# Seconds between imports, to stay under the site's rate limit (600 a minute).
+IMPORT_DELAY = float(os.getenv("IMPORT_DELAY", "0.15"))
+
 logger = logging.getLogger("lhc_scraper")
 
 
@@ -92,6 +95,7 @@ class JudgmentRecord:
     slug: str
     is_published: bool
     cited_citations: tuple[str, ...] = ()
+    is_reported: bool = True  # this court's listing only holds judgments approved for reporting
 
     def as_payload(self) -> dict[str, object]:
         payload = asdict(self)
@@ -581,6 +585,13 @@ def post_record(
 
                 return "failed", f"unexpected API status {status!r}"
 
+            if response.status_code == 429:
+                wait = min(int(response.headers.get("Retry-After") or 30), 120)
+                logger.warning("The site asked to slow down (429); waiting %ds.", wait)
+                time.sleep(wait)
+                last_error = "HTTP 429 Too Many Requests"
+                continue
+
             message = f"HTTP {response.status_code}: {response.text[:300]}"
             if response.status_code in {401, 403, 404, 422}:
                 return "failed", message
@@ -666,6 +677,10 @@ def run(config: Config, *, dry_run: bool, limit: int | None, read_pdfs: bool = T
     failed = 0
 
     for index, record in enumerate(records, start=1):
+
+        if index > 1:
+
+            time.sleep(IMPORT_DELAY)
         payload = record.as_payload()
         status, error = post_record(session, config, payload)
 

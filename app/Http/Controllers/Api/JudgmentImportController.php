@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * Receives judgment metadata from the Python LHC scraper and stores it in the
+ * Receives judgment metadata from the Python LHC, PHC and Supreme Court scrapers and stores it in the
  * existing reported_judgments table. Duplicates are detected by PDF URL or by
  * normalized case details; empty pdf/source/tag-line/citation fields on a duplicate
  * are backfilled without overwriting values an admin already saved. The scraper reads
@@ -30,6 +30,9 @@ class JudgmentImportController extends Controller
             'title' => ['required', 'string', 'max:500'],
             'judges' => ['required', 'string', 'max:500'],
             'citation' => ['nullable', 'string', 'max:120'],
+            'other_citation' => ['nullable', 'string', 'max:120'],
+            'sc_citation' => ['nullable', 'string', 'max:120'],
+            'remarks' => ['nullable', 'string', 'max:60000'],
             'cited_citations' => ['nullable', 'array', 'max:200'],
             'cited_citations.*' => ['string', 'max:120'],
             'tag_line' => ['nullable', 'string', 'max:2000'],
@@ -39,6 +42,7 @@ class JudgmentImportController extends Controller
             'source_url' => ['required', 'url:http,https', 'max:500'],
             'slug' => ['nullable', 'string', 'max:180'],
             'is_published' => ['sometimes', 'boolean'],
+            'is_reported' => ['sometimes', 'boolean'],
         ]);
 
         $court = $data['court'] ?? 'lhc';
@@ -67,11 +71,15 @@ class JudgmentImportController extends Controller
             'citation' => $data['citation'],
             'cited_citations' => $data['cited_citations'],
             'tag_line' => $data['tag_line'] ?? null,
-            'decision_date' => null,
+            'decision_date' => $data['decision_date'] ?? null,
+            'other_citation' => filled($data['other_citation'] ?? null) ? trim($data['other_citation']) : null,
+            'remarks' => filled($data['remarks'] ?? null) ? trim($data['remarks']) : null,
+            'sc_citation' => filled($data['sc_citation'] ?? null) ? trim($data['sc_citation']) : null,
             'uploaded_on' => $data['uploaded_on'],
             'pdf_path' => $data['pdf_path'],
             'source_url' => $data['source_url'],
             'is_published' => true,
+            'is_reported' => (bool) ($data['is_reported'] ?? true),
         ]);
         $judgment->slug = $this->uniqueSlug($data['slug'] ?? null, $court, $data);
         $judgment->views = 0;
@@ -114,7 +122,7 @@ class JudgmentImportController extends Controller
                 "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(case_number, '-', ''), '/', ''), '.', ''), ' ', ''), '(', ''), ')', '')) = ?",
                 [$caseNumber],
             )
-            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'cited_citations'])
+            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'is_reported'])
             ->first(fn (ReportedJudgment $row) => $this->normalize($row->title) === $title);
     }
 
@@ -125,10 +133,15 @@ class JudgmentImportController extends Controller
     {
         $updates = [];
 
-        foreach (['pdf_path', 'source_url', 'tag_line', 'citation', 'cited_citations'] as $field) {
+        foreach (['pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations'] as $field) {
             if (blank($judgment->getAttribute($field)) && filled($data[$field] ?? null)) {
                 $updates[$field] = $data[$field];
             }
+        }
+
+        // A judgment first seen as unreported (Supreme Court latest page) becomes reported; never the reverse.
+        if (($data['is_reported'] ?? true) && $judgment->getAttribute('is_reported') === false) {
+            $updates['is_reported'] = true;
         }
 
         if ($updates === []) {

@@ -17,7 +17,7 @@ use Inertia\Response;
 /** Admin, Reported judgments: add, edit, upload the PDF, or import many rows from CSV. */
 class ReportedJudgmentController extends Controller
 {
-    public const CSV_COLUMNS = ['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'tag_line', 'decision_date', 'uploaded_on', 'pdf_url', 'source_url'];
+    public const CSV_COLUMNS = ['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'other_citation', 'sc_citation', 'tag_line', 'remarks', 'decision_date', 'uploaded_on', 'pdf_url', 'source_url', 'is_reported'];
 
     public function index(Request $request): Response
     {
@@ -26,7 +26,7 @@ class ReportedJudgmentController extends Controller
         return Inertia::render('Admin/Judgments', [
             'rows' => PublicJudgments::filtered(ReportedJudgment::query(), ['court' => $filters['court'] ?? null, 'title' => $filters['search'] ?? null])
                 ->orderByDesc('uploaded_on')->orderByDesc('id')->paginate(25)->withQueryString()
-                ->through(fn (ReportedJudgment $j) => [...$j->toListItem(), 'is_published' => $j->is_published, 'views' => $j->views]),
+                ->through(fn (ReportedJudgment $j) => [...$j->toListItem(), 'remarks' => $j->remarks, 'is_published' => $j->is_published, 'views' => $j->views]),
             'courts' => collect(ReportedJudgment::COURTS)->map(fn ($c, $key) => ['value' => $key, 'label' => $c['name']])->values(),
             'counts' => ReportedJudgment::query()->selectRaw('court, COUNT(*) as total')->groupBy('court')->pluck('total', 'court'),
             'filters' => $filters,
@@ -85,9 +85,10 @@ class ReportedJudgmentController extends Controller
                 ['court' => $court, 'case_number' => trim($data['case_number']), 'title' => trim($data['title'])],
                 [
                     'case_type' => trim((string) ($data['case_type'] ?? '')) ?: 'Case', 'judges' => trim((string) ($data['judges'] ?? '')) ?: '—',
-                    'citation' => ($data['citation'] ?? null) ?: ReportedJudgment::citationFromPdfUrl($pdfUrl), 'tag_line' => ($data['tag_line'] ?? null) ?: null,
+                    'citation' => ($data['citation'] ?? null) ?: ReportedJudgment::citationFromPdfUrl($pdfUrl), 'other_citation' => ($data['other_citation'] ?? null) ?: null, 'sc_citation' => ($data['sc_citation'] ?? null) ?: null, 'remarks' => ($data['remarks'] ?? null) ?: null, 'tag_line' => ($data['tag_line'] ?? null) ?: null,
                     'decision_date' => $date($data['decision_date'] ?? null), 'uploaded_on' => $date($data['uploaded_on'] ?? null) ?? today()->toDateString(),
                     'source_url' => filter_var($data['source_url'] ?? null, FILTER_VALIDATE_URL) ?: null, 'is_published' => true,
+                    'is_reported' => ! in_array(strtolower(trim((string) ($data['is_reported'] ?? '1'))), ['0', 'no', 'false'], true),
                     ...($pdfUrl ? ['pdf_path' => $pdfUrl] : []),
                 ],
             );
@@ -111,13 +112,17 @@ class ReportedJudgmentController extends Controller
             'title' => ['required', 'string', 'max:500'],
             'judges' => ['required', 'string', 'max:500'],
             'citation' => ['nullable', 'string', 'max:120'],
+            'other_citation' => ['nullable', 'string', 'max:120'],
+            'sc_citation' => ['nullable', 'string', 'max:120'],
             'tag_line' => ['nullable', 'string', 'max:2000'],
+            'remarks' => ['nullable', 'string', 'max:60000'],
             'decision_date' => ['nullable', 'date'],
             'uploaded_on' => ['required', 'date'],
             'text_mode' => ['required', Rule::in(['pdf', 'link'])],
             'pdf_link' => [Rule::requiredIf($link && blank($request->input('source_url'))), 'nullable', 'url:https,http', 'max:500'],
             'source_url' => ['nullable', 'url:https,http', 'max:500'],
             'is_published' => ['boolean'],
+            'is_reported' => ['boolean'],
             'pdf' => [! $link && ! $hasUploadedPdf ? 'required' : 'nullable', 'file', 'mimes:pdf', 'max:20480'],
             'remove_pdf' => ['boolean'],
         ], ['pdf_link.required' => __('Add the PDF link, the source page link, or both.')]);

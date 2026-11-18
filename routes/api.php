@@ -20,9 +20,9 @@ Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)->mi
 Route::post('webhooks/stripe', StripeWebhookController::class)->middleware('throttle:120,1')->name('webhooks.stripe');
 
 /*
-| Python scraper (lhc-scraper/scraper.py) imports reported-judgment metadata.
+| Python scrapers (lhc-scraper, phc-scraper, sc-scraper) import judgment metadata.
 | Protected by JUDGMENTS_IMPORT_TOKEN; see docs/judgment-automation.md.
 */
 Route::post('judgments/import', JudgmentImportController::class)
-    ->middleware([EnsureJudgmentImportToken::class, 'throttle:120,1'])
+    ->middleware([EnsureJudgmentImportToken::class, 'throttle:600,1'])
     ->name('api.judgments.import');

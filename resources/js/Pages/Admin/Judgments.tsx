@@ -9,7 +9,7 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 import type { SelectOption } from '@/types/domain';
 
-type Row = { id: number; slug: string; court: string; court_name: string; case_type: string; case_number: string; title: string; judges: string; citation: string | null; tag_line: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; pdf_is_link: boolean; cited_citations: string[]; source_url: string | null; is_published: boolean; views: number };
+type Row = { id: number; slug: string; court: string; court_name: string; case_type: string; case_number: string; title: string; judges: string; citation: string | null; other_citation: string | null; sc_citation: string | null; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; pdf_is_link: boolean; is_reported: boolean; cited_citations: string[]; source_url: string | null; is_published: boolean; views: number };
 
 const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-md file:border-0 file:bg-navy-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-navy-800 hover:file:bg-navy-200 dark:text-navy-200 dark:file:bg-navy-800 dark:file:text-navy-100';
 
@@ -45,7 +45,7 @@ export default function Judgments({ rows, courts, counts, filters, csvColumns }:
                         { key: 'court', label: t('Court'), hideOnMobile: true, render: (r) => <Badge>{r.court.toUpperCase()}</Badge> },
                         { key: 'uploaded_on', label: t('Uploaded'), hideOnMobile: true, render: (r) => formatDate(r.uploaded_on, locale) },
                         { key: 'files', label: t('Text'), hideOnMobile: true, render: (r) => r.pdf_url ? <a href={r.pdf_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm underline"><FileText className="size-4 text-red-600" />PDF</a> : r.source_url ? <a href={r.source_url} target="_blank" rel="noreferrer" className="text-sm underline">{t('Source')}</a> : <span className="text-navy-400">—</span> },
-                        { key: 'status', label: t('Status'), render: (r) => <Badge tone={r.is_published ? 'green' : 'neutral'}>{r.is_published ? t('Public') : t('Hidden')}</Badge> },
+                        { key: 'status', label: t('Status'), render: (r) => <span className="flex flex-wrap gap-1"><Badge tone={r.is_published ? 'green' : 'neutral'}>{r.is_published ? t('Public') : t('Hidden')}</Badge>{!r.is_reported && <Badge tone="amber">{t('Unreported')}</Badge>}</span> },
                         { key: 'actions', label: '', render: (r) => (
                             <div className="flex justify-end gap-1">
                                 <Button size="sm" variant="ghost" aria-label={t('Edit')} onClick={() => setEditing(r)}><Pencil className="size-4" /></Button>
@@ -62,15 +62,15 @@ export default function Judgments({ rows, courts, counts, filters, csvColumns }:
 
 function JudgmentDialog({ row, courts, defaultCourt, onClose }: { row: Row | null; courts: SelectOption[]; defaultCourt?: string; onClose: () => void }) {
     const t = useT();
-    const form = useForm<{ court: string; case_type: string; case_number: string; title: string; judges: string; citation: string; tag_line: string; decision_date: string; uploaded_on: string; pdf_link: string; source_url: string; is_published: boolean; pdf: File | null; remove_pdf: boolean; text_mode: 'pdf' | 'link' }>({
+    const form = useForm<{ court: string; case_type: string; case_number: string; title: string; judges: string; citation: string; other_citation: string; sc_citation: string; tag_line: string; remarks: string; decision_date: string; uploaded_on: string; pdf_link: string; source_url: string; is_published: boolean; is_reported: boolean; pdf: File | null; remove_pdf: boolean; text_mode: 'pdf' | 'link' }>({
         text_mode: row?.pdf_url && !row.pdf_is_link ? 'pdf' : 'link',
         pdf_link: row?.pdf_is_link ? row.pdf_url ?? '' : '',
         court: row?.court ?? defaultCourt ?? 'lhc', case_type: row?.case_type ?? '', case_number: row?.case_number ?? '', title: row?.title ?? '', judges: row?.judges ?? '',
-        citation: row?.citation ?? '', tag_line: row?.tag_line ?? '', decision_date: row?.decision_date ?? '', uploaded_on: row?.uploaded_on ?? new Date().toISOString().slice(0, 10),
-        source_url: row?.source_url ?? '', is_published: row?.is_published ?? true, pdf: null, remove_pdf: false,
+        citation: row?.citation ?? '', other_citation: row?.other_citation ?? '', sc_citation: row?.sc_citation ?? '', tag_line: row?.tag_line ?? '', remarks: row?.remarks ?? '', decision_date: row?.decision_date ?? '', uploaded_on: row?.uploaded_on ?? new Date().toISOString().slice(0, 10),
+        source_url: row?.source_url ?? '', is_published: row?.is_published ?? true, is_reported: row?.is_reported ?? true, pdf: null, remove_pdf: false,
     });
     function submit() {
-        form.transform((d) => ({ ...d, citation: d.citation || null, tag_line: d.tag_line || null, decision_date: d.decision_date || null, pdf_link: d.pdf_link || null, source_url: d.source_url || null }));
+        form.transform((d) => ({ ...d, citation: d.citation || null, other_citation: d.other_citation || null, sc_citation: d.sc_citation || null, tag_line: d.tag_line || null, remarks: d.remarks || null, decision_date: d.decision_date || null, pdf_link: d.pdf_link || null, source_url: d.source_url || null }));
         const options = { forceFormData: true, preserveScroll: true, onSuccess: onClose };
         if (row) form.post(route('admin.judgments.update', row.id), options);
         else form.post(route('admin.judgments.store'), options);
@@ -84,7 +84,10 @@ function JudgmentDialog({ row, courts, defaultCourt, onClose }: { row: Row | nul
                 <Input label={t('Citation')} value={form.data.citation} onChange={(e) => form.setData('citation', e.target.value)} error={form.errors.citation} placeholder="2026 LHC 1234" />
                 <Input wrapperClassName="sm:col-span-2" label={t('Title (parties)')} value={form.data.title} onChange={(e) => form.setData('title', e.target.value)} error={form.errors.title} placeholder="Jannat Begum etc Vs Province of the Punjab etc" required />
                 <Input wrapperClassName="sm:col-span-2" label={t('Judge or bench')} value={form.data.judges} onChange={(e) => form.setData('judges', e.target.value)} error={form.errors.judges} placeholder="Mr. Justice ..." required />
+                <Input label={t('SC citation')} value={form.data.sc_citation} onChange={(e) => form.setData('sc_citation', e.target.value)} error={form.errors.sc_citation} placeholder="2018 SCP 131" hint={t('Supreme Court judgments only.')} />
+                <Input label={t('Other citation')} value={form.data.other_citation} onChange={(e) => form.setData('other_citation', e.target.value)} error={form.errors.other_citation} placeholder="2016 YLR 1229" hint={t('The judgment’s citation in a law report, besides the court’s neutral citation.')} />
                 <Textarea wrapperClassName="sm:col-span-2" label={t('Tag line')} rows={2} value={form.data.tag_line} onChange={(e) => form.setData('tag_line', e.target.value)} error={form.errors.tag_line} />
+                <Textarea wrapperClassName="sm:col-span-2" label={t('Remarks (headnote)')} rows={5} value={form.data.remarks} onChange={(e) => form.setData('remarks', e.target.value)} error={form.errors.remarks} />
                 <Input label={t('Decision date')} type="date" value={form.data.decision_date} onChange={(e) => form.setData('decision_date', e.target.value)} error={form.errors.decision_date} />
                 <Input label={t('Uploaded on')} type="date" value={form.data.uploaded_on} onChange={(e) => form.setData('uploaded_on', e.target.value)} error={form.errors.uploaded_on} required />
                 <fieldset className="space-y-3 sm:col-span-2">
@@ -120,6 +123,7 @@ function JudgmentDialog({ row, courts, defaultCourt, onClose }: { row: Row | nul
                     )}
                 </fieldset>
                 <Checkbox label={t('Show on the public page')} checked={form.data.is_published} onChange={(e) => form.setData('is_published', e.target.checked)} />
+                <Checkbox label={t('Reported judgment (approved for reporting)')} checked={form.data.is_reported} onChange={(e) => form.setData('is_reported', e.target.checked)} />
             </div>
         </Modal>
     );

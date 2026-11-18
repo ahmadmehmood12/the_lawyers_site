@@ -4,11 +4,13 @@ namespace App\Models;
 
 use App\Support\PublicFile;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /** A judgment approved for reporting by a High Court (or the Supreme Court). */
-#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'cited_citations', 'tag_line', 'decision_date', 'uploaded_on', 'pdf_path', 'source_url', 'slug', 'is_published'])]
+#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'other_citation', 'sc_citation', 'cited_citations', 'tag_line', 'remarks', 'decision_date', 'uploaded_on', 'pdf_path', 'source_url', 'slug', 'is_published', 'is_reported'])]
 class ReportedJudgment extends Model
 {
     /** @var array<string, array{name: string, short: string, province: string}> */
@@ -23,7 +25,7 @@ class ReportedJudgment extends Model
 
     protected function casts(): array
     {
-        return ['cited_citations' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'views' => 'integer'];
+        return ['cited_citations' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'is_reported' => 'boolean', 'views' => 'integer'];
     }
 
     protected static function booted(): void
@@ -54,15 +56,28 @@ class ReportedJudgment extends Model
         return (bool) preg_match('#^https?://#i', (string) $this->pdf_path);
     }
 
+    /**
+     * Shown on the public Reported judgments pages: published and approved for reporting.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function listed(Builder $query): void
+    {
+        $query->where('is_published', true)->where('is_reported', true);
+    }
+
     /** @return array<string, mixed> */
     public function toListItem(): array
     {
         return [
             'id' => $this->id, 'slug' => $this->slug, 'court' => $this->court, 'court_name' => self::COURTS[$this->court]['name'] ?? $this->court,
             'case_type' => $this->case_type, 'case_number' => $this->case_number, 'title' => $this->title, 'judges' => $this->judges,
-            'citation' => $this->citation, 'cited_citations' => array_values($this->cited_citations ?? []), 'tag_line' => $this->tag_line,
+            'citation' => $this->citation, 'other_citation' => $this->other_citation, 'sc_citation' => $this->sc_citation, 'cited_citations' => array_values($this->cited_citations ?? []), 'tag_line' => $this->tag_line,
+            // Lists show the start of the remarks (PHC headnotes run to several paragraphs); the detail page sends it whole.
+            'remarks' => $this->remarks ? Str::limit($this->remarks, 360) : null,
             'decision_date' => $this->decision_date?->toDateString(), 'uploaded_on' => $this->uploaded_on->toDateString(),
-            'pdf_url' => PublicFile::url($this->pdf_path), 'pdf_is_link' => $this->pdfIsLink(), 'source_url' => $this->source_url,
+            'pdf_url' => PublicFile::url($this->pdf_path), 'pdf_is_link' => $this->pdfIsLink(), 'is_reported' => $this->is_reported, 'source_url' => $this->source_url,
         ];
     }
 }

@@ -10,7 +10,7 @@ import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 
-export type Judgment = { id: number; slug: string; court: string; court_name: string; case_type: string; case_number: string; title: string; judges: string; citation: string | null; cited_citations: string[]; tag_line: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; source_url: string | null };
+export type Judgment = { id: number; slug: string; court: string; court_name: string; case_type: string; case_number: string; title: string; judges: string; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; source_url: string | null };
 type Court = { key: string; name: string; short: string; province: string; count: number };
 type Filters = Partial<Record<'court' | 'year' | 'judge' | 'citation' | 'case' | 'title' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
 
@@ -60,7 +60,7 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                         <FilterField label={t('Hon’ble Judge')} labelElement="div">
                             <Select value={form.judge ?? ''} onChange={(e) => set('judge', e.target.value)} aria-label={t('Hon’ble Judge')} placeholder={t('All judges')} options={judges.map((j) => ({ value: j, label: j }))} />
                         </FilterField>
-                        <FilterField label={t('Citation')}><input value={form.citation ?? ''} onChange={(e) => set('citation', e.target.value)} placeholder={t('e.g. 2026 LHC 1234 or PLD 2019 SC 730')} className={controlClasses(false)} /></FilterField>
+                        <FilterField label={t('Citation')}><input value={form.citation ?? ''} onChange={(e) => set('citation', e.target.value)} placeholder={t('e.g. 2026 PHC 7407, 2016 YLR 1229 or a keyword')} className={controlClasses(false)} /></FilterField>
                         <FilterField label={t('Case number')}><input value={form.case ?? ''} onChange={(e) => set('case', e.target.value)} placeholder={t('e.g. 21229/26 or Civil Revision')} className={controlClasses(false)} /></FilterField>
                         <FilterField label={t('Title')} className="md:col-span-2"><input value={form.title ?? ''} onChange={(e) => set('title', e.target.value)} placeholder={t('Party names, e.g. Muhammad Irfan')} className={controlClasses(false)} /></FilterField>
                         {more && (
@@ -104,13 +104,16 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                                         </p>
                                     </Link>
                                     <p className="mt-1 text-sm text-navy-600 dark:text-navy-300">{t('by')} {j.judges}{!filters.court && <span className="text-navy-400"> · {j.court_name}</span>}</p>
-                                    {(j.citation || citedMatch(j)) && (
+                                    {(j.citation || j.other_citation || j.sc_citation || citedMatch(j)) && (
                                         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                                             {j.citation && <span className="rounded bg-gold-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-gold-700 dark:bg-gold-500/10 dark:text-gold-300">{j.citation}</span>}
+                                            {j.sc_citation && <span className="rounded bg-gold-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-gold-700 dark:bg-gold-500/10 dark:text-gold-300">{j.sc_citation}</span>}
+                                            {j.other_citation && <span className="rounded bg-navy-50 px-1.5 py-0.5 font-mono text-xs font-medium text-navy-700 dark:bg-navy-800 dark:text-navy-200">{j.other_citation}</span>}
                                             {citedMatch(j) && <span className="text-xs text-navy-500">{t('Cites')} <span className="font-mono font-medium text-navy-700 dark:text-navy-200">{citedMatch(j)}</span></span>}
                                         </p>
                                     )}
                                     {j.tag_line && <p className="mt-1.5 text-sm italic text-navy-600 dark:text-navy-300"><span className="not-italic font-medium text-navy-800 dark:text-navy-100">{t('Tag line')}:</span> {j.tag_line}</p>}
+                                    {!j.tag_line && j.remarks && <p className="mt-1.5 line-clamp-3 text-sm text-navy-600 dark:text-navy-300"><span className="font-medium text-navy-800 dark:text-navy-100">{t('Remarks')}:</span> {j.remarks}</p>}
                                     <p className="mt-1.5 text-xs text-navy-500">{t('Uploaded on')} {formatDate(j.uploaded_on, locale)}{j.decision_date && ` · ${t('Decided')} ${formatDate(j.decision_date, locale)}`}</p>
                                 </div>
                                 {(j.pdf_url || j.source_url) && (

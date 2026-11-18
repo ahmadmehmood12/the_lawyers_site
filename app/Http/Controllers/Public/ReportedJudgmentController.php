@@ -18,22 +18,22 @@ class ReportedJudgmentController extends Controller
         $court = array_key_exists((string) $request->query('court'), ReportedJudgment::COURTS) ? (string) $request->query('court') : null;
         $filters = $request->only(['court', 'year', 'judge', 'citation', 'case', 'title', 'decided_from', 'decided_to', 'uploaded_from', 'uploaded_to']);
 
-        $judgments = self::filtered(ReportedJudgment::query()->where('is_published', true), $filters)
+        $judgments = self::filtered(ReportedJudgment::query()->listed(), $filters)
             // Searching a citation shows that judgment first, then the judgments that cite it.
-            ->when(filled($filters['citation'] ?? null), fn ($q) => $q->orderByRaw(self::compactColumn('citation').' = ? DESC', [self::compactCitation((string) $filters['citation'])]))
+            ->when(filled($filters['citation'] ?? null), fn ($q) => $q->orderByRaw('('.self::compactColumn('citation').' = ? OR '.self::compactColumn('other_citation').' = ? OR '.self::compactColumn('sc_citation').' = ?) DESC', array_fill(0, 3, self::compactCitation((string) $filters['citation']))))
             ->orderByDesc('uploaded_on')->orderByDesc('id')
             ->paginate(25)->withQueryString()
             ->through(fn (ReportedJudgment $j) => $j->toListItem());
 
-        $counts = Cache::remember('judgment-counts', now()->addMinutes(10), fn () => ReportedJudgment::query()->where('is_published', true)
+        $counts = Cache::remember('judgment-counts', now()->addMinutes(10), fn () => ReportedJudgment::query()->listed()
             ->selectRaw('court, COUNT(*) as total')->groupBy('court')->pluck('total', 'court')->all());
 
         return Inertia::render('Public/Judgments/Index', [
             'judgments' => $judgments,
             'courts' => collect(ReportedJudgment::COURTS)->map(fn ($c, $key) => [...$c, 'key' => $key, 'count' => (int) ($counts[$key] ?? 0)])->values(),
-            'judges' => ReportedJudgment::query()->where('is_published', true)->when($court, fn ($q) => $q->where('court', $court))
+            'judges' => ReportedJudgment::query()->listed()->when($court, fn ($q) => $q->where('court', $court))
                 ->distinct()->orderBy('judges')->limit(300)->pluck('judges'),
-            'years' => ReportedJudgment::query()->where('is_published', true)->selectRaw('DISTINCT YEAR(COALESCE(decision_date, uploaded_on)) as y')->orderByDesc('y')->pluck('y'),
+            'years' => ReportedJudgment::query()->listed()->selectRaw('DISTINCT YEAR(COALESCE(decision_date, uploaded_on)) as y')->orderByDesc('y')->pluck('y'),
             'filters' => $filters,
             'canonical' => route('judgments.index'),
             'embedded' => $embedded,
@@ -42,12 +42,12 @@ class ReportedJudgmentController extends Controller
 
     public function show(ReportedJudgment $judgment, ?string $embedded = null): Response
     {
-        abort_unless($judgment->is_published, 404);
+        abort_unless($judgment->is_published && $judgment->is_reported, 404);
         $judgment->increment('views');
 
         return Inertia::render('Public/Judgments/Show', [
-            'judgment' => $judgment->toListItem(),
-            'related' => ReportedJudgment::query()->where('is_published', true)->where('court', $judgment->court)->whereKeyNot($judgment->id)
+            'judgment' => [...$judgment->toListItem(), 'remarks' => $judgment->remarks],
+            'related' => ReportedJudgment::query()->listed()->where('court', $judgment->court)->whereKeyNot($judgment->id)
                 ->where('judges', $judgment->judges)->latest('uploaded_on')->limit(5)->get()->map->toListItem(),
             'canonical' => route('judgments.show', $judgment),
             'embedded' => $embedded,
@@ -72,8 +72,11 @@ class ReportedJudgmentController extends Controller
                 $compact = '%'.self::compactCitation((string) $f['citation']).'%';
 
                 $q->where(fn ($w) => $w->whereRaw(self::compactColumn('citation').' LIKE ?', [$compact])
+                    ->orWhereRaw(self::compactColumn('other_citation').' LIKE ?', [$compact])
+                    ->orWhereRaw(self::compactColumn('sc_citation').' LIKE ?', [$compact])
                     ->orWhereRaw(self::compactColumn('cited_citations').' LIKE ?', [$compact])
-                    ->orWhere('tag_line', 'like', $like($f['citation'])));
+                    ->orWhere('tag_line', 'like', $like($f['citation']))
+                    ->orWhere('remarks', 'like', $like($f['citation'])));
             })
             ->when(filled($f['case'] ?? null), fn ($q) => $q->where(fn ($w) => $w->where('case_number', 'like', $like($f['case']))->orWhere('case_type', 'like', $like($f['case']))))
             ->when(filled($f['title'] ?? null), fn ($q) => $q->where('title', 'like', $like($f['title'])))

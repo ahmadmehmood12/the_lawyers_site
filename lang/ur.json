@@ -2664,5 +2664,14 @@
     ":name transferred.": ":name کا تبادلہ ہو گیا۔",
     ":first and :second swapped postings.": ":first اور :second کی تعیناتیاں تبدیل ہو گئیں۔",
     "Choose two different judges.": "دو مختلف جج منتخب کریں۔",
-    "For getting started: your court diary with a few cases.": "آغاز کے لیے: چند مقدمات کے ساتھ آپ کی عدالتی ڈائری۔"
+    "For getting started: your court diary with a few cases.": "آغاز کے لیے: چند مقدمات کے ساتھ آپ کی عدالتی ڈائری۔",
+    "Other citation": "دیگر حوالہ",
+    "Remarks": "ریمارکس",
+    "Remarks (headnote)": "ریمارکس (ہیڈ نوٹ)",
+    "The judgment’s citation in a law report, besides the court’s neutral citation.": "عدالت کے نیوٹرل حوالے کے علاوہ کسی لاء رپورٹ میں فیصلے کا حوالہ۔",
+    "e.g. 2026 PHC 7407, 2016 YLR 1229 or a keyword": "مثلاً 2026 PHC 7407، 2016 YLR 1229 یا کوئی لفظ",
+    "SC citation": "سپریم کورٹ حوالہ",
+    "Supreme Court judgments only.": "صرف سپریم کورٹ کے فیصلوں کے لیے۔",
+    "Unreported": "غیر رپورٹ شدہ",
+    "Reported judgment (approved for reporting)": "رپورٹ شدہ فیصلہ (رپورٹنگ کے لیے منظور شدہ)"
 }

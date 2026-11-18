@@ -14,7 +14,7 @@ export default function JudgmentShow({ judgment: j, related, canonical, embedded
     const indexRoute = embedded === 'workspace' ? 'judgments.workspace.index' : 'judgments.index';
     const showRoute = embedded === 'workspace' ? 'judgments.workspace.show' : 'judgments.show';
     const rows: [string, string | null][] = [
-        [t('Court'), j.court_name], [t('Case'), `${j.case_type} ${j.case_number}`], [t('Bench'), j.judges], [t('Citation'), j.citation],
+        [t('Court'), j.court_name], [t('Case'), `${j.case_type} ${j.case_number}`], [t('Bench'), j.judges], [t('Citation'), j.citation], [t('SC citation'), j.sc_citation], [t('Other citation'), j.other_citation],
         [t('Decision date'), j.decision_date ? formatDate(j.decision_date, locale) : null], [t('Uploaded on'), formatDate(j.uploaded_on, locale)],
     ];
     const content = (
@@ -26,6 +26,12 @@ export default function JudgmentShow({ judgment: j, related, canonical, embedded
                 <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
                     <div className="space-y-6">
                         {j.tag_line && <blockquote className="rounded-card border-s-4 border-gold-500 bg-gold-50/60 px-5 py-4 text-lg italic leading-relaxed text-navy-800 dark:bg-gold-500/10 dark:text-navy-100">{j.tag_line}</blockquote>}
+                        {j.remarks && (
+                            <section className="rounded-card border border-navy-100 bg-white p-5 dark:border-navy-800 dark:bg-navy-900">
+                                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-navy-500">{t('Remarks')}</h2>
+                                <div className="whitespace-pre-line text-[15px] leading-relaxed text-navy-800 dark:text-navy-100">{j.remarks}</div>
+                            </section>
+                        )}
                         {j.pdf_url ? (
                             <div className="overflow-hidden rounded-card border border-navy-100 dark:border-navy-800">
                                 <iframe src={j.pdf_url} title={j.title} className="h-[80dvh] w-full bg-white" />
