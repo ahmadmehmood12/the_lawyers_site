@@ -81,7 +81,7 @@ class DashboardController extends Controller
                 ->with(['legalCase:id,title,reference', 'court:id,name'])->orderBy('hearing_date')->orderBy('hearing_time')->limit(8)->get()
                 ->map(fn (Hearing $h) => [...CaseController::hearingSummary($h), 'case' => ['id' => $h->legalCase->id, 'title' => $h->legalCase->title, 'reference' => $h->legalCase->reference]])),
             'tasks' => Inertia::defer(fn () => Task::query()->forOrganization($organization)->where('assigned_to', $user->id)
-                ->whereIn('status', [TaskStatus::Open->value, TaskStatus::InProgress->value])->with('legalCase:id,title,reference')
+                ->whereIn('status', [TaskStatus::Open->value, TaskStatus::InProgress->value])->with([...TaskController::PEOPLE, 'legalCase:id,title,reference'])
                 ->orderByRaw('due_date IS NULL, due_date')->limit(6)->get()->map(fn ($t) => TaskController::present($t))),
             'breakdown' => Inertia::defer(fn () => [
                 'bySpecialization' => $cases()->whereIn('legal_cases.status', CaseStatus::openValues())->leftJoin('specializations as s', 's.id', '=', 'legal_cases.specialization_id')

@@ -38,6 +38,10 @@ export type TaskItem = {
     status_label: string;
     assignee: string | null;
     assigned_to: number | null;
+    assignee_avatar: string | null;
+    reporter: string | null;
+    reporter_id: number | null;
+    reporter_avatar: string | null;
     case: { id: number; title: string; reference: string } | null;
     legal_case_id: number | null;
 };

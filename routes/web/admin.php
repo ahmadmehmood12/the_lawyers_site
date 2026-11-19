@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AppointmentOverviewController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\CourtCalendarController;
@@ -27,6 +28,7 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('analytics', AnalyticsController::class)->middleware('permission:analytics.platform')->name('analytics.index');
 
     Route::middleware('permission:users.view')->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');

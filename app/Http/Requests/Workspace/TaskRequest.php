@@ -25,6 +25,7 @@ class TaskRequest extends FormRequest
             'legal_case_id' => ['nullable', 'integer'],
             'hearing_id' => ['nullable', 'integer'],
             'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'reporter_id' => ['nullable', 'integer', 'exists:users,id'],
             'due_date' => ['nullable', 'date'],
             'priority' => ['required', Rule::enum(Priority::class)],
             'status' => ['sometimes', Rule::enum(TaskStatus::class)],

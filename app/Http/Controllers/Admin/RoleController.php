@@ -43,6 +43,7 @@ class RoleController extends Controller
             'audit.view' => __('Read the audit log'),
             'reports.view' => __('See platform reports'),
             'exports.run' => __('Export data'),
+            'analytics.platform' => __('See the platform analytics dashboard'),
         ];
     }
 

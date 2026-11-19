@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PageVisit;
 use Illuminate\Support\Facades\Schedule;
 
 /*
@@ -11,4 +12,5 @@ Schedule::command('subscriptions:expire')->hourly()->withoutOverlapping();
 Schedule::command('subscriptions:remind')->dailyAt('10:00')->timezone('Asia/Karachi')->withoutOverlapping();
 Schedule::command('queue:prune-failed --hours=720')->daily();
 Schedule::command('activitylog:clean')->monthly();
+Schedule::command('model:prune', ['--model' => [PageVisit::class]])->dailyAt('03:30');
 Schedule::command('disposable:update')->weekly();

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 | admin.php     — platform staff (prefix /admin, Spatie permissions)
 */
 
-require __DIR__.'/web/public.php';
+Route::middleware('track-visits')->group(__DIR__.'/web/public.php');
 require __DIR__.'/web/account.php';
 require __DIR__.'/web/workspace.php';
 
@@ -24,6 +24,6 @@ foreach (['portal', 'admin'] as $file) {
     }
 }
 
-Route::get('{slug}', [PageController::class, 'show'])
+Route::middleware('track-visits')->get('{slug}', [PageController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('pages.show');

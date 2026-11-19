@@ -69,8 +69,8 @@ export function Stat({ label, value, hint, icon, href, tone = 'navy' }: { label:
     );
 }
 
-export function Avatar({ name, src, size = 'md' }: { name: string; src?: string | null; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
-    const sizes = { sm: 'size-8 text-xs', md: 'size-10 text-sm', lg: 'size-14 text-lg', xl: 'size-24 text-2xl' };
+export function Avatar({ name, src, size = 'md' }: { name: string; src?: string | null; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' }) {
+    const sizes = { xs: 'size-6 text-[10px]', sm: 'size-8 text-xs', md: 'size-10 text-sm', lg: 'size-14 text-lg', xl: 'size-24 text-2xl' };
     const initials = name
         .split(' ')
         .filter(Boolean)

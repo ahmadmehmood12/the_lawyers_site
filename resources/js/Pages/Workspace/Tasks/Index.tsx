@@ -1,8 +1,9 @@
 import { Link, router, usePoll } from '@inertiajs/react';
 import { CheckCircle2, Circle, ClipboardList, Columns3, List, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { TaskAssignee } from '@/Components/domain/TaskAssignee';
 import { TaskDialog } from '@/Components/domain/TaskDialog';
-import { Badge, Button, Card, EmptyState, PageHeader, Pagination, Select, StatusBadge, Tabs } from '@/Components/ui';
+import { Avatar, Badge, Button, Card, EmptyState, PageHeader, Pagination, Select, StatusBadge, Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { cn } from '@/lib/cn';
 import { formatDate } from '@/lib/format';
@@ -19,7 +20,7 @@ type Props = {
     canManage: boolean;
 };
 
-type Lane = { key: string; label: string; tasks: TaskItem[] };
+type Lane = { key: string; label: string; avatar: string | null; tasks: TaskItem[] };
 
 export default function TasksIndex({ tasks, boardTasks, view, filters, options, canManage }: Props) {
     const t = useT();
@@ -75,11 +76,13 @@ export default function TasksIndex({ tasks, boardTasks, view, filters, options, 
                                     <button type="button" className="min-w-0 flex-1 text-start" onClick={() => setEditing(task)}>
                                         <p className={cn('text-sm font-medium', task.status === 'done' && 'text-navy-400 line-through')}>{task.title}</p>
                                         <p className={cn('text-xs', task.overdue ? 'font-semibold text-red-600' : 'text-navy-500')}>
-                                            {task.due_date ? formatDate(task.due_date, locale) : t('No due date')}{task.assignee ? `, ${task.assignee}` : ''}
+                                            {task.due_date ? formatDate(task.due_date, locale) : t('No due date')}
+                                            {task.reporter && <span className="text-navy-400"> · {t('Reported by :name', { name: task.reporter })}</span>}
                                         </p>
                                     </button>
                                     {task.case && <Link href={route('cases.show', task.case.id)} className="ltr-nums hidden text-xs text-navy-500 hover:underline sm:inline">{task.case.reference}</Link>}
                                     <StatusBadge value={task.priority} label={task.priority_label} />
+                                    <TaskAssignee task={task} />
                                 </li>
                             ))}
                         </ul>
@@ -117,7 +120,7 @@ function TaskBoard({ tasks, statuses, canManage, onEdit }: { tasks: TaskItem[]; 
                     <section key={lane.key} className="space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-900 dark:text-white">
-                                <span className="flex size-7 items-center justify-center rounded-full bg-navy-100 text-xs font-bold text-navy-600 dark:bg-navy-800 dark:text-navy-300">{lane.label.slice(0, 1).toUpperCase()}</span>
+                                {lane.key === 'unassigned' ? <TaskAssignee task={{ assignee: null, assignee_avatar: null, reporter: null }} /> : <Avatar name={lane.label} src={lane.avatar} size="xs" />}
                                 {lane.label}
                             </h2>
                             <p className="text-xs text-navy-500 dark:text-navy-400">
@@ -174,12 +177,15 @@ function TaskBoard({ tasks, statuses, canManage, onEdit }: { tasks: TaskItem[]; 
                                                         <button type="button" className="w-full text-start" onClick={() => onEdit(task)}>
                                                             <p className={cn('text-sm font-medium', task.status === 'done' && 'text-navy-400 line-through')}>{task.title}</p>
                                                             <p className={cn('mt-1 text-xs', task.overdue ? 'font-semibold text-red-600' : 'text-navy-500')}>
-                                                                {task.due_date ? formatDate(task.due_date, locale) : t('No due date')}{task.assignee ? `, ${task.assignee}` : ''}
+                                                                {task.due_date ? formatDate(task.due_date, locale) : t('No due date')}
                                                             </p>
                                                         </button>
-                                                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                            <StatusBadge value={task.priority} label={task.priority_label} />
-                                                            {task.case && <Link href={route('cases.show', task.case.id)} className="text-xs text-navy-500 hover:underline">{task.case.reference}</Link>}
+                                                        <div className="mt-2 flex items-end justify-between gap-2">
+                                                            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                                                <StatusBadge value={task.priority} label={task.priority_label} />
+                                                                {task.case && <Link href={route('cases.show', task.case.id)} className="ltr-nums truncate text-xs text-navy-500 hover:underline">{task.case.reference}</Link>}
+                                                            </div>
+                                                            <TaskAssignee task={task} />
                                                         </div>
                                                     </article>
                                                 ))
@@ -202,7 +208,7 @@ function groupByAssignee(tasks: TaskItem[], t: Translator): Lane[] {
     for (const task of tasks) {
         const key = task.assigned_to ? String(task.assigned_to) : 'unassigned';
         if (!lanes.has(key)) {
-            lanes.set(key, { key, label: task.assignee ?? t('Unassigned'), tasks: [] });
+            lanes.set(key, { key, label: task.assignee ?? t('Unassigned'), avatar: task.assignee_avatar, tasks: [] });
         }
         lanes.get(key)!.tasks.push(task);
     }

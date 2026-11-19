@@ -11,6 +11,7 @@ use App\Models\LegalCase;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\Access\OrganizationAccess;
+use App\Support\PublicFile;
 use App\Support\ReferenceOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,9 @@ class TaskController extends Controller
     /** How long a completed task stays on the live board after it is resolved. */
     private const RESOLVED_BOARD_DAYS = 7;
 
+    /** Eager loads for the assignee and reporter avatars shown on task cards. */
+    public const PEOPLE = ['assignee:id,name,avatar_path', 'reporter:id,name,avatar_path'];
+
     public function index(Request $request, OrganizationAccess $access): Response
     {
         $organization = $this->organization();
@@ -34,8 +38,8 @@ class TaskController extends Controller
         $status = $request->string('status')->toString() ?: ($view === 'board' ? 'all' : 'active');
 
         $query = Task::query()->forOrganization($organization)
-            ->with(['assignee:id,name', 'legalCase:id,title,reference'])
-            ->when($scope === 'mine' || ! $manager, fn ($q) => $q->where(fn ($w) => $w->where('assigned_to', $user->id)->orWhere('created_by', $user->id)))
+            ->with([...self::PEOPLE, 'legalCase:id,title,reference'])
+            ->when($scope === 'mine' || ! $manager, fn ($q) => $q->where(fn ($w) => $w->where('assigned_to', $user->id)->orWhere('reporter_id', $user->id)->orWhere('created_by', $user->id)))
             ->when($status, function ($q, string $status): void {
                 $status === 'active' ? $q->whereIn('status', [TaskStatus::Open->value, TaskStatus::InProgress->value]) : ($status === 'all' ? null : $q->where('status', $status));
             })
@@ -77,6 +81,7 @@ class TaskController extends Controller
             'organization_id' => $organization->id,
             'status' => $status,
             'completed_at' => $status === TaskStatus::Done ? now() : null,
+            'reporter_id' => $data['reporter_id'] ?? $request->user()->id,
             'created_by' => $request->user()->id,
         ]);
 
@@ -163,6 +168,10 @@ class TaskController extends Controller
             throw ValidationException::withMessages(['assigned_to' => __('Assignee must be a member of this organization.')]);
         }
 
+        if (! empty($data['reporter_id']) && ! app(OrganizationAccess::class)->isMember(User::findOrFail($data['reporter_id']), $organization)) {
+            throw ValidationException::withMessages(['reporter_id' => __('Reporter must be a member of this organization.')]);
+        }
+
         return $data;
     }
 
@@ -176,9 +185,23 @@ class TaskController extends Controller
             'due_date' => $t->due_date?->toDateString(), 'overdue' => $t->due_date && $t->due_date->isPast() && ! $t->due_date->isToday() && $t->status !== TaskStatus::Done,
             'priority' => $t->priority->value, 'priority_label' => $t->priority->label(),
             'status' => $t->status->value, 'status_label' => $t->status->label(),
-            'assignee' => $t->assignee?->name, 'assigned_to' => $t->assigned_to,
+            'assignee' => $t->assignee?->name, 'assigned_to' => $t->assigned_to, 'assignee_avatar' => self::avatar($t->assignee),
+            'reporter' => $t->reporter?->name, 'reporter_id' => $t->reporter_id, 'reporter_avatar' => self::avatar($t->reporter),
             'case' => $t->relationLoaded('legalCase') && $t->legalCase ? ['id' => $t->legalCase->id, 'title' => $t->legalCase->title, 'reference' => $t->legalCase->reference] : null,
             'legal_case_id' => $t->legal_case_id,
         ];
+    }
+
+    /** Photo URL for a task person, resolved once per path (boards repeat the same few people). */
+    private static function avatar(?User $user): ?string
+    {
+        static $urls = [];
+        $path = $user?->avatar_path;
+
+        if ($path === null) {
+            return null;
+        }
+
+        return ($urls[$path] ??= PublicFile::url($path) ?? '') ?: null;
     }
 }

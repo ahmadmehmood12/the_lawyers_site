@@ -66,6 +66,7 @@ export const adminNav: NavGroup[] = [
     {
         items: [
             { label: 'Dashboard', route: 'admin.dashboard', icon: LayoutDashboard, mobile: true },
+            { label: 'Analytics', route: 'admin.analytics.index', icon: BarChart3, match: 'admin.analytics.*', platform: 'analytics.platform' },
             { label: 'Calendar', route: 'calendar.index', icon: CalendarRange, match: 'calendar.*' },
             { label: 'Users', route: 'admin.users.index', icon: Users, match: 'admin.users.*', platform: 'users.view', mobile: true },
             { label: 'Verification', route: 'admin.verifications.index', icon: ShieldCheck, match: 'admin.verifications.*', platform: 'verification.review', mobile: true },

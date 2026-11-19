@@ -3,6 +3,7 @@ import { Archive, CalendarPlus, CheckCircle2, Circle, Download, Eye, EyeOff, Fil
 import { useState } from 'react';
 import { DocumentUploadDialog } from '@/Components/domain/DocumentUploadDialog';
 import { CancelHearingDialog, OutcomeDialog, RescheduleDialog, ScheduleHearingDialog } from '@/Components/domain/HearingDialogs';
+import { TaskAssignee } from '@/Components/domain/TaskAssignee';
 import { TaskDialog } from '@/Components/domain/TaskDialog';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Checkbox, ConfirmAction, DetailList, EmptyState, Input, LinkButton, Modal, PageHeader, Select, Skeleton, StatusBadge, Tabs } from '@/Components/ui';
 import { CaseTimeTab } from '@/Components/domain/CaseTime';
@@ -373,9 +374,10 @@ function Tasks({ tasks, can, onEdit }: { tasks: TaskItem[]; can: Record<string, 
                             </button>
                             <button type="button" className="min-w-0 flex-1 text-start" onClick={() => onEdit(task)}>
                                 <p className={cn('text-sm font-medium', task.status === 'done' && 'text-navy-400 line-through')}>{task.title}</p>
-                                <p className={cn('text-xs', task.overdue ? 'font-semibold text-red-600' : 'text-navy-500')}>{task.due_date ? formatDate(task.due_date, locale) : t('No due date')}{task.assignee ? `, ${task.assignee}` : ''}</p>
+                                <p className={cn('text-xs', task.overdue ? 'font-semibold text-red-600' : 'text-navy-500')}>{task.due_date ? formatDate(task.due_date, locale) : t('No due date')}{task.reporter && <span className="text-navy-400"> · {t('Reported by :name', { name: task.reporter })}</span>}</p>
                             </button>
                             <StatusBadge value={task.priority} label={task.priority_label} />
+                            <TaskAssignee task={task} />
                         </li>
                     ))}
                 </ul>

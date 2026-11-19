@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureAccountType;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureOrganizationContext;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RecordPageVisit;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'account' => EnsureAccountType::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
+            'track-visits' => RecordPageVisit::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

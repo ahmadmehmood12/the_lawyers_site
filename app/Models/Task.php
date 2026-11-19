@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-#[Fillable(['organization_id', 'legal_case_id', 'hearing_id', 'title', 'description', 'assigned_to', 'due_date', 'priority', 'status', 'completed_at', 'created_by'])]
+#[Fillable(['organization_id', 'legal_case_id', 'hearing_id', 'title', 'description', 'assigned_to', 'reporter_id', 'due_date', 'priority', 'status', 'completed_at', 'created_by'])]
 class Task extends Model
 {
     use BelongsToOrganization, LogsActivity;
@@ -19,7 +19,7 @@ class Task extends Model
     /** Activity feed entry; only non-sensitive fields are recorded (docs/Modules/Activity-Feed.md). */
     public function getActivitylogOptions(): LogOptions
     {
-        return LogOptions::defaults()->useLogName('tasks')->logOnly(['status', 'assigned_to', 'due_date'])->logOnlyDirty()->dontSubmitEmptyLogs();
+        return LogOptions::defaults()->useLogName('tasks')->logOnly(['status', 'assigned_to', 'reporter_id', 'due_date'])->logOnlyDirty()->dontSubmitEmptyLogs();
     }
 
     /** @var array<string, mixed> Mirrors DB defaults so new instances are complete. */
@@ -51,6 +51,12 @@ class Task extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /** Who raised the task (Jira-style reporter); defaults to the creator. */
+    public function reporter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reporter_id');
     }
 
     public function creator(): BelongsTo

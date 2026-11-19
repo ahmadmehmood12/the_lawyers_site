@@ -24,6 +24,7 @@ class PlatformRolesSeeder extends Seeder
         'content.moderate', 'support.manage',
         'billing.view', 'billing.manage',
         'settings.manage', 'audit.view', 'reports.view', 'exports.run',
+        'analytics.platform',
     ];
 
     public function run(): void

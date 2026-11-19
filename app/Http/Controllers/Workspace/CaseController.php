@@ -322,7 +322,7 @@ class CaseController extends Controller
                 'drafts' => $case->drafts()->latest('updated_at')->get(['id', 'title', 'status', 'version', 'updated_at'])
                     ->map(fn ($d) => ['id' => $d->id, 'title' => $d->title, 'status' => $d->status->value, 'status_label' => $d->status->label(), 'version' => $d->version, 'updated_at' => $d->updated_at->toIso8601String()]),
             ] : null,
-            'tasks' => ['tasks' => $case->tasks()->with('assignee:id,name')->orderByRaw("status = 'done'")->orderBy('due_date')->get()->map(fn ($t) => TaskController::present($t))],
+            'tasks' => ['tasks' => $case->tasks()->with(TaskController::PEOPLE)->orderByRaw("status = 'done'")->orderBy('due_date')->get()->map(fn ($t) => TaskController::present($t))],
             'finance' => [
                 'expenses' => $case->expenses()->with('recorder:id,name')->latest('incurred_on')->get()
                     ->map(fn ($e) => [...$e->only(['id', 'category', 'description', 'amount', 'is_billable', 'invoice_item_id']), 'incurred_on' => $e->incurred_on->toDateString(), 'recorded_by' => $e->recorder?->name]),
