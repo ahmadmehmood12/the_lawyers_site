@@ -13,6 +13,7 @@ use App\Models\WhatsAppTemplate;
 use App\Services\Ai\AiProvider;
 use App\Services\Auth\GoogleSignIn;
 use App\Services\Mail\MailSettings;
+use App\Services\Mobile\MobileAppConfig;
 use App\Services\WhatsApp\WhatsAppClient;
 use App\Support\ActivityPresenter;
 use App\Support\PublicFile;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -111,6 +113,7 @@ class PlatformController extends Controller
             'branding' => $this->brandingSettings(),
             'authMedia' => self::authMedia(),
             'google' => $this->googleSettings(),
+            'mobileApp' => app(MobileAppConfig::class)->adminPayload(),
             'typography' => Typography::adminPayload(),
             'env' => [
                 'ai' => app(AiProvider::class)->isEnabled(),
@@ -385,6 +388,72 @@ class PlatformController extends Controller
             'configured' => $google->isEnabled(),
             'redirect_url' => $google->redirectUrl(),
         ];
+    }
+
+    /**
+     * Mobile app configuration: name, icon, push on/off, FCM service-account
+     * credentials (encrypted), and the iOS/Android versions, store links,
+     * minimum supported versions, force-update and maintenance flags.
+     */
+    public function saveMobileAppSettings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'app_name' => ['nullable', 'string', 'max:60'],
+            'icon' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:1024'],
+            'remove_icon' => ['boolean'],
+            'push_enabled' => ['required', Rule::in(['0', '1'])],
+            'fcm_project_id' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9._-]+$/'],
+            'fcm_credentials_json' => ['nullable', 'string', 'max:20000'],
+            'clear_fcm_credentials' => ['boolean'],
+            'ios_app_version' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+(\.[0-9]+)*$/'],
+            'ios_min_version' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+(\.[0-9]+)*$/'],
+            'ios_app_url' => ['nullable', 'url:https,http', 'max:255'],
+            'android_app_version' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+(\.[0-9]+)*$/'],
+            'android_min_version' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+(\.[0-9]+)*$/'],
+            'android_app_url' => ['nullable', 'url:https,http', 'max:255'],
+            'app_force_update' => ['required', Rule::in(['0', '1'])],
+            'app_maintenance' => ['required', Rule::in(['0', '1'])],
+            'app_maintenance_message' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if (filled($validated['fcm_credentials_json'] ?? null)) {
+            json_decode($validated['fcm_credentials_json'], true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw ValidationException::withMessages(['fcm_credentials_json' => __('The service account must be valid JSON.')]);
+            }
+        }
+
+        foreach (['mobile_app_name' => 'app_name', 'fcm_project_id' => 'fcm_project_id', 'ios_app_version' => 'ios_app_version', 'ios_min_version' => 'ios_min_version', 'ios_app_url' => 'ios_app_url', 'android_app_version' => 'android_app_version', 'android_min_version' => 'android_min_version', 'android_app_url' => 'android_app_url', 'app_maintenance_message' => 'app_maintenance_message'] as $key => $field) {
+            Setting::put($key, filled($validated[$field] ?? null) ? trim((string) $validated[$field]) : null);
+        }
+
+        foreach (['push_enabled', 'app_force_update', 'app_maintenance'] as $key) {
+            Setting::put($key, $validated[$key]);
+        }
+
+        if ($request->boolean('clear_fcm_credentials')) {
+            Setting::putSecret('fcm_credentials_json', null);
+        } elseif (filled($validated['fcm_credentials_json'] ?? null)) {
+            Setting::putSecret('fcm_credentials_json', trim($validated['fcm_credentials_json']));
+        }
+
+        if ($request->boolean('remove_icon')) {
+            if ($old = Setting::get('mobile_app_icon_path')) {
+                Storage::disk('public')->delete($old);
+            }
+            Setting::put('mobile_app_icon_path', null);
+        }
+
+        if ($request->hasFile('icon')) {
+            if ($old = Setting::get('mobile_app_icon_path')) {
+                Storage::disk('public')->delete($old);
+            }
+            Setting::put('mobile_app_icon_path', $request->file('icon')->store('branding', 'public'));
+        }
+
+        activity('admin')->causedBy($request->user())->withProperties(collect($validated)->except(['icon', 'fcm_credentials_json'])->all())->log('mobile_app_settings_changed');
+
+        return back()->with('success', __('Mobile app settings saved.'));
     }
 
     public function saveGoogleSettings(Request $request): RedirectResponse

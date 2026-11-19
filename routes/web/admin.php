@@ -164,6 +164,7 @@ Route::middleware(['auth', 'verified', 'account:platform'])->prefix('admin')->na
         Route::post('settings/branding', [PlatformController::class, 'saveBrandingSettings'])->name('branding-settings.update');
         Route::post('settings/auth-media', [PlatformController::class, 'saveAuthMediaSettings'])->name('auth-media-settings.update');
         Route::put('settings/google', [PlatformController::class, 'saveGoogleSettings'])->name('google-settings.update');
+        Route::post('settings/mobile-app', [PlatformController::class, 'saveMobileAppSettings'])->name('mobile-app-settings.update');
         Route::put('settings/fonts', [TypographyController::class, 'update'])->name('font-settings.update');
         Route::post('settings/fonts/library', [TypographyController::class, 'store'])->middleware('throttle:20,1')->name('fonts.store');
         Route::delete('settings/fonts/library/{font}', [TypographyController::class, 'destroy'])->name('fonts.destroy');

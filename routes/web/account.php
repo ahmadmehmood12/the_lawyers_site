@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Account\AccountController;
+use App\Http\Controllers\Account\DeviceTokenController;
 use App\Http\Controllers\Account\FeedbackController;
 use App\Http\Controllers\Account\HomeRedirectController;
 use App\Http\Controllers\Account\NotificationController;
@@ -59,6 +60,9 @@ Route::middleware('auth')->group(function () {
     Route::post('account/sessions/logout-others', [AccountController::class, 'logoutOtherSessions'])->name('account.sessions.logout');
     Route::post('account/whatsapp-consent', [AccountController::class, 'giveWhatsAppConsent'])->middleware('throttle:10,1')->name('account.whatsapp-consent.store');
     Route::delete('account/whatsapp-consent', [AccountController::class, 'withdrawWhatsAppConsent'])->name('account.whatsapp-consent.destroy');
+    // Mobile app registers this device's push token (docs/Modules/Notifications.md).
+    Route::post('account/device-token', [DeviceTokenController::class, 'store'])->middleware('throttle:30,1')->name('account.device-token.store');
+    Route::delete('account/device-token', [DeviceTokenController::class, 'destroy'])->name('account.device-token.destroy');
     Route::post('account/deletion', [AccountController::class, 'requestDeletion'])->name('account.deletion.request');
     Route::delete('account/deletion', [AccountController::class, 'cancelDeletion'])->name('account.deletion.cancel');
 

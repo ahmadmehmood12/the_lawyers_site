@@ -24,7 +24,15 @@ const fileClasses = 'block w-full text-sm text-navy-700 file:me-3 file:rounded-m
 
 type GoogleSettings = { enabled: boolean; client_id: string; has_secret: boolean; configured: boolean; redirect_url: string };
 
-export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia, google, typography }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia; google: GoogleSettings; typography: TypographyPayload }) {
+type MobileApp = {
+    app_name: string; icon_url: string | null; push_enabled: boolean; push_ready: boolean;
+    fcm_project_id: string; has_fcm_credentials: boolean;
+    ios_app_version: string; ios_min_version: string; ios_app_url: string;
+    android_app_version: string; android_min_version: string; android_app_url: string;
+    force_update: boolean; maintenance: boolean; maintenance_message: string;
+};
+
+export default function Settings({ settings, plans, env, whatsapp, mail, branding, authMedia, google, mobileApp, typography }: { settings: Record<string, string | null>; plans: SelectOption[]; env: Record<string, string | boolean>; whatsapp: WhatsAppSettings; mail: MailSettings; branding: Branding; authMedia: AuthMedia; google: GoogleSettings; mobileApp: MobileApp; typography: TypographyPayload }) {
     const t = useT();
     const { auth } = usePage<SharedProps>().props;
     const brand = useForm<{ site_name: string; site_tagline: string; logo: File | null; favicon: File | null; remove_logo: boolean; remove_favicon: boolean; contact_email: string; contact_phone: string; contact_address: string } & Record<`social_${keyof Branding['social']}`, string>>({
@@ -57,6 +65,13 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
     });
     const testMail = useForm({ to: auth.user?.email ?? '' });
     const googleForm = useForm({ enabled: google.enabled ? '1' : '0', client_id: google.client_id, client_secret: '', clear_secret: false });
+    const appForm = useForm<{ app_name: string; icon: File | null; remove_icon: boolean; push_enabled: string; fcm_project_id: string; fcm_credentials_json: string; clear_fcm_credentials: boolean; ios_app_version: string; ios_min_version: string; ios_app_url: string; android_app_version: string; android_min_version: string; android_app_url: string; app_force_update: string; app_maintenance: string; app_maintenance_message: string }>({
+        app_name: mobileApp.app_name, icon: null, remove_icon: false,
+        push_enabled: mobileApp.push_enabled ? '1' : '0', fcm_project_id: mobileApp.fcm_project_id, fcm_credentials_json: '', clear_fcm_credentials: false,
+        ios_app_version: mobileApp.ios_app_version, ios_min_version: mobileApp.ios_min_version, ios_app_url: mobileApp.ios_app_url,
+        android_app_version: mobileApp.android_app_version, android_min_version: mobileApp.android_min_version, android_app_url: mobileApp.android_app_url,
+        app_force_update: mobileApp.force_update ? '1' : '0', app_maintenance: mobileApp.maintenance ? '1' : '0', app_maintenance_message: mobileApp.maintenance_message,
+    });
     const media = useForm<{ enabled: string; mode: string; heading: string; description: string; heading_ur: string; description_ur: string; image: File | null; video: File | null; poster: File | null; remove_image: boolean; remove_video: boolean; remove_poster: boolean }>({
         enabled: authMedia.enabled ? '1' : '0',
         mode: authMedia.mode,
@@ -92,6 +107,7 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
         { key: 'whatsapp', label: t('WhatsApp') },
         { key: 'typography', label: t('Typography') },
         { key: 'signin', label: t('Sign-in page') },
+        { key: 'mobile', label: t('Mobile app') },
     ];
     const [tab, setTab] = useState(() => {
         const requested = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
@@ -264,6 +280,76 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                         </div>
                         <p className="text-xs text-navy-500 dark:text-navy-400">{t('With nothing uploaded, the panel shows a real screenshot of the advocate dashboard.')}</p>
                         <Button loading={media.processing} onClick={() => media.post(route('admin.auth-media-settings.update'), { preserveScroll: true, forceFormData: true, onSuccess: () => media.reset('image', 'video', 'poster', 'remove_image', 'remove_video', 'remove_poster') })}>{t('Save sign-in page')}</Button>
+                    </CardBody>
+                </Card>
+                </div>
+            )}
+
+            {tab === 'mobile' && (
+                <div className="grid items-start gap-6 lg:grid-cols-2">
+                <Card>
+                    <CardHeader title={t('Mobile app')} description={t('Identity and store details for the companion iOS and Android apps. The apps read this from /api/app/config on launch.')} />
+                    <CardBody className="space-y-5">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Input label={t('App name')} value={appForm.data.app_name} onChange={(e) => appForm.setData('app_name', e.target.value)} error={appForm.errors.app_name} placeholder={branding.site_name} hint={t('Shown in the app. Defaults to the site name.')} />
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-navy-800 dark:text-navy-200">{t('App icon')}</p>
+                                <div className="flex items-center gap-3">
+                                    {mobileApp.icon_url && <img src={mobileApp.icon_url} alt="" className="size-12 rounded-xl border border-navy-100 bg-white object-cover p-0.5 dark:border-navy-700" />}
+                                    <input type="file" accept="image/png,image/jpeg,image/webp" className={fileClasses} aria-label={t('App icon')} onChange={(e) => appForm.setData('icon', e.target.files?.[0] ?? null)} />
+                                </div>
+                                <p className="text-xs text-navy-500 dark:text-navy-400">{t('Square PNG, at least 512 × 512, up to 1 MB.')}</p>
+                                {appForm.errors.icon && <p className="text-xs text-red-600">{appForm.errors.icon}</p>}
+                                {mobileApp.icon_url && <Checkbox label={t('Remove the current icon')} checked={appForm.data.remove_icon} onChange={(e) => appForm.setData('remove_icon', e.target.checked)} />}
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border border-navy-100 p-4 dark:border-navy-800">
+                            <div className="mb-3 flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-navy-900 dark:text-white">{t('iOS')}</p>
+                                {mobileApp.ios_app_url && <Badge tone="green">{t('Linked')}</Badge>}
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                <Input label={t('Current version')} value={appForm.data.ios_app_version} onChange={(e) => appForm.setData('ios_app_version', e.target.value)} error={appForm.errors.ios_app_version} placeholder="1.0.0" />
+                                <Input label={t('Minimum supported')} value={appForm.data.ios_min_version} onChange={(e) => appForm.setData('ios_min_version', e.target.value)} error={appForm.errors.ios_min_version} placeholder="1.0.0" hint={t('Below this, the app asks users to update.')} />
+                                <Input wrapperClassName="sm:col-span-3" label={t('App Store link')} value={appForm.data.ios_app_url} onChange={(e) => appForm.setData('ios_app_url', e.target.value)} error={appForm.errors.ios_app_url} placeholder="https://apps.apple.com/app/id..." />
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border border-navy-100 p-4 dark:border-navy-800">
+                            <div className="mb-3 flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-navy-900 dark:text-white">{t('Android')}</p>
+                                {appForm.data.android_app_url && <Badge tone="green">{t('Linked')}</Badge>}
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                <Input label={t('Current version')} value={appForm.data.android_app_version} onChange={(e) => appForm.setData('android_app_version', e.target.value)} error={appForm.errors.android_app_version} placeholder="1.0.0" />
+                                <Input label={t('Minimum supported')} value={appForm.data.android_min_version} onChange={(e) => appForm.setData('android_min_version', e.target.value)} error={appForm.errors.android_min_version} placeholder="1.0.0" hint={t('Below this, the app asks users to update.')} />
+                                <Input wrapperClassName="sm:col-span-3" label={t('Play Store link')} value={appForm.data.android_app_url} onChange={(e) => appForm.setData('android_app_url', e.target.value)} error={appForm.errors.android_app_url} placeholder="https://play.google.com/store/apps/details?id=..." />
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Select label={t('Force update below minimum')} value={appForm.data.app_force_update} onChange={(e) => appForm.setData('app_force_update', e.target.value)} options={yesNo} hint={t('Block older versions until the user updates.')} />
+                            <Select label={t('Maintenance mode')} value={appForm.data.app_maintenance} onChange={(e) => appForm.setData('app_maintenance', e.target.value)} options={yesNo} hint={t('Show a maintenance screen in the app.')} />
+                            <Textarea wrapperClassName="sm:col-span-2" label={t('Maintenance message')} rows={2} value={appForm.data.app_maintenance_message} onChange={(e) => appForm.setData('app_maintenance_message', e.target.value)} error={appForm.errors.app_maintenance_message} maxLength={255} placeholder={t('We are upgrading Wakeel Diary. Please check back shortly.')} />
+                        </div>
+
+                        <Button loading={appForm.processing} onClick={() => appForm.post(route('admin.mobile-app-settings.update'), { preserveScroll: true, forceFormData: true, onSuccess: () => appForm.reset('icon', 'remove_icon', 'fcm_credentials_json', 'clear_fcm_credentials') })}>{t('Save mobile app')}</Button>
+                    </CardBody>
+                </Card>
+
+                <Card>
+                    <CardHeader title={t('Push notifications')} description={t('Firebase Cloud Messaging (FCM) delivers push to the mobile apps. Enter the project and service account, then switch push on.')}
+                        actions={<Badge tone={mobileApp.push_ready ? 'green' : 'amber'}>{mobileApp.push_ready ? t('Ready') : t('Not configured')}</Badge>} />
+                    <CardBody className="space-y-4">
+                        <Select label={t('Enable push notifications')} value={appForm.data.push_enabled} onChange={(e) => appForm.setData('push_enabled', e.target.value)} options={yesNo} />
+                        <Input label={t('FCM project ID')} value={appForm.data.fcm_project_id} onChange={(e) => appForm.setData('fcm_project_id', e.target.value)} error={appForm.errors.fcm_project_id} placeholder="wakeel-diary" />
+                        <Textarea label={t('Service account JSON')} rows={5} value={appForm.data.fcm_credentials_json} onChange={(e) => appForm.setData('fcm_credentials_json', e.target.value)} error={appForm.errors.fcm_credentials_json}
+                            hint={mobileApp.has_fcm_credentials ? t('Saved and encrypted. Leave blank to keep it.') : t('Paste the Firebase service account JSON (Project settings → Service accounts). Stored encrypted; never shown again.')} />
+                        {mobileApp.has_fcm_credentials && <Checkbox label={t('Remove the saved service account')} checked={appForm.data.clear_fcm_credentials} onChange={(e) => appForm.setData('clear_fcm_credentials', e.target.checked)} />}
+                        {appForm.data.push_enabled === '1' && !mobileApp.push_ready && <Alert tone="warning">{t('Add the project ID and service account before push can be sent.')}</Alert>}
+                        <p className="text-xs text-navy-500 dark:text-navy-400">{t('Each device registers its token at POST /account/device-token after sign-in; tokens are stored per user.')}</p>
+                        <Button loading={appForm.processing} onClick={() => appForm.post(route('admin.mobile-app-settings.update'), { preserveScroll: true, forceFormData: true, onSuccess: () => appForm.reset('icon', 'remove_icon', 'fcm_credentials_json', 'clear_fcm_credentials') })}>{t('Save push settings')}</Button>
                     </CardBody>
                 </Card>
                 </div>

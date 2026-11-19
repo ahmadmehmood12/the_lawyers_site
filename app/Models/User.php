@@ -22,8 +22,8 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'phone', 'avatar_path', 'password', 'account_type', 'locale', 'theme', 'referral_code', 'coupon_code'])]
-#[Hidden(['password', 'google_id', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+#[Fillable(['name', 'email', 'phone', 'avatar_path', 'password', 'account_type', 'locale', 'theme', 'referral_code', 'coupon_code', 'fcm_token', 'fcm_platform'])]
+#[Hidden(['password', 'google_id', 'fcm_token', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -49,6 +49,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'status' => UserStatus::class,
             'whatsapp_consent_at' => 'datetime',
             'whatsapp_consent_revoked_at' => 'datetime',
+            'fcm_token_updated_at' => 'datetime',
         ];
     }
 

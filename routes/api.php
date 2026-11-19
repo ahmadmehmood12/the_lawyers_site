@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\JudgmentImportController;
 use App\Http\Controllers\Webhooks\GreenApiWebhookController;
 use App\Http\Controllers\Webhooks\PaymentWebhookController;
@@ -26,3 +27,9 @@ Route::post('webhooks/stripe', StripeWebhookController::class)->middleware('thro
 Route::post('judgments/import', JudgmentImportController::class)
     ->middleware([EnsureJudgmentImportToken::class, 'throttle:600,1'])
     ->name('api.judgments.import');
+
+/*
+| Public configuration the companion mobile apps fetch on launch
+| (app name/icon, iOS/Android versions + store links, flags). No secrets.
+*/
+Route::get('app/config', AppConfigController::class)->middleware('throttle:120,1')->name('api.app.config');
