@@ -10,22 +10,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /** A judgment approved for reporting by a High Court (or the Supreme Court). */
-#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'other_citation', 'sc_citation', 'cited_citations', 'tag_line', 'remarks', 'decision_date', 'uploaded_on', 'pdf_path', 'source_url', 'slug', 'is_published', 'is_reported'])]
+#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'other_citation', 'sc_citation', 'cited_citations', 'tag_line', 'remarks', 'summary', 'decision_date', 'uploaded_on', 'pdf_path', 'source_url', 'slug', 'is_published', 'is_reported'])]
 class ReportedJudgment extends Model
 {
     /** @var array<string, array{name: string, short: string, province: string}> */
     public const COURTS = [
+        'scp' => ['name' => 'Supreme Court of Pakistan', 'short' => 'SCP', 'province' => 'Pakistan'],
+        'fcc' => ['name' => 'Federal Constitutional Court', 'short' => 'FCC', 'province' => 'Pakistan'],
+        'fsc' => ['name' => 'Federal Shariat Court', 'short' => 'FSC', 'province' => 'Pakistan'],
         'lhc' => ['name' => 'Lahore High Court', 'short' => 'LHC', 'province' => 'Punjab'],
         'shc' => ['name' => 'Sindh High Court', 'short' => 'SHC', 'province' => 'Sindh'],
         'phc' => ['name' => 'Peshawar High Court', 'short' => 'PHC', 'province' => 'Khyber Pakhtunkhwa'],
         'bhc' => ['name' => 'Balochistan High Court', 'short' => 'BHC', 'province' => 'Balochistan'],
         'ihc' => ['name' => 'Islamabad High Court', 'short' => 'IHC', 'province' => 'Islamabad Capital Territory'],
-        'scp' => ['name' => 'Supreme Court of Pakistan', 'short' => 'SCP', 'province' => 'Pakistan'],
     ];
 
     protected function casts(): array
     {
-        return ['cited_citations' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'is_reported' => 'boolean', 'views' => 'integer'];
+        return ['cited_citations' => 'array', 'summary' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'is_reported' => 'boolean', 'views' => 'integer'];
     }
 
     protected static function booted(): void
@@ -71,7 +73,7 @@ class ReportedJudgment extends Model
     public function toListItem(): array
     {
         return [
-            'id' => $this->id, 'slug' => $this->slug, 'court' => $this->court, 'court_name' => self::COURTS[$this->court]['name'] ?? $this->court,
+            'id' => $this->id, 'slug' => $this->slug, 'court' => $this->court, 'court_name' => self::COURTS[$this->court]['name'] ?? strtoupper((string) $this->court), 'court_short' => self::COURTS[$this->court]['short'] ?? strtoupper((string) $this->court),
             'case_type' => $this->case_type, 'case_number' => $this->case_number, 'title' => $this->title, 'judges' => $this->judges,
             'citation' => $this->citation, 'other_citation' => $this->other_citation, 'sc_citation' => $this->sc_citation, 'cited_citations' => array_values($this->cited_citations ?? []), 'tag_line' => $this->tag_line,
             // Lists show the start of the remarks (PHC headnotes run to several paragraphs); the detail page sends it whole.

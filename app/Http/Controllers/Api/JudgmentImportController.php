@@ -33,6 +33,17 @@ class JudgmentImportController extends Controller
             'other_citation' => ['nullable', 'string', 'max:120'],
             'sc_citation' => ['nullable', 'string', 'max:120'],
             'remarks' => ['nullable', 'string', 'max:60000'],
+            'summary' => ['nullable', 'array'],
+            'summary.overview' => ['nullable', 'string', 'max:5000'],
+            'summary.facts' => ['nullable', 'string', 'max:10000'],
+            'summary.issues' => ['nullable', 'array', 'max:30'],
+            'summary.issues.*' => ['string', 'max:2000'],
+            'summary.held' => ['nullable', 'string', 'max:10000'],
+            'summary.reasoning' => ['nullable', 'string', 'max:20000'],
+            'summary.laws' => ['nullable', 'array', 'max:60'],
+            'summary.laws.*' => ['string', 'max:500'],
+            'summary.outcome' => ['nullable', 'string', 'max:1000'],
+            'summary.model' => ['nullable', 'string', 'max:80'],
             'cited_citations' => ['nullable', 'array', 'max:200'],
             'cited_citations.*' => ['string', 'max:120'],
             'tag_line' => ['nullable', 'string', 'max:2000'],
@@ -48,6 +59,7 @@ class JudgmentImportController extends Controller
         $court = $data['court'] ?? 'lhc';
         $data['citation'] = filled($data['citation'] ?? null) ? trim($data['citation']) : ReportedJudgment::citationFromPdfUrl($data['pdf_path']);
         $data['cited_citations'] = array_values(array_unique(array_filter(array_map('trim', $data['cited_citations'] ?? [])))) ?: null;
+        $data['summary'] = $this->summary($data['summary'] ?? null);
         $existing = $this->findDuplicate($data, $court);
 
         if ($existing instanceof ReportedJudgment) {
@@ -75,6 +87,7 @@ class JudgmentImportController extends Controller
             'other_citation' => filled($data['other_citation'] ?? null) ? trim($data['other_citation']) : null,
             'remarks' => filled($data['remarks'] ?? null) ? trim($data['remarks']) : null,
             'sc_citation' => filled($data['sc_citation'] ?? null) ? trim($data['sc_citation']) : null,
+            'summary' => $data['summary'],
             'uploaded_on' => $data['uploaded_on'],
             'pdf_path' => $data['pdf_path'],
             'source_url' => $data['source_url'],
@@ -122,7 +135,7 @@ class JudgmentImportController extends Controller
                 "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(case_number, '-', ''), '/', ''), '.', ''), ' ', ''), '(', ''), ')', '')) = ?",
                 [$caseNumber],
             )
-            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'is_reported'])
+            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'summary', 'is_reported'])
             ->first(fn (ReportedJudgment $row) => $this->normalize($row->title) === $title);
     }
 
@@ -133,7 +146,7 @@ class JudgmentImportController extends Controller
     {
         $updates = [];
 
-        foreach (['pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations'] as $field) {
+        foreach (['pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'summary'] as $field) {
             if (blank($judgment->getAttribute($field)) && filled($data[$field] ?? null)) {
                 $updates[$field] = $data[$field];
             }
@@ -174,6 +187,21 @@ class JudgmentImportController extends Controller
         }
 
         return $slug;
+    }
+
+    /**
+     * Only the known summary keys are kept (AI output from the scrapers).
+     *
+     * @param  array<string, mixed>|null  $summary
+     * @return array<string, mixed>|null
+     */
+    private function summary(?array $summary): ?array
+    {
+        if (! $summary || blank($summary['overview'] ?? null)) {
+            return null;
+        }
+
+        return [...collect($summary)->only(['overview', 'facts', 'issues', 'held', 'reasoning', 'laws', 'outcome', 'model'])->all(), 'generated_at' => now()->toDateString()];
     }
 
     private function normalize(string $value): string

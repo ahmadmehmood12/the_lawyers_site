@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { ArrowLeft, Download, ExternalLink, FileText } from 'lucide-react';
+import { JudgmentRemarks, JudgmentSummary, type JudgmentSummaryData } from '@/Components/domain/JudgmentSummary';
 import { Card, CardHeader } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
@@ -7,8 +8,8 @@ import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Judgment } from './Index';
 
-/** One reported judgment: details, the PDF and more from the same bench. */
-export default function JudgmentShow({ judgment: j, related, canonical, embedded = null }: { judgment: Judgment; related: Judgment[]; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
+/** One reported judgment: the PDF first, then the AI summary, tag line and remarks; details and more from the same bench at the side. */
+export default function JudgmentShow({ judgment: j, related, canonical, embedded = null }: { judgment: Judgment & { summary?: JudgmentSummaryData | null }; related: Judgment[]; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
     const { locale } = useLocale();
     const indexRoute = embedded === 'workspace' ? 'judgments.workspace.index' : 'judgments.index';
@@ -22,18 +23,16 @@ export default function JudgmentShow({ judgment: j, related, canonical, embedded
             <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
                 <Link href={route(indexRoute, { court: j.court })} className="inline-flex items-center gap-1.5 text-sm text-navy-600 hover:underline dark:text-navy-300"><ArrowLeft className="size-4 rtl:rotate-180" />{j.court_name}</Link>
                 <h1 className="mt-3 font-serif text-3xl font-semibold leading-tight sm:text-4xl">{j.title}</h1>
-                <p className="mt-2 text-lg text-navy-600 dark:text-navy-300">{j.case_type} {j.case_number} · {t('by')} {j.judges}</p>
+                <p className="mt-2 text-lg text-navy-600 dark:text-navy-300"><span className="me-2 inline-flex rounded bg-navy-900 px-1.5 py-0.5 align-middle text-xs font-semibold uppercase tracking-wide text-white dark:bg-gold-500 dark:text-navy-950">{j.court_short}</span>{j.court_name} · {j.case_type} {j.case_number} · {t('by')} {j.judges}</p>
                 <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
                     <div className="space-y-6">
-                        {j.tag_line && <blockquote className="rounded-card border-s-4 border-gold-500 bg-gold-50/60 px-5 py-4 text-lg italic leading-relaxed text-navy-800 dark:bg-gold-500/10 dark:text-navy-100">{j.tag_line}</blockquote>}
-                        {j.remarks && (
-                            <section className="rounded-card border border-navy-100 bg-white p-5 dark:border-navy-800 dark:bg-navy-900">
-                                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-navy-500">{t('Remarks')}</h2>
-                                <div className="whitespace-pre-line text-[15px] leading-relaxed text-navy-800 dark:text-navy-100">{j.remarks}</div>
-                            </section>
-                        )}
                         {j.pdf_url ? (
                             <div className="overflow-hidden rounded-card border border-navy-100 dark:border-navy-800">
+                                {/* Some court servers refuse to show their PDFs inside other sites; the direct link always works. */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-navy-100 bg-navy-50 px-4 py-2 text-sm dark:border-navy-800 dark:bg-navy-900">
+                                    <span className="flex items-center gap-2 text-navy-600 dark:text-navy-300"><FileText className="size-4 text-red-600" />{t('Judgment PDF')}</span>
+                                    <a href={j.pdf_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-medium text-navy-900 hover:underline dark:text-gold-300">{t('Not showing? Open the PDF')}<ExternalLink className="size-3.5" /></a>
+                                </div>
                                 <iframe src={j.pdf_url} title={j.title} className="h-[80dvh] w-full bg-white" />
                             </div>
                         ) : (
@@ -47,6 +46,10 @@ export default function JudgmentShow({ judgment: j, related, canonical, embedded
                                 ) : <p className="mt-3 font-medium">{t('The full text is not available here yet.')}</p>}
                             </div>
                         )}
+                        {/* Below the PDF: the AI summary, then the court's own tag line and remarks. */}
+                        {j.summary?.overview && <JudgmentSummary summary={j.summary} />}
+                        {j.tag_line && <blockquote className="rounded-card border-s-4 border-gold-500 bg-gold-50/60 px-5 py-4 text-lg italic leading-relaxed text-navy-800 dark:bg-gold-500/10 dark:text-navy-100"><span className="mb-1 block text-xs font-semibold not-italic uppercase tracking-wide text-gold-700 dark:text-gold-300">{t('Tag line')}</span>{j.tag_line}</blockquote>}
+                        {j.remarks && <JudgmentRemarks remarks={j.remarks} />}
                     </div>
                     <div className="space-y-6 lg:sticky lg:top-24">
                         <Card>

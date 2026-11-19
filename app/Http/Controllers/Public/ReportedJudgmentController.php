@@ -46,7 +46,7 @@ class ReportedJudgmentController extends Controller
         $judgment->increment('views');
 
         return Inertia::render('Public/Judgments/Show', [
-            'judgment' => [...$judgment->toListItem(), 'remarks' => $judgment->remarks],
+            'judgment' => [...$judgment->toListItem(), 'remarks' => $judgment->remarks, 'summary' => $judgment->summary],
             'related' => ReportedJudgment::query()->listed()->where('court', $judgment->court)->whereKeyNot($judgment->id)
                 ->where('judges', $judgment->judges)->latest('uploaded_on')->limit(5)->get()->map->toListItem(),
             'canonical' => route('judgments.show', $judgment),
