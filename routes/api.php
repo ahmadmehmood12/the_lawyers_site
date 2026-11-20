@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\JudgmentImportController;
+use App\Http\Controllers\Api\JudgmentTextController;
 use App\Http\Controllers\Webhooks\GreenApiWebhookController;
 use App\Http\Controllers\Webhooks\PaymentWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
@@ -27,6 +28,11 @@ Route::post('webhooks/stripe', StripeWebhookController::class)->middleware('thro
 Route::post('judgments/import', JudgmentImportController::class)
     ->middleware([EnsureJudgmentImportToken::class, 'throttle:600,1'])
     ->name('api.judgments.import');
+
+// The scrapers' PDF text indexer sends extracted page text + keywords (phrase/keyword search).
+Route::post('judgments/text', JudgmentTextController::class)
+    ->middleware([EnsureJudgmentImportToken::class, 'throttle:600,1'])
+    ->name('api.judgments.text');
 
 /*
 | Public configuration the companion mobile apps fetch on launch

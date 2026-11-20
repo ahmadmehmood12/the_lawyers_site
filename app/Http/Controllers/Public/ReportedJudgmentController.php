@@ -7,6 +7,7 @@ use App\Models\ReportedJudgment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,14 +17,24 @@ class ReportedJudgmentController extends Controller
     public function index(Request $request, ?string $embedded = null): Response
     {
         $court = array_key_exists((string) $request->query('court'), ReportedJudgment::COURTS) ? (string) $request->query('court') : null;
-        $filters = $request->only(['court', 'year', 'judge', 'citation', 'case', 'title', 'decided_from', 'decided_to', 'uploaded_from', 'uploaded_to']);
+        $filters = $request->only(['court', 'year', 'judge', 'citation', 'case', 'title', 'text', 'decided_from', 'decided_to', 'uploaded_from', 'uploaded_to']);
+
+        // Full-text / keyword search over the extracted PDF text (judgment_pages + judgment_keywords).
+        $textMatch = filled($filters['text'] ?? null) ? self::textMatch((string) $filters['text']) : null;
 
         $judgments = self::filtered(ReportedJudgment::query()->listed(), $filters)
+            ->when($textMatch !== null, fn ($q) => $q->whereIn('id', $textMatch['ids'] ?: [0]))
+            // A text search ranks by relevance (most relevant judgment first); other searches are newest first.
+            ->when($textMatch !== null && $textMatch['ids'] !== [], fn ($q) => $q->orderByRaw('FIELD(id, '.implode(',', $textMatch['ids']).') ASC'))
             // Searching a citation shows that judgment first, then the judgments that cite it.
             ->when(filled($filters['citation'] ?? null), fn ($q) => $q->orderByRaw('('.self::compactColumn('citation').' = ? OR '.self::compactColumn('other_citation').' = ? OR '.self::compactColumn('sc_citation').' = ?) DESC', array_fill(0, 3, self::compactCitation((string) $filters['citation']))))
             ->orderByDesc('uploaded_on')->orderByDesc('id')
             ->paginate(25)->withQueryString()
-            ->through(fn (ReportedJudgment $j) => $j->toListItem());
+            ->through(fn (ReportedJudgment $j) => $textMatch === null ? $j->toListItem() : [
+                ...$j->toListItem(),
+                'match_pages' => $textMatch['pages'][$j->id] ?? [],
+                'match_keywords' => $textMatch['keywords'][$j->id] ?? [],
+            ]);
 
         $counts = Cache::remember('judgment-counts', now()->addMinutes(10), fn () => ReportedJudgment::query()->listed()
             ->selectRaw('court, COUNT(*) as total')->groupBy('court')->pluck('total', 'court')->all());
@@ -46,7 +57,12 @@ class ReportedJudgmentController extends Controller
         $judgment->increment('views');
 
         return Inertia::render('Public/Judgments/Show', [
-            'judgment' => [...$judgment->toListItem(), 'remarks' => $judgment->remarks, 'summary' => $judgment->summary],
+            'judgment' => [
+                ...$judgment->toListItem(),
+                'remarks' => $judgment->remarks,
+                'summary' => $judgment->summary,
+                'keywords' => $judgment->keywords()->orderByDesc('frequency')->limit(24)->pluck('keyword'),
+            ],
             'related' => ReportedJudgment::query()->listed()->where('court', $judgment->court)->whereKeyNot($judgment->id)
                 ->where('judges', $judgment->judges)->latest('uploaded_on')->limit(5)->get()->map->toListItem(),
             'canonical' => route('judgments.show', $judgment),
@@ -84,6 +100,76 @@ class ReportedJudgmentController extends Controller
             ->when(filled($f['decided_to'] ?? null), fn ($q) => $q->whereDate('decision_date', '<=', $f['decided_to']))
             ->when(filled($f['uploaded_from'] ?? null), fn ($q) => $q->whereDate('uploaded_on', '>=', $f['uploaded_from']))
             ->when(filled($f['uploaded_to'] ?? null), fn ($q) => $q->whereDate('uploaded_on', '<=', $f['uploaded_to']));
+    }
+
+    /**
+     * Search the extracted PDF text and keywords for a phrase or keywords. Returns the matching
+     * judgment ids (most relevant first), the pages each phrase hit, and the keywords that matched.
+     * Phrases wrapped in "quotes" are matched as exact phrases; bare words must all appear (AND).
+     *
+     * @return array{ids: list<int>, pages: array<int, list<int>>, keywords: array<int, list<string>>}
+     */
+    public static function textMatch(string $query): array
+    {
+        $query = trim($query);
+        $phrases = [];
+        preg_match_all('/"([^"]+)"/', $query, $quoted);
+        foreach ($quoted[1] as $phrase) {
+            $clean = trim(preg_replace('/[+\-><()~*@"]+/', ' ', $phrase) ?? '');
+            if ($clean !== '') {
+                $phrases[] = $clean;
+            }
+        }
+        $rest = preg_replace('/"[^"]*"/', ' ', $query) ?? '';
+        $words = array_values(array_filter(preg_split('/\s+/', preg_replace('/[+\-><()~*@"]+/', ' ', $rest) ?? '') ?: [], fn ($w) => mb_strlen($w) >= 2));
+
+        $terms = [...array_map(fn ($p) => '"'.$p.'"', $phrases), ...array_map(fn ($w) => '+'.$w.'*', $words)];
+        if ($terms === []) {
+            return ['ids' => [], 'pages' => [], 'keywords' => []];
+        }
+        $boolean = implode(' ', $terms);
+
+        // Pages whose text matches, with a relevance score and the page numbers that hit (capped for the listing).
+        $pageRows = DB::table('judgment_pages')
+            ->selectRaw('reported_judgment_id AS jid, MAX(MATCH(body) AGAINST(? IN BOOLEAN MODE)) AS score, GROUP_CONCAT(page_number ORDER BY page_number) AS pages', [$boolean])
+            ->whereRaw('MATCH(body) AGAINST(? IN BOOLEAN MODE)', [$boolean])
+            ->groupBy('reported_judgment_id')
+            ->limit(500)
+            ->get();
+
+        $scores = [];
+        $pages = [];
+        foreach ($pageRows as $row) {
+            $scores[(int) $row->jid] = (float) $row->score;
+            $pages[(int) $row->jid] = array_slice(array_map('intval', explode(',', (string) $row->pages)), 0, 20);
+        }
+
+        // Exact keyword matches (supplementary): a stored keyword equals a search word or contains a phrase.
+        $keywords = [];
+        $kwQuery = DB::table('judgment_keywords')
+            ->selectRaw('reported_judgment_id AS jid, GROUP_CONCAT(DISTINCT keyword) AS kws')
+            ->where(function ($w) use ($words, $phrases) {
+                if ($words !== []) {
+                    $w->orWhereIn('keyword', array_map(fn ($word) => mb_strtolower($word), $words));
+                }
+                foreach ([...$phrases, ...$words] as $term) {
+                    $w->orWhere('keyword', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], mb_strtolower($term)).'%');
+                }
+            })
+            ->groupBy('reported_judgment_id')
+            ->limit(500)
+            ->get();
+
+        foreach ($kwQuery as $row) {
+            $jid = (int) $row->jid;
+            $keywords[$jid] = array_slice(array_values(array_unique(array_filter(explode(',', (string) $row->kws)))), 0, 12);
+            $scores[$jid] = ($scores[$jid] ?? 0) + 0.5; // a keyword hit alone still qualifies the judgment
+        }
+
+        arsort($scores);
+        $ids = array_map('intval', array_keys($scores));
+
+        return ['ids' => $ids, 'pages' => $pages, 'keywords' => $keywords];
     }
 
     /** Court names in law report citations, compared in their short form ("PLD 2026 Lahore 172" = "PLD 2026 Lah. 172"). */

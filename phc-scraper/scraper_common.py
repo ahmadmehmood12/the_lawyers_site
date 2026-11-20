@@ -32,6 +32,7 @@ from pypdf import PdfReader
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+import text_indexer
 from import_state import ImportState
 from judgment_summary import Summarizer
 
@@ -76,6 +77,9 @@ class JudgmentRecord:
     pdf_path: str
     source_url: str
     slug: str
+    bench: bool = False
+    apex_court_case: str | None = None
+    apex_court_status: str | None = None
     citation: str | None = None
     other_citation: str | None = None
     sc_citation: str | None = None
@@ -308,7 +312,7 @@ class JsonCache:
 class Pipeline:
     """Shared steps after a scraper has collected its records."""
 
-    def __init__(self, settings: Settings, storage: Path, *, read_pdfs: bool = True, summaries: bool = True) -> None:
+    def __init__(self, settings: Settings, storage: Path, *, read_pdfs: bool = True, summaries: bool = True, index_text: bool = False) -> None:
         self.settings = settings
         self.storage = storage
         self.read_pdfs = read_pdfs
@@ -316,6 +320,10 @@ class Pipeline:
         self.state = ImportState(storage / "state.json")
         self.citations = JsonCache(storage / "pdf_citations.json")
         self.summarizer = Summarizer(storage / "summaries.json", enabled=summaries)
+        self.index_text = index_text
+        # The text endpoint sits beside the import endpoint (/api/judgments/import -> /api/judgments/text).
+        self.text_url = re.sub(r"/import/?$", "/text", settings.import_url) if settings.import_url else ""
+        self.text_results: dict[str, text_indexer.TextResult] = {}
 
     def pending(self, records: list[JudgmentRecord], resend: bool = False) -> list[JudgmentRecord]:
         """Judgments the site does not have yet, oldest decision first (today's go in last)."""
@@ -329,18 +337,24 @@ class Pipeline:
         cited = extract_citations(" ".join(filter(None, [record.tag_line, record.remarks])))
         cached = self.citations.data.get(record.pdf_path)
         summary = self.summarizer.cached(record.pdf_path)
-        needs_text = (self.read_pdfs and cached is None) or (self.summarizer.enabled and summary is None)
+        wants_index = self.index_text and record.pdf_path not in self.text_results and not self.state.is_indexed(record.pdf_path)
+        needs_text = (self.read_pdfs and cached is None) or (self.summarizer.enabled and summary is None) or wants_index
 
         text = ""
         if needs_text:
             time.sleep(self.settings.delay)
+            content = b""
             try:
-                text = read_pdf_text(download_pdf(self.session, self.settings, record.pdf_path))
+                content = download_pdf(self.session, self.settings, record.pdf_path)
+                text = read_pdf_text(content)
             except Exception as exc:  # noqa: BLE001 - one unreadable PDF must not stop the run
                 logger.warning("Could not read PDF %s: %s", record.pdf_path, exc)
             if cached is None and text:
                 cached = {"cited": extract_citations(text)}
                 self.citations.data[record.pdf_path] = cached
+            # Full page-by-page text + keywords for phrase/keyword search, from the same download.
+            if content and wants_index:
+                self.text_results[record.pdf_path] = text_indexer.extract(content)
 
         cited += [str(c) for c in (cached or {}).get("cited") or []]
         unique: list[str] = []
@@ -362,6 +376,35 @@ class Pipeline:
         self.citations.save()
         self.summarizer.save()
         self.state.save()
+
+    def send_text(self, record: JudgmentRecord) -> None:
+        """POST a judgment's extracted page text + keywords to the site's /text endpoint (idempotent)."""
+        result = self.text_results.get(record.pdf_path)
+        if result is None or not result.pages or not self.text_url:
+            return
+
+        payload = {
+            "pdf_path": record.pdf_path,
+            "ocr_used": result.ocr_used,
+            "status": result.status,
+            "pages": [{"page": number, "body": body} for number, body in result.pages],
+            "keywords": [{"keyword": keyword[:190], "frequency": frequency} for keyword, frequency in result.keywords],
+        }
+        headers = {"Authorization": f"Bearer {self.settings.import_token}", "Accept": "application/json"}
+        try:
+            response = self.session.post(self.text_url, json=payload, headers=headers, timeout=120)
+        except requests.RequestException as exc:
+            logger.warning("Text index POST failed for %s: %s", record.case_number, exc)
+            return
+
+        if response.status_code == 200:
+            self.state.mark_indexed(record.pdf_path)
+            body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+            logger.info("    Indexed text: %s pages, %s keywords%s.", body.get("pages", "?"), body.get("keywords", "?"), " (OCR)" if result.ocr_used else "")
+        elif response.status_code == 404:
+            logger.warning("Text index: no judgment yet for %s (metadata import must land first).", record.case_number)
+        else:
+            logger.warning("Text index failed for %s: HTTP %s %s", record.case_number, response.status_code, response.text[:200])
 
     def post(self, payload: dict[str, object]) -> tuple[str, str | None]:
         """POST one judgment. Returns ("imported"|"duplicate"|"failed", error)."""
@@ -409,6 +452,8 @@ class Pipeline:
             logger.info("AI summaries on (model %s, effort %s).", self.summarizer.model, self.summarizer.effort)
         elif not os.getenv("ANTHROPIC_API_KEY"):
             logger.info("AI summaries off: set ANTHROPIC_API_KEY in .env to turn them on.")
+        if self.index_text:
+            logger.info("PDF text indexing on (phrase/keyword search)%s.", "" if text_indexer.ocr_available() else "; OCR unavailable (install tesseract for scanned judgments)")
 
         if dry_run:
             enriched = []
@@ -419,7 +464,7 @@ class Pipeline:
                     self.summarizer.save()
             self.citations.save()
             self.summarizer.save()
-            report_dry_run(found, enriched, groups, self.state, output or self.storage / "dry-run-results.json")
+            report_dry_run(found, enriched, groups, self.state, output or self.storage / "dry-run-results.json", self.text_results)
             return 0
 
         if not self.settings.import_url or not self.settings.import_token:
@@ -438,6 +483,8 @@ class Pipeline:
             else:
                 self.state.mark(record.pdf_path)
                 logger.info("[%d/%d] %s: %s %s (%s)", index, len(new), status.capitalize(), record.case_type, record.case_number, record.decision_date or "no date")
+                if self.index_text:
+                    self.send_text(record)
             if index % 25 == 0:
                 self.save_caches()
 
@@ -447,7 +494,7 @@ class Pipeline:
         return 1 if counts["failed"] else 0
 
 
-def report_dry_run(found: list[JudgmentRecord], shown: list[JudgmentRecord], groups: dict[str, int], state: ImportState, target: Path) -> None:
+def report_dry_run(found: list[JudgmentRecord], shown: list[JudgmentRecord], groups: dict[str, int], state: ImportState, target: Path, text_results: dict[str, "text_indexer.TextResult"] | None = None) -> None:
     """Full counts first, then each judgment that would be imported, and all fields saved to JSON."""
     print(f"\n=== {len(found)} judgments found; {sum(1 for r in found if state.is_imported(r.pdf_path))} already imported; {len(found) - sum(1 for r in found if state.is_imported(r.pdf_path))} new ===")
     if groups:
@@ -458,7 +505,9 @@ def report_dry_run(found: list[JudgmentRecord], shown: list[JudgmentRecord], gro
     for index, record in enumerate(shown or [], start=1):
         print(f"\n[{index}] {record.case_type} | {record.case_number}   [{'reported' if record.is_reported else 'unreported'}]")
         print(f"    Title:      {record.title}")
-        print(f"    Bench:      {record.judges}")
+        print(f"    Bench:      {record.judges}  [{'D.B.' if record.bench else 'S.B.'}]")
+        if record.apex_court_case or record.apex_court_status:
+            print(f"    Apex court: {record.apex_court_case or '-'}  ({record.apex_court_status or '-'})")
         print(f"    Citation:   {record.citation or '-'}   Other: {record.other_citation or '-'}   SC: {record.sc_citation or '-'}")
         print(f"    Decided:    {record.decision_date or '-'}   Uploaded (run date): {record.as_payload()['uploaded_on']}")
         print(f"    PDF:        {record.pdf_path}")
@@ -468,6 +517,9 @@ def report_dry_run(found: list[JudgmentRecord], shown: list[JudgmentRecord], gro
             remarks = record.remarks.replace("\n", " ")
             print(f"    Remarks:    {remarks[:240]}{'…' if len(remarks) > 240 else ''}")
         print(f"    Cites:      {', '.join(record.cited_citations) or '-'}")
+        result = (text_results or {}).get(record.pdf_path)
+        if result is not None:
+            print(f"    Text:       {result.page_count} pages ({result.status}{', OCR' if result.ocr_used else ''}); keywords: {', '.join(k for k, _ in result.keywords[:12]) or '-'}")
         if record.summary:
             print(f"    Summary:    {record.summary.get('overview', '')[:300]}")
             print(f"    Outcome:    {record.summary.get('outcome', '')}")

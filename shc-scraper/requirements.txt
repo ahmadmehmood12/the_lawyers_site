@@ -1,0 +1,10 @@
+requests>=2.31,<3
+beautifulsoup4>=4.12,<5
+python-dotenv>=1.0,<2
+pypdf>=4.2,<6
+anthropic>=2.10,<3
+# PDF text indexing (--index-text). PyMuPDF is the primary extractor; pypdf above is the fallback.
+PyMuPDF>=1.24,<2
+# Optional OCR for scanned judgments. Also needs the system "tesseract" binary (apt install tesseract-ocr).
+pytesseract>=0.3.10,<0.4
+Pillow>=10,<12

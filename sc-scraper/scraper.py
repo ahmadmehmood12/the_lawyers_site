@@ -158,6 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--resend", action="store_true", help="Send every judgment found again (fills empty fields on the site).")
     parser.add_argument("--skip-pdf", action="store_true", help="Do not read PDFs (cited case law and summaries from the tag line only).")
     parser.add_argument("--skip-summary", action="store_true", help="Do not write AI summaries.")
+    parser.add_argument("--index-text", action="store_true", help="Also extract each PDF's full text + keywords and send them for phrase/keyword search.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -200,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             logger.info("Saved as %s.", "reported (is_reported = 1)" if reported else "unreported (is_reported = 0)")
 
-            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary)
+            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary, index_text=args.index_text)
             return pipeline.run(merge_benches(records), groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output)
         except requests.RequestException as exc:
             logger.error("Failed to fetch the Supreme Court page: %s", exc)

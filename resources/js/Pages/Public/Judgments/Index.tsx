@@ -10,9 +10,9 @@ import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 
-export type Judgment = { id: number; slug: string; court: string; court_name: string; court_short: string; case_type: string; case_number: string; title: string; judges: string; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; source_url: string | null };
+export type Judgment = { id: number; slug: string; court: string; court_name: string; court_short: string; case_type: string; case_number: string; title: string; judges: string; bench: boolean; bench_label: string | null; apex_court_case: string | null; apex_court_status: string | null; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; source_url: string | null; match_pages?: number[]; match_keywords?: string[] };
 type Court = { key: string; name: string; short: string; province: string; count: number };
-type Filters = Partial<Record<'court' | 'year' | 'judge' | 'citation' | 'case' | 'title' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
+type Filters = Partial<Record<'court' | 'year' | 'judge' | 'citation' | 'case' | 'title' | 'text' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
 
 /** Judgments approved for reporting, High Court wise (Public\ReportedJudgmentController). */
 export default function JudgmentsIndex({ judgments, courts, judges, years, filters, canonical, embedded = null }: { judgments: Paginated<Judgment>; courts: Court[]; judges: string[]; years: number[]; filters: Filters; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
@@ -52,6 +52,15 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
         </p>
     );
     const courtBadge = (j: Judgment) => <span className="inline-flex items-center rounded bg-navy-900 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white dark:bg-gold-500 dark:text-navy-950" title={j.court_name}>{j.court_short}</span>;
+    // Division (D.B.) / Single (S.B.) bench tag; only Sindh High Court currently records it.
+    const benchBadge = (j: Judgment) => j.bench_label && <span className="inline-flex items-center rounded bg-navy-100 px-1.5 py-0.5 text-[11px] font-semibold text-navy-700 dark:bg-navy-800 dark:text-navy-200" title={j.bench ? t('Division Bench') : t('Single Bench')}>{j.bench_label}</span>;
+    // After a full-text search: the pages a phrase hit and the keywords that matched.
+    const matchInfo = (j: Judgment) => (j.match_pages?.length || j.match_keywords?.length) ? (
+        <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+            {j.match_pages && j.match_pages.length > 0 && <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{t('On :label', { label: j.match_pages.length === 1 ? `${t('page')} ${j.match_pages[0]}` : `${t('pages')} ${j.match_pages.join(', ')}` })}</span>}
+            {j.match_keywords?.slice(0, 8).map((k) => <span key={k} className="rounded bg-navy-50 px-1.5 py-0.5 text-navy-600 dark:bg-navy-800 dark:text-navy-300">{k}</span>)}
+        </p>
+    ) : null;
     const pdfLink = (j: Judgment, className: string) => (j.pdf_url || j.source_url) && (
         <a href={j.pdf_url ?? j.source_url ?? '#'} target="_blank" rel="noreferrer" className={className}>
             {j.pdf_url ? <FileText className="size-4 text-red-600" /> : <ExternalLink className="size-4" />}{j.pdf_url ? 'PDF' : t('Open judgment')}
@@ -76,6 +85,13 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
 
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
                 <form onSubmit={submit} className="rounded-card border border-navy-100 bg-white p-5 shadow-card dark:border-navy-800 dark:bg-navy-900">
+                    <FilterField label={t('Search within judgments')} className="mb-4">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-navy-400" />
+                            <input value={form.text ?? ''} onChange={(e) => set('text', e.target.value)} placeholder={t('Full text: a phrase in "quotes" or keywords, e.g. pre-arrest bail')} className={cn(controlClasses(false), 'pl-9')} />
+                        </div>
+                        <span className="mt-1 block text-xs text-navy-500">{t('Searches the full text of every judgment PDF and its keywords.')}</span>
+                    </FilterField>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <FilterField label={t('Court')} labelElement="div">
                             <Select value={form.court ?? ''} onChange={(e) => setForm((f) => ({ ...f, court: e.target.value, judge: '' }))} aria-label={t('Court')} placeholder={t('All courts')} options={courts.map((c) => ({ value: c.key, label: c.name }))} />
@@ -137,11 +153,12 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                                     {j.decision_date && <span className="shrink-0 text-xs tabular-nums text-navy-500">{formatDate(j.decision_date, locale)}</span>}
                                 </div>
                                 <Link href={route(showRoute, j.slug)} className="mt-3 block">
-                                    <p className="text-sm font-semibold text-navy-500 dark:text-navy-300">{j.case_type} {j.case_number}</p>
+                                    <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-navy-500 dark:text-navy-300">{j.case_type} {j.case_number} {benchBadge(j)}</p>
                                     <p className="mt-1 line-clamp-3 font-serif text-lg font-semibold leading-snug text-navy-900 group-hover:underline dark:text-white">{j.title}</p>
                                 </Link>
                                 <p className="mt-2 line-clamp-2 text-sm text-navy-600 dark:text-navy-300">{j.judges}</p>
                                 {chips(j)}
+                                {matchInfo(j)}
                                 {(j.tag_line || j.remarks) && <p className="mt-2 line-clamp-3 text-sm text-navy-600 dark:text-navy-300">{j.tag_line ?? j.remarks}</p>}
                                 <div className="mt-auto flex items-center justify-between gap-2 pt-4">
                                     <Link href={route(showRoute, j.slug)} className="text-sm font-medium text-navy-900 hover:underline dark:text-gold-300">{t('Read judgment')}</Link>
@@ -161,8 +178,9 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                                             <span className="font-semibold">{j.case_type} {j.case_number}</span> <span>({j.title})</span>
                                         </p>
                                     </Link>
-                                    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-navy-600 dark:text-navy-300">{courtBadge(j)}<span className="font-medium text-navy-700 dark:text-navy-200">{j.court_name}</span><span className="text-navy-400">·</span><span>{t('by')} {j.judges}</span></p>
+                                    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-navy-600 dark:text-navy-300">{courtBadge(j)}{benchBadge(j)}<span className="font-medium text-navy-700 dark:text-navy-200">{j.court_name}</span><span className="text-navy-400">·</span><span>{t('by')} {j.judges}</span></p>
                                     {chips(j)}
+                                    {matchInfo(j)}
                                     {j.tag_line && <p className="mt-1.5 text-sm italic text-navy-600 dark:text-navy-300"><span className="not-italic font-medium text-navy-800 dark:text-navy-100">{t('Tag line')}:</span> {j.tag_line}</p>}
                                     {!j.tag_line && j.remarks && <p className="mt-1.5 line-clamp-3 text-sm text-navy-600 dark:text-navy-300"><span className="font-medium text-navy-800 dark:text-navy-100">{t('Remarks')}:</span> {j.remarks}</p>}
                                     <p className="mt-1.5 text-xs text-navy-500">{t('Uploaded on')} {formatDate(j.uploaded_on, locale)}{j.decision_date && ` · ${t('Decided')} ${formatDate(j.decision_date, locale)}`}</p>

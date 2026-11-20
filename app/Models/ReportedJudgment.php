@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /** A judgment approved for reporting by a High Court (or the Supreme Court). */
-#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'other_citation', 'sc_citation', 'cited_citations', 'tag_line', 'remarks', 'summary', 'decision_date', 'uploaded_on', 'pdf_path', 'source_url', 'slug', 'is_published', 'is_reported'])]
+#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'bench', 'apex_court_case', 'apex_court_status', 'citation', 'other_citation', 'sc_citation', 'cited_citations', 'tag_line', 'remarks', 'summary', 'decision_date', 'uploaded_on', 'pdf_path', 'source_url', 'slug', 'is_published', 'is_reported', 'text_extracted_at', 'ocr_used', 'page_count', 'extraction_status'])]
 class ReportedJudgment extends Model
 {
     /** @var array<string, array{name: string, short: string, province: string}> */
@@ -27,7 +28,19 @@ class ReportedJudgment extends Model
 
     protected function casts(): array
     {
-        return ['cited_citations' => 'array', 'summary' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'is_reported' => 'boolean', 'views' => 'integer'];
+        return ['cited_citations' => 'array', 'summary' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'is_reported' => 'boolean', 'bench' => 'boolean', 'views' => 'integer', 'text_extracted_at' => 'datetime', 'ocr_used' => 'boolean', 'page_count' => 'integer'];
+    }
+
+    /** @return HasMany<JudgmentPage, $this> */
+    public function pages(): HasMany
+    {
+        return $this->hasMany(JudgmentPage::class);
+    }
+
+    /** @return HasMany<JudgmentKeyword, $this> */
+    public function keywords(): HasMany
+    {
+        return $this->hasMany(JudgmentKeyword::class);
     }
 
     protected static function booted(): void
@@ -75,6 +88,8 @@ class ReportedJudgment extends Model
         return [
             'id' => $this->id, 'slug' => $this->slug, 'court' => $this->court, 'court_name' => self::COURTS[$this->court]['name'] ?? strtoupper((string) $this->court), 'court_short' => self::COURTS[$this->court]['short'] ?? strtoupper((string) $this->court),
             'case_type' => $this->case_type, 'case_number' => $this->case_number, 'title' => $this->title, 'judges' => $this->judges,
+            // Only the Sindh High Court listing records the bench type (Division / Single); other courts leave it blank.
+            'bench' => $this->bench, 'bench_label' => $this->court === 'shc' ? ($this->bench ? 'D.B.' : 'S.B.') : null, 'apex_court_case' => $this->apex_court_case, 'apex_court_status' => $this->apex_court_status,
             'citation' => $this->citation, 'other_citation' => $this->other_citation, 'sc_citation' => $this->sc_citation, 'cited_citations' => array_values($this->cited_citations ?? []), 'tag_line' => $this->tag_line,
             // Lists show the start of the remarks (PHC headnotes run to several paragraphs); the detail page sends it whole.
             'remarks' => $this->remarks ? Str::limit($this->remarks, 360) : null,

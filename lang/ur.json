@@ -2994,5 +2994,22 @@
     "Each device registers its token at POST /account/device-token after sign-in; tokens are stored per user.": "ہر آلہ سائن اِن کے بعد POST /account/device-token پر اپنا ٹوکن رجسٹر کرتا ہے؛ ٹوکن فی صارف محفوظ ہوتے ہیں۔",
     "Save push settings": "پش ترتیبات محفوظ کریں",
     "Mobile app settings saved.": "موبائل ایپ ترتیبات محفوظ ہو گئیں۔",
-    "The service account must be valid JSON.": "سروس اکاؤنٹ درست JSON ہونا چاہیے۔"
+    "The service account must be valid JSON.": "سروس اکاؤنٹ درست JSON ہونا چاہیے۔",
+    "Search within judgments": "فیصلوں میں تلاش کریں",
+    "Full text: a phrase in \"quotes\" or keywords, e.g. pre-arrest bail": "مکمل متن: \"کوٹس\" میں کوئی جملہ یا کلیدی الفاظ، مثلاً pre-arrest bail",
+    "Searches the full text of every judgment PDF and its keywords.": "ہر فیصلے کی پی ڈی ایف کے مکمل متن اور اس کے کلیدی الفاظ میں تلاش کرتا ہے۔",
+    "Division Bench": "ڈویژن بینچ",
+    "Single Bench": "سنگل بینچ",
+    "On :label": ":label پر",
+    "page": "صفحہ",
+    "Bench type": "بینچ کی قسم",
+    "Division Bench (D.B.)": "ڈویژن بینچ (D.B.)",
+    "Single Bench (S.B.)": "سنگل بینچ (S.B.)",
+    "Apex court case": "عدالتِ عظمیٰ کا مقدمہ",
+    "Apex court status": "عدالتِ عظمیٰ میں حیثیت",
+    "Keywords": "کلیدی الفاظ",
+    "Extracted from the judgment text. Select one to search every judgment for it.": "فیصلے کے متن سے اخذ کردہ۔ کسی ایک کو منتخب کریں تاکہ اسے ہر فیصلے میں تلاش کیا جا سکے۔",
+    "Supreme Court appeal reference, if any (Sindh High Court).": "عدالتِ عظمیٰ میں اپیل کا حوالہ، اگر ہو (سندھ ہائی کورٹ)۔",
+    "e.g. Pending, Dismissed": "مثلاً زیرِ التواء، خارج",
+    "Division Bench (D.B.) — otherwise Single Bench": "ڈویژن بینچ (D.B.) — بصورتِ دیگر سنگل بینچ"
 }

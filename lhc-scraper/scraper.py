@@ -160,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--resend", action="store_true", help="Send every judgment found again (fills empty fields on the site).")
     parser.add_argument("--skip-pdf", action="store_true", help="Do not read PDFs (no cited case law from the PDF, summaries from the tag line only).")
     parser.add_argument("--skip-summary", action="store_true", help="Do not write AI summaries.")
+    parser.add_argument("--index-text", action="store_true", help="Also extract each PDF's full text + keywords and send them for phrase/keyword search.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -172,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
             logger.warning("Another scraper instance is already running; this run will exit.")
             return 0
         try:
-            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary)
+            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary, index_text=args.index_text)
             former_done = pipeline.state.flag("lhc_former_done")
             which = ["current"] + (["former"] if args.former or not former_done else [])
             records, groups = collect(build_session(settings), settings, which, args.judge)

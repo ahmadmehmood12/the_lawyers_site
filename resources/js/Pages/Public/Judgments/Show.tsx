@@ -9,13 +9,16 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { Judgment } from './Index';
 
 /** One reported judgment: the PDF first, then the AI summary, tag line and remarks; details and more from the same bench at the side. */
-export default function JudgmentShow({ judgment: j, related, canonical, embedded = null }: { judgment: Judgment & { summary?: JudgmentSummaryData | null }; related: Judgment[]; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
+export default function JudgmentShow({ judgment: j, related, canonical, embedded = null }: { judgment: Judgment & { summary?: JudgmentSummaryData | null; keywords?: string[] }; related: Judgment[]; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
     const { locale } = useLocale();
     const indexRoute = embedded === 'workspace' ? 'judgments.workspace.index' : 'judgments.index';
     const showRoute = embedded === 'workspace' ? 'judgments.workspace.show' : 'judgments.show';
     const rows: [string, string | null][] = [
-        [t('Court'), j.court_name], [t('Case'), `${j.case_type} ${j.case_number}`], [t('Bench'), j.judges], [t('Citation'), j.citation], [t('SC citation'), j.sc_citation], [t('Other citation'), j.other_citation],
+        [t('Court'), j.court_name], [t('Case'), `${j.case_type} ${j.case_number}`], [t('Bench'), j.judges],
+        [t('Bench type'), j.bench_label ? (j.bench ? t('Division Bench (D.B.)') : t('Single Bench (S.B.)')) : null],
+        [t('Citation'), j.citation], [t('SC citation'), j.sc_citation], [t('Other citation'), j.other_citation],
+        [t('Apex court case'), j.apex_court_case], [t('Apex court status'), j.apex_court_status],
         [t('Decision date'), j.decision_date ? formatDate(j.decision_date, locale) : null], [t('Uploaded on'), formatDate(j.uploaded_on, locale)],
     ];
     const content = (
@@ -69,6 +72,16 @@ export default function JudgmentShow({ judgment: j, related, canonical, embedded
                                 <div className="flex flex-wrap gap-1.5 px-5 pb-5">
                                     {j.cited_citations.map((c) => (
                                         <Link key={c} href={route(indexRoute, { citation: c })} className="rounded bg-navy-50 px-2 py-1 font-mono text-xs font-medium text-navy-700 hover:bg-gold-50 hover:text-gold-700 dark:bg-navy-800 dark:text-navy-200 dark:hover:bg-gold-500/10 dark:hover:text-gold-300">{c}</Link>
+                                    ))}
+                                </div>
+                            </Card>
+                        )}
+                        {j.keywords && j.keywords.length > 0 && (
+                            <Card>
+                                <CardHeader title={t('Keywords')} description={t('Extracted from the judgment text. Select one to search every judgment for it.')} />
+                                <div className="flex flex-wrap gap-1.5 px-5 pb-5">
+                                    {j.keywords.map((k) => (
+                                        <Link key={k} href={route(indexRoute, { text: k })} className="rounded bg-navy-50 px-2 py-1 text-xs font-medium text-navy-700 hover:bg-gold-50 hover:text-gold-700 dark:bg-navy-800 dark:text-navy-200 dark:hover:bg-gold-500/10 dark:hover:text-gold-300">{k}</Link>
                                     ))}
                                 </div>
                             </Card>

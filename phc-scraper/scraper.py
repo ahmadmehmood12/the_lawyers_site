@@ -304,6 +304,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-benches", action="store_true", help="Do not search per judge; benches saved as 'Peshawar High Court'.")
     parser.add_argument("--skip-pdf", action="store_true", help="Do not read PDFs (cited case law and summaries from the remarks only).")
     parser.add_argument("--skip-summary", action="store_true", help="Do not write AI summaries.")
+    parser.add_argument("--index-text", action="store_true", help="Also extract each PDF's full text + keywords and send them for phrase/keyword search.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -347,7 +348,7 @@ def main(argv: list[str] | None = None) -> int:
                 if unmatched:
                     groups["No judge in the filter (saved as Peshawar High Court)"] = unmatched
 
-            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary)
+            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary, index_text=args.index_text)
             return pipeline.run(merge_benches(records), groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output)
         except requests.RequestException as exc:
             logger.error("Failed to fetch the PHC page: %s", exc)

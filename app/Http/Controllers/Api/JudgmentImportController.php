@@ -29,6 +29,9 @@ class JudgmentImportController extends Controller
             'case_number' => ['required', 'string', 'max:60'],
             'title' => ['required', 'string', 'max:500'],
             'judges' => ['required', 'string', 'max:500'],
+            'bench' => ['sometimes', 'boolean'],
+            'apex_court_case' => ['nullable', 'string', 'max:255'],
+            'apex_court_status' => ['nullable', 'string', 'max:255'],
             'citation' => ['nullable', 'string', 'max:120'],
             'other_citation' => ['nullable', 'string', 'max:120'],
             'sc_citation' => ['nullable', 'string', 'max:120'],
@@ -80,6 +83,9 @@ class JudgmentImportController extends Controller
             'case_number' => $data['case_number'],
             'title' => $data['title'],
             'judges' => $data['judges'],
+            'bench' => (bool) ($data['bench'] ?? false),
+            'apex_court_case' => filled($data['apex_court_case'] ?? null) ? trim($data['apex_court_case']) : null,
+            'apex_court_status' => filled($data['apex_court_status'] ?? null) ? trim($data['apex_court_status']) : null,
             'citation' => $data['citation'],
             'cited_citations' => $data['cited_citations'],
             'tag_line' => $data['tag_line'] ?? null,
@@ -135,7 +141,7 @@ class JudgmentImportController extends Controller
                 "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(case_number, '-', ''), '/', ''), '.', ''), ' ', ''), '(', ''), ')', '')) = ?",
                 [$caseNumber],
             )
-            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'summary', 'is_reported'])
+            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'summary', 'is_reported', 'bench', 'apex_court_case', 'apex_court_status'])
             ->first(fn (ReportedJudgment $row) => $this->normalize($row->title) === $title);
     }
 
@@ -146,10 +152,15 @@ class JudgmentImportController extends Controller
     {
         $updates = [];
 
-        foreach (['pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'summary'] as $field) {
+        foreach (['pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'summary', 'apex_court_case', 'apex_court_status'] as $field) {
             if (blank($judgment->getAttribute($field)) && filled($data[$field] ?? null)) {
                 $updates[$field] = $data[$field];
             }
+        }
+
+        // Bench (S.B./D.B.) is known from the case label; set it when the stored row is still the default single bench.
+        if (! $judgment->getAttribute('bench') && ($data['bench'] ?? false)) {
+            $updates['bench'] = true;
         }
 
         // A judgment first seen as unreported (Supreme Court latest page) becomes reported; never the reverse.

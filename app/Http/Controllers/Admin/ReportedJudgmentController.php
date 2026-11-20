@@ -17,7 +17,7 @@ use Inertia\Response;
 /** Admin, Reported judgments: add, edit, upload the PDF, or import many rows from CSV. */
 class ReportedJudgmentController extends Controller
 {
-    public const CSV_COLUMNS = ['court', 'case_type', 'case_number', 'title', 'judges', 'citation', 'other_citation', 'sc_citation', 'tag_line', 'remarks', 'decision_date', 'uploaded_on', 'pdf_url', 'source_url', 'is_reported'];
+    public const CSV_COLUMNS = ['court', 'case_type', 'case_number', 'title', 'judges', 'bench', 'apex_court_case', 'apex_court_status', 'citation', 'other_citation', 'sc_citation', 'tag_line', 'remarks', 'decision_date', 'uploaded_on', 'pdf_url', 'source_url', 'is_reported'];
 
     public function index(Request $request): Response
     {
@@ -85,6 +85,8 @@ class ReportedJudgmentController extends Controller
                 ['court' => $court, 'case_number' => trim($data['case_number']), 'title' => trim($data['title'])],
                 [
                     'case_type' => trim((string) ($data['case_type'] ?? '')) ?: 'Case', 'judges' => trim((string) ($data['judges'] ?? '')) ?: '—',
+                    'bench' => in_array(strtolower(trim((string) ($data['bench'] ?? '0'))), ['1', 'yes', 'true', 'd.b.', 'db', 'division'], true),
+                    'apex_court_case' => ($data['apex_court_case'] ?? null) ?: null, 'apex_court_status' => ($data['apex_court_status'] ?? null) ?: null,
                     'citation' => ($data['citation'] ?? null) ?: ReportedJudgment::citationFromPdfUrl($pdfUrl), 'other_citation' => ($data['other_citation'] ?? null) ?: null, 'sc_citation' => ($data['sc_citation'] ?? null) ?: null, 'remarks' => ($data['remarks'] ?? null) ?: null, 'tag_line' => ($data['tag_line'] ?? null) ?: null,
                     'decision_date' => $date($data['decision_date'] ?? null), 'uploaded_on' => $date($data['uploaded_on'] ?? null) ?? today()->toDateString(),
                     'source_url' => filter_var($data['source_url'] ?? null, FILTER_VALIDATE_URL) ?: null, 'is_published' => true,
@@ -111,6 +113,9 @@ class ReportedJudgmentController extends Controller
             'case_number' => ['required', 'string', 'max:60'],
             'title' => ['required', 'string', 'max:500'],
             'judges' => ['required', 'string', 'max:500'],
+            'bench' => ['boolean'],
+            'apex_court_case' => ['nullable', 'string', 'max:255'],
+            'apex_court_status' => ['nullable', 'string', 'max:255'],
             'citation' => ['nullable', 'string', 'max:120'],
             'other_citation' => ['nullable', 'string', 'max:120'],
             'sc_citation' => ['nullable', 'string', 'max:120'],
