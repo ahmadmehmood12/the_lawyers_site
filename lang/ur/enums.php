@@ -205,6 +205,7 @@ return [
         'drafting_templates' => 'مسودہ سانچے',
         'client_portal' => 'کلائنٹ پورٹل',
         'analytics' => 'تجزیات',
+        'judgment_pdf_download' => 'فیصلوں کی پی ڈی ایف ڈاؤن لوڈ',
     ],
     'complaint_status' => [
         'open' => 'کھلی',

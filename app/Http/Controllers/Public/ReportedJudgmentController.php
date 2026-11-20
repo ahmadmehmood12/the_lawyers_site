@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Enums\PlanFeature;
 use App\Http\Controllers\Controller;
 use App\Models\ReportedJudgment;
+use App\Models\User;
+use App\Services\Subscriptions\SubscriptionService;
+use App\Support\PublicFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -48,6 +54,7 @@ class ReportedJudgmentController extends Controller
             'filters' => $filters,
             'canonical' => route('judgments.index'),
             'embedded' => $embedded,
+            'canDownloadPdf' => self::canDownloadPdf($request->user()),
         ]);
     }
 
@@ -67,7 +74,59 @@ class ReportedJudgmentController extends Controller
                 ->where('judges', $judgment->judges)->latest('uploaded_on')->limit(5)->get()->map->toListItem(),
             'canonical' => route('judgments.show', $judgment),
             'embedded' => $embedded,
+            'canDownloadPdf' => self::canDownloadPdf(request()->user()),
         ]);
+    }
+
+    /**
+     * Whether the viewer may download judgment PDFs: their current organization's plan must have the
+     * "Download judgment PDFs" feature enabled. Guests (and users without a plan) get view-only access.
+     */
+    public static function canDownloadPdf(?User $user): bool
+    {
+        $organization = $user?->currentOrganization;
+
+        return $organization !== null && app(SubscriptionService::class)->enabled($organization, PlanFeature::JudgmentPdfDownload);
+    }
+
+    /** Stream the stored judgment PDF inline (the website's viewer). Everyone may view a reported judgment. */
+    public function viewPdf(ReportedJudgment $judgment): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_unless($judgment->is_published && $judgment->is_reported, 404);
+
+        if ($judgment->hasStoredPdf()) {
+            abort_unless(Storage::disk('local')->exists($judgment->stored_pdf_path), 404);
+
+            return Storage::disk('local')->response($judgment->stored_pdf_path, $this->pdfFilename($judgment), ['Content-Type' => 'application/pdf']);
+        }
+
+        abort_unless(filled($judgment->pdf_path), 404);
+
+        return redirect()->away($judgment->pdfIsLink() ? $judgment->pdf_path : PublicFile::url($judgment->pdf_path));
+    }
+
+    /** Download the judgment PDF as an attachment. Gated by the viewer's plan (403 otherwise). */
+    public function downloadPdf(Request $request, ReportedJudgment $judgment): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_unless($judgment->is_published && $judgment->is_reported, 404);
+        abort_unless(self::canDownloadPdf($request->user()), 403);
+
+        if ($judgment->hasStoredPdf()) {
+            abort_unless(Storage::disk('local')->exists($judgment->stored_pdf_path), 404);
+
+            return Storage::disk('local')->download($judgment->stored_pdf_path, $this->pdfFilename($judgment));
+        }
+
+        abort_unless(filled($judgment->pdf_path) && ! $judgment->pdfIsLink(), 404);
+
+        return redirect()->away(PublicFile::url($judgment->pdf_path));
+    }
+
+    private function pdfFilename(ReportedJudgment $judgment): string
+    {
+        $base = Str::slug($judgment->citation ?: ($judgment->court.' '.$judgment->case_number)) ?: 'judgment';
+
+        return $base.'.pdf';
     }
 
     /**

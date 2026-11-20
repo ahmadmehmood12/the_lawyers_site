@@ -312,7 +312,7 @@ class JsonCache:
 class Pipeline:
     """Shared steps after a scraper has collected its records."""
 
-    def __init__(self, settings: Settings, storage: Path, *, read_pdfs: bool = True, summaries: bool = True, index_text: bool = False) -> None:
+    def __init__(self, settings: Settings, storage: Path, *, read_pdfs: bool = True, summaries: bool = True, index_text: bool = False, store_pdf: bool = False) -> None:
         self.settings = settings
         self.storage = storage
         self.read_pdfs = read_pdfs
@@ -321,9 +321,13 @@ class Pipeline:
         self.citations = JsonCache(storage / "pdf_citations.json")
         self.summarizer = Summarizer(storage / "summaries.json", enabled=summaries)
         self.index_text = index_text
-        # The text endpoint sits beside the import endpoint (/api/judgments/import -> /api/judgments/text).
+        self.store_pdf = store_pdf
+        self.store_active = False  # set true only for a real import run (never a dry run)
+        # The text and pdf endpoints sit beside the import endpoint (/api/judgments/import -> /text, /pdf).
         self.text_url = re.sub(r"/import/?$", "/text", settings.import_url) if settings.import_url else ""
+        self.pdf_url = re.sub(r"/import/?$", "/pdf", settings.import_url) if settings.import_url else ""
         self.text_results: dict[str, text_indexer.TextResult] = {}
+        self.pdf_bytes: dict[str, bytes] = {}  # transient: the downloaded file awaiting upload
 
     def pending(self, records: list[JudgmentRecord], resend: bool = False) -> list[JudgmentRecord]:
         """Judgments the site does not have yet, oldest decision first (today's go in last)."""
@@ -338,7 +342,8 @@ class Pipeline:
         cached = self.citations.data.get(record.pdf_path)
         summary = self.summarizer.cached(record.pdf_path)
         wants_index = self.index_text and record.pdf_path not in self.text_results and not self.state.is_indexed(record.pdf_path)
-        needs_text = (self.read_pdfs and cached is None) or (self.summarizer.enabled and summary is None) or wants_index
+        wants_store = self.store_active and record.pdf_path not in self.pdf_bytes and not self.state.is_stored(record.pdf_path)
+        needs_text = (self.read_pdfs and cached is None) or (self.summarizer.enabled and summary is None) or wants_index or wants_store
 
         text = ""
         if needs_text:
@@ -355,6 +360,9 @@ class Pipeline:
             # Full page-by-page text + keywords for phrase/keyword search, from the same download.
             if content and wants_index:
                 self.text_results[record.pdf_path] = text_indexer.extract(content)
+            # Keep the raw bytes to upload the file itself (so the site serves and can gate the PDF).
+            if content and wants_store:
+                self.pdf_bytes[record.pdf_path] = content
 
         cited += [str(c) for c in (cached or {}).get("cited") or []]
         unique: list[str] = []
@@ -406,6 +414,30 @@ class Pipeline:
         else:
             logger.warning("Text index failed for %s: HTTP %s %s", record.case_number, response.status_code, response.text[:200])
 
+    def send_pdf(self, record: JudgmentRecord) -> None:
+        """Upload the downloaded PDF file to the site so it stores and serves it itself."""
+        content = self.pdf_bytes.pop(record.pdf_path, None)
+        if content is None or not self.pdf_url:
+            return
+
+        headers = {"Authorization": f"Bearer {self.settings.import_token}", "Accept": "application/json"}
+        files = {"pdf": ("judgment.pdf", content, "application/pdf")}
+        data = {"pdf_path": record.pdf_path}
+        try:
+            response = self.session.post(self.pdf_url, data=data, files=files, headers=headers, timeout=120)
+        except requests.RequestException as exc:
+            logger.warning("PDF upload failed for %s: %s", record.case_number, exc)
+            return
+
+        if response.status_code == 200:
+            self.state.mark_stored(record.pdf_path)
+            body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+            logger.info("    Stored PDF: %s KB.", round(int(body.get("bytes", len(content))) / 1024))
+        elif response.status_code == 404:
+            logger.warning("PDF upload: no judgment yet for %s (metadata import must land first).", record.case_number)
+        else:
+            logger.warning("PDF upload failed for %s: HTTP %s %s", record.case_number, response.status_code, response.text[:200])
+
     def post(self, payload: dict[str, object]) -> tuple[str, str | None]:
         """POST one judgment. Returns ("imported"|"duplicate"|"failed", error)."""
         headers = {"Authorization": f"Bearer {self.settings.import_token}", "Accept": "application/json"}
@@ -438,8 +470,49 @@ class Pipeline:
 
         return "failed", last_error
 
-    def run(self, found: list[JudgmentRecord], *, groups: dict[str, int], dry_run: bool, limit: int | None, resend: bool, output: Path | None) -> int:
+    def index_existing(self, found: list[JudgmentRecord], *, limit: int | None, resend: bool) -> int:
+        """Backfill text + keywords (and the stored PDF) for judgments ALREADY on the site, without
+        re-importing their metadata. Matches by PDF URL on the /text and /pdf endpoints, so it never
+        touches columns the site already has — ideal for LHC/PHC whose metadata was imported earlier."""
+        self.store_active = self.store_pdf
+        self.summarizer.enabled = False  # no summaries here; this pass only adds text, keywords and the file
+        if not self.text_url and not self.pdf_url:
+            logger.error("JUDGMENTS_IMPORT_URL must be set (the /text and /pdf endpoints derive from it).")
+            return 1
+
+        todo = [
+            r for r in found
+            if (self.index_text and (resend or not self.state.is_indexed(r.pdf_path))) or (self.store_pdf and (resend or not self.state.is_stored(r.pdf_path)))
+        ]
+        todo = sorted(todo, key=lambda r: (r.decision_date or "0000-00-00", r.case_number))
+        if resend:
+            self.state.indexed.clear()
+            self.state.stored.clear()
+        if limit:
+            todo = todo[:limit]
+        logger.info("Index-only: %d of %d judgments need text%s.", len(todo), len(found), " and/or the stored PDF" if self.store_pdf else "")
+
+        for index, record in enumerate(todo, start=1):
+            record = self.enrich(record)
+            if self.store_active:
+                self.send_pdf(record)
+            if self.index_text:
+                self.send_text(record)
+            logger.info("[%d/%d] %s %s", index, len(todo), record.case_type, record.case_number)
+            if index % 25 == 0:
+                self.save_caches()
+            time.sleep(IMPORT_DELAY)
+
+        self.save_caches()
+        logger.info("Index-only complete: processed %d.", len(todo))
+
+        return 0
+
+    def run(self, found: list[JudgmentRecord], *, groups: dict[str, int], dry_run: bool, limit: int | None, resend: bool, output: Path | None, index_only: bool = False) -> int:
         """Counts, new judgments only, oldest first, enrich, then dry run report or import."""
+        if index_only:
+            return self.index_existing(found, limit=limit, resend=resend)
+        self.store_active = self.store_pdf and not dry_run  # a dry run never uploads files
         new = self.pending(found, resend)
         logger.info(
             "Found %d judgments in total; already on the site: %d; to %s now: %d.",
@@ -454,6 +527,8 @@ class Pipeline:
             logger.info("AI summaries off: set ANTHROPIC_API_KEY in .env to turn them on.")
         if self.index_text:
             logger.info("PDF text indexing on (phrase/keyword search)%s.", "" if text_indexer.ocr_available() else "; OCR unavailable (install tesseract for scanned judgments)")
+        if self.store_pdf:
+            logger.info("PDF storing on: the file is downloaded and uploaded to the site%s.", "" if not dry_run else " (skipped in a dry run)")
 
         if dry_run:
             enriched = []
@@ -483,6 +558,8 @@ class Pipeline:
             else:
                 self.state.mark(record.pdf_path)
                 logger.info("[%d/%d] %s: %s %s (%s)", index, len(new), status.capitalize(), record.case_type, record.case_number, record.decision_date or "no date")
+                if self.store_active:
+                    self.send_pdf(record)
                 if self.index_text:
                     self.send_text(record)
             if index % 25 == 0:

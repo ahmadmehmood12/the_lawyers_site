@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /** A judgment approved for reporting by a High Court (or the Supreme Court). */
-#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'bench', 'apex_court_case', 'apex_court_status', 'citation', 'other_citation', 'sc_citation', 'cited_citations', 'tag_line', 'remarks', 'summary', 'decision_date', 'uploaded_on', 'pdf_path', 'source_url', 'slug', 'is_published', 'is_reported', 'text_extracted_at', 'ocr_used', 'page_count', 'extraction_status'])]
+#[Fillable(['court', 'case_type', 'case_number', 'title', 'judges', 'bench', 'apex_court_case', 'apex_court_status', 'citation', 'other_citation', 'sc_citation', 'cited_citations', 'tag_line', 'remarks', 'summary', 'decision_date', 'uploaded_on', 'pdf_path', 'stored_pdf_path', 'source_pdf_url', 'pdf_bytes', 'source_url', 'slug', 'is_published', 'is_reported', 'text_extracted_at', 'ocr_used', 'page_count', 'extraction_status'])]
 class ReportedJudgment extends Model
 {
     /** @var array<string, array{name: string, short: string, province: string}> */
@@ -28,7 +28,7 @@ class ReportedJudgment extends Model
 
     protected function casts(): array
     {
-        return ['cited_citations' => 'array', 'summary' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'is_reported' => 'boolean', 'bench' => 'boolean', 'views' => 'integer', 'text_extracted_at' => 'datetime', 'ocr_used' => 'boolean', 'page_count' => 'integer'];
+        return ['cited_citations' => 'array', 'summary' => 'array', 'decision_date' => 'date', 'uploaded_on' => 'date', 'is_published' => 'boolean', 'is_reported' => 'boolean', 'bench' => 'boolean', 'views' => 'integer', 'text_extracted_at' => 'datetime', 'ocr_used' => 'boolean', 'page_count' => 'integer', 'pdf_bytes' => 'integer'];
     }
 
     /** @return HasMany<JudgmentPage, $this> */
@@ -71,6 +71,12 @@ class ReportedJudgment extends Model
         return (bool) preg_match('#^https?://#i', (string) $this->pdf_path);
     }
 
+    /** True when the actual PDF has been downloaded and stored on the private disk (served by us). */
+    public function hasStoredPdf(): bool
+    {
+        return filled($this->stored_pdf_path);
+    }
+
     /**
      * Shown on the public Reported judgments pages: published and approved for reporting.
      *
@@ -94,7 +100,13 @@ class ReportedJudgment extends Model
             // Lists show the start of the remarks (PHC headnotes run to several paragraphs); the detail page sends it whole.
             'remarks' => $this->remarks ? Str::limit($this->remarks, 360) : null,
             'decision_date' => $this->decision_date?->toDateString(), 'uploaded_on' => $this->uploaded_on->toDateString(),
-            'pdf_url' => PublicFile::url($this->pdf_path), 'pdf_is_link' => $this->pdfIsLink(), 'is_reported' => $this->is_reported, 'source_url' => $this->source_url,
+            // A downloaded PDF is served inline by our own route (so the viewer always works and downloads can be gated);
+            // otherwise fall back to the external court link or a public admin upload.
+            'pdf_url' => $this->hasStoredPdf() ? route('judgments.pdf', $this) : PublicFile::url($this->pdf_path),
+            'pdf_is_link' => $this->hasStoredPdf() ? false : $this->pdfIsLink(),
+            'pdf_stored' => $this->hasStoredPdf(),
+            'download_url' => $this->hasStoredPdf() ? route('judgments.pdf.download', $this) : ($this->pdfIsLink() ? null : PublicFile::url($this->pdf_path)),
+            'is_reported' => $this->is_reported, 'source_url' => $this->source_url,
         ];
     }
 }

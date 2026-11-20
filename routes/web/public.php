@@ -27,6 +27,9 @@ Route::get('practice-areas', [SpecializationController::class, 'index'])->name('
 Route::get('practice-areas/{specialization:slug}', [SpecializationController::class, 'show'])->name('specializations.show');
 
 Route::get('reported-judgments', [ReportedJudgmentController::class, 'index'])->name('judgments.index');
+// PDF served by us when downloaded: view is open to all; download is gated by the viewer's plan.
+Route::get('reported-judgments/{judgment:slug}/pdf', [ReportedJudgmentController::class, 'viewPdf'])->middleware('throttle:120,1')->name('judgments.pdf');
+Route::get('reported-judgments/{judgment:slug}/pdf/download', [ReportedJudgmentController::class, 'downloadPdf'])->middleware('throttle:60,1')->name('judgments.pdf.download');
 Route::get('reported-judgments/{judgment:slug}', [ReportedJudgmentController::class, 'show'])->name('judgments.show');
 Route::get('articles', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');

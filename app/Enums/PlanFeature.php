@@ -17,6 +17,7 @@ enum PlanFeature: string
     case DraftingTemplates = 'drafting_templates';
     case ClientPortal = 'client_portal';
     case Analytics = 'analytics';
+    case JudgmentPdfDownload = 'judgment_pdf_download';
 
     public static function translationGroup(): string
     {

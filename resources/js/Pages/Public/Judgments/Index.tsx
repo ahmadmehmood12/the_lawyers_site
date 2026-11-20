@@ -10,7 +10,7 @@ import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 
-export type Judgment = { id: number; slug: string; court: string; court_name: string; court_short: string; case_type: string; case_number: string; title: string; judges: string; bench: boolean; bench_label: string | null; apex_court_case: string | null; apex_court_status: string | null; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; source_url: string | null; match_pages?: number[]; match_keywords?: string[] };
+export type Judgment = { id: number; slug: string; court: string; court_name: string; court_short: string; case_type: string; case_number: string; title: string; judges: string; bench: boolean; bench_label: string | null; apex_court_case: string | null; apex_court_status: string | null; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; pdf_is_link: boolean; pdf_stored?: boolean; download_url?: string | null; source_url: string | null; match_pages?: number[]; match_keywords?: string[] };
 type Court = { key: string; name: string; short: string; province: string; count: number };
 type Filters = Partial<Record<'court' | 'year' | 'judge' | 'citation' | 'case' | 'title' | 'text' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
 

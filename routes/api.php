@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\JudgmentImportController;
+use App\Http\Controllers\Api\JudgmentPdfController;
 use App\Http\Controllers\Api\JudgmentTextController;
 use App\Http\Controllers\Webhooks\GreenApiWebhookController;
 use App\Http\Controllers\Webhooks\PaymentWebhookController;
@@ -33,6 +34,11 @@ Route::post('judgments/import', JudgmentImportController::class)
 Route::post('judgments/text', JudgmentTextController::class)
     ->middleware([EnsureJudgmentImportToken::class, 'throttle:600,1'])
     ->name('api.judgments.text');
+
+// The scrapers upload the downloaded PDF file so the site can store and serve it itself.
+Route::post('judgments/pdf', JudgmentPdfController::class)
+    ->middleware([EnsureJudgmentImportToken::class, 'throttle:300,1'])
+    ->name('api.judgments.pdf');
 
 /*
 | Public configuration the companion mobile apps fetch on launch

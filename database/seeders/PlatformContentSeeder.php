@@ -24,11 +24,11 @@ class PlatformContentSeeder extends Seeder
         // Basic is the free starter plan every new account gets (setting default_plan).
         $plans = [
             ['basic', 'Basic', 'بنیادی', 'lawyer', 0, 0, 0, 'For getting started: your court diary with a few cases.',
-                [F::MaxActiveCases->value => 2, F::MaxClients->value => 2, F::MaxTeamMembers->value => 3, F::StorageMb->value => 500, F::WhatsAppReminders->value => 0, F::AiAssistant->value => 0, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => 0]],
+                [F::MaxActiveCases->value => 2, F::MaxClients->value => 2, F::MaxTeamMembers->value => 3, F::StorageMb->value => 500, F::WhatsAppReminders->value => 0, F::AiAssistant->value => 0, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => 0, F::JudgmentPdfDownload->value => 0]],
             ['professional', 'Professional', 'پروفیشنل', 'lawyer', 3500, 35000, 14, 'Unlimited cases, WhatsApp reminders and AI drafting help.',
-                [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 4, F::StorageMb->value => 20000, F::WhatsAppReminders->value => 1500, F::AiAssistant->value => 150, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null]],
+                [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 4, F::StorageMb->value => 20000, F::WhatsAppReminders->value => 1500, F::AiAssistant->value => 150, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null, F::JudgmentPdfDownload->value => null]],
             ['law-firm', 'Law Firm', 'لاء فرم', 'firm', 10000, 100000, 14, 'Multi-lawyer firms with shared diary and firm analytics.',
-                [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 40, F::StorageMb->value => 100000, F::WhatsAppReminders->value => null, F::AiAssistant->value => 2000, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null]],
+                [F::MaxActiveCases->value => null, F::MaxClients->value => null, F::MaxTeamMembers->value => 40, F::StorageMb->value => 100000, F::WhatsAppReminders->value => null, F::AiAssistant->value => 2000, F::DraftingTemplates->value => null, F::ClientPortal->value => null, F::Analytics->value => null, F::JudgmentPdfDownload->value => null]],
         ];
 
         // Retired plans stay for existing subscriptions but are hidden from new sign ups and upgrades.

@@ -21,6 +21,7 @@ class ImportState:
             data = {}
         self.imported: set[str] = set(data.get("imported", []))
         self.indexed: set[str] = set(data.get("indexed", []))
+        self.stored: set[str] = set(data.get("stored", []))
         self.flags: dict[str, str] = dict(data.get("flags", {}))
 
     def is_imported(self, pdf_url: str) -> bool:
@@ -36,6 +37,13 @@ class ImportState:
     def mark_indexed(self, pdf_url: str) -> None:
         self.indexed.add(pdf_url)
 
+    def is_stored(self, pdf_url: str) -> bool:
+        """Whether the PDF file itself has already been downloaded and uploaded to the site."""
+        return pdf_url in self.stored
+
+    def mark_stored(self, pdf_url: str) -> None:
+        self.stored.add(pdf_url)
+
     def flag(self, name: str) -> str | None:
         return self.flags.get(name)
 
@@ -45,5 +53,5 @@ class ImportState:
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(".tmp")
-        temporary.write_text(json.dumps({"flags": self.flags, "imported": sorted(self.imported), "indexed": sorted(self.indexed)}, indent=0), encoding="utf-8")
+        temporary.write_text(json.dumps({"flags": self.flags, "imported": sorted(self.imported), "indexed": sorted(self.indexed), "stored": sorted(self.stored)}, indent=0), encoding="utf-8")
         temporary.replace(self.path)

@@ -54,6 +54,9 @@ class ReportedJudgmentController extends Controller
         if ($judgment->pdf_path && ! $judgment->pdfIsLink()) {
             Storage::disk('public')->delete($judgment->pdf_path);
         }
+        if ($judgment->hasStoredPdf()) {
+            Storage::disk('local')->delete($judgment->stored_pdf_path);
+        }
         $judgment->delete();
         Cache::forget('judgment-counts');
 
@@ -105,7 +108,8 @@ class ReportedJudgmentController extends Controller
     private function fill(Request $request, ReportedJudgment $judgment): void
     {
         $link = $request->input('text_mode') === 'link';
-        $hasUploadedPdf = $judgment->pdf_path && ! $judgment->pdfIsLink();
+        // A scraped-and-stored PDF (on the private disk) counts as an existing file, so editing other fields doesn't force a re-upload.
+        $hasUploadedPdf = ($judgment->pdf_path && ! $judgment->pdfIsLink()) || $judgment->hasStoredPdf();
 
         $data = $request->validate([
             'court' => ['required', Rule::in(array_keys(ReportedJudgment::COURTS))],
@@ -135,6 +139,11 @@ class ReportedJudgmentController extends Controller
         $deleteUploaded = function () use ($judgment): void {
             if ($judgment->pdf_path && ! $judgment->pdfIsLink()) {
                 Storage::disk('public')->delete($judgment->pdf_path);
+            }
+            // A new PDF or link replaces any scraper-stored file too, so it is removed from the private disk.
+            if ($judgment->hasStoredPdf()) {
+                Storage::disk('local')->delete($judgment->stored_pdf_path);
+                $judgment->forceFill(['stored_pdf_path' => null, 'source_pdf_url' => null, 'pdf_bytes' => null]);
             }
             $judgment->pdf_path = null;
         };

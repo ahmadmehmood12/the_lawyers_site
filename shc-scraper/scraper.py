@@ -195,7 +195,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--resend", action="store_true", help="Send every judgment found again (fills empty fields on the site).")
     parser.add_argument("--skip-pdf", action="store_true", help="Do not read PDFs (no cited case law from the PDF, summaries from the tag line only).")
     parser.add_argument("--skip-summary", action="store_true", help="Do not write AI summaries.")
-    parser.add_argument("--index-text", action="store_true", help="Also extract each PDF's full text + keywords and send them for phrase/keyword search.")
+    parser.add_argument("--no-store-pdf", action="store_true", help="Do not download and store the PDF on the site (on by default); keep only the court link.")
+    parser.add_argument("--no-index-text", action="store_true", help="Do not extract and send full text + keywords for search (on by default).")
+    parser.add_argument("--index-only", action="store_true", help="Only add text + keywords (and the stored PDF) for judgments already on the site; do not import metadata. For backfilling.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -208,12 +210,12 @@ def main(argv: list[str] | None = None) -> int:
             logger.warning("Another scraper instance is already running; this run will exit.")
             return 0
         try:
-            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary, index_text=args.index_text)
+            pipeline = Pipeline(settings, STORAGE, read_pdfs=not args.skip_pdf, summaries=not args.skip_summary, index_text=not args.no_index_text, store_pdf=not args.no_store_pdf)
             records, groups = collect(build_session(settings), settings, args.judge)
             if not records:
                 logger.error("No judgments parsed; the SHC pages may have changed or be unavailable.")
                 return 1
-            return pipeline.run(records, groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output)
+            return pipeline.run(records, groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output, index_only=args.index_only)
         except Exception:
             logger.exception("Unhandled scraper error.")
             return 1

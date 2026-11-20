@@ -205,6 +205,7 @@ return [
         'drafting_templates' => 'Drafting templates',
         'client_portal' => 'Client portal',
         'analytics' => 'Analytics',
+        'judgment_pdf_download' => 'Download judgment PDFs',
     ],
     'complaint_status' => [
         'open' => 'Open',

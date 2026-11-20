@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, Download, ExternalLink, FileText } from 'lucide-react';
+import { ArrowLeft, Download, ExternalLink, FileText, Lock } from 'lucide-react';
 import { JudgmentRemarks, JudgmentSummary, type JudgmentSummaryData } from '@/Components/domain/JudgmentSummary';
 import { Card, CardHeader } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
@@ -9,7 +9,7 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { Judgment } from './Index';
 
 /** One reported judgment: the PDF first, then the AI summary, tag line and remarks; details and more from the same bench at the side. */
-export default function JudgmentShow({ judgment: j, related, canonical, embedded = null }: { judgment: Judgment & { summary?: JudgmentSummaryData | null; keywords?: string[] }; related: Judgment[]; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
+export default function JudgmentShow({ judgment: j, related, canonical, canDownloadPdf = false, embedded = null }: { judgment: Judgment & { summary?: JudgmentSummaryData | null; keywords?: string[] }; related: Judgment[]; canonical: string; canDownloadPdf?: boolean; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
     const { locale } = useLocale();
     const indexRoute = embedded === 'workspace' ? 'judgments.workspace.index' : 'judgments.index';
@@ -60,9 +60,20 @@ export default function JudgmentShow({ judgment: j, related, canonical, embedded
                                 {rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="px-5 py-3"><dt className="text-xs text-navy-500">{k}</dt><dd className="mt-0.5 font-medium">{v}</dd></div>)}
                             </dl>
                             {(j.pdf_url || j.source_url) && (
-                                <div className="flex gap-2 border-t border-navy-100 p-4 dark:border-navy-800">
-                                    {j.pdf_url && <a href={j.pdf_url} download className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-white dark:bg-gold-500 dark:text-navy-950"><Download className="size-4" />PDF</a>}
-                                    {j.source_url && <a href={j.source_url} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-navy-200 dark:ring-navy-700"><ExternalLink className="size-4" />{j.pdf_url ? t('Source page') : t('Open judgment')}</a>}
+                                <div className="flex flex-col gap-2 border-t border-navy-100 p-4 dark:border-navy-800">
+                                    <div className="flex gap-2">
+                                        {j.pdf_stored ? (
+                                            canDownloadPdf ? (
+                                                <a href={j.download_url ?? '#'} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-white dark:bg-gold-500 dark:text-navy-950"><Download className="size-4" />{t('Download PDF')}</a>
+                                            ) : (
+                                                <span className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-navy-500 ring-1 ring-navy-200 dark:text-navy-400 dark:ring-navy-700"><Lock className="size-4" />{t('Download PDF')}</span>
+                                            )
+                                        ) : (
+                                            j.pdf_url && <a href={j.pdf_url} download className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-white dark:bg-gold-500 dark:text-navy-950"><Download className="size-4" />PDF</a>
+                                        )}
+                                        {j.source_url && <a href={j.source_url} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-navy-200 dark:ring-navy-700"><ExternalLink className="size-4" />{j.pdf_url ? t('Source page') : t('Open judgment')}</a>}
+                                    </div>
+                                    {j.pdf_stored && !canDownloadPdf && <p className="text-xs text-navy-500">{t('Downloading judgment PDFs is available on paid plans. You can read the full judgment in the viewer.')}</p>}
                                 </div>
                             )}
                         </Card>
