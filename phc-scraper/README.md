@@ -57,7 +57,7 @@ were imported *before* these features — without changing any other column — 
 .venv/bin/python scraper.py --index-only
 ```
 
-It matches each judgment by its PDF URL and sends **only** text/keywords/PDF (no metadata import, no
+It matches each judgment by its PDF URL — or, if the court changed the PDF link since import, by **court + case number + title** (the same identity check the import uses) — and sends **only** text/keywords/PDF (no metadata import, no
 duplicates). `--resend --index-only` redoes all of them.
 
 **Citations.** When a court page has no citation the column is left empty. The import **never overwrites a

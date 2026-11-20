@@ -126,27 +126,7 @@ class JudgmentImportController extends Controller
      */
     private function findDuplicate(array $data, string $court): ?ReportedJudgment
     {
-        $byPdf = ReportedJudgment::query()->where('pdf_path', $data['pdf_path'])->first();
-
-        if ($byPdf instanceof ReportedJudgment) {
-            return $byPdf;
-        }
-
-        $caseNumber = $this->normalize($data['case_number']);
-        $title = $this->normalize($data['title']);
-
-        if ($caseNumber === '') {
-            return null;
-        }
-
-        return ReportedJudgment::query()
-            ->where('court', $court)
-            ->whereRaw(
-                "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(case_number, '-', ''), '/', ''), '.', ''), ' ', ''), '(', ''), ')', '')) = ?",
-                [$caseNumber],
-            )
-            ->get(['id', 'slug', 'case_number', 'title', 'pdf_path', 'source_url', 'tag_line', 'citation', 'other_citation', 'sc_citation', 'remarks', 'decision_date', 'cited_citations', 'summary', 'is_reported', 'bench', 'apex_court_case', 'apex_court_status'])
-            ->first(fn (ReportedJudgment $row) => $this->normalize($row->title) === $title);
+        return ReportedJudgment::locate($data['pdf_path'], $court, $data['case_number'], $data['title']);
     }
 
     /**
@@ -217,11 +197,6 @@ class JudgmentImportController extends Controller
         }
 
         return [...collect($summary)->only(['overview', 'facts', 'issues', 'held', 'reasoning', 'laws', 'outcome', 'model'])->all(), 'generated_at' => now()->toDateString()];
-    }
-
-    private function normalize(string $value): string
-    {
-        return preg_replace('/[^a-z0-9]+/', '', Str::lower($value)) ?? '';
     }
 
     /** Court placeholder text ("Nil", "N/A", "awaited", …) and blanks become NULL. */

@@ -404,6 +404,8 @@ class Pipeline:
 
         payload = {
             "pdf_path": record.pdf_path,
+            # Identity fields so the site can match even if the court's PDF link changed since import.
+            "court": record.court, "case_number": record.case_number, "title": record.title,
             "ocr_used": result.ocr_used,
             "status": result.status,
             "pages": [{"page": number, "body": body} for number, body in result.pages],
@@ -433,7 +435,8 @@ class Pipeline:
 
         headers = {"Authorization": f"Bearer {self.settings.import_token}", "Accept": "application/json"}
         files = {"pdf": ("judgment.pdf", content, "application/pdf")}
-        data = {"pdf_path": record.pdf_path}
+        # Identity fields so the site can match even if the court's PDF link changed since import.
+        data = {"pdf_path": record.pdf_path, "court": record.court, "case_number": record.case_number, "title": record.title}
         try:
             response = self.session.post(self.pdf_url, data=data, files=files, headers=headers, timeout=120)
         except requests.RequestException as exc:

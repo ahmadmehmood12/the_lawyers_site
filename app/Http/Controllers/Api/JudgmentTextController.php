@@ -22,6 +22,10 @@ class JudgmentTextController extends Controller
     {
         $data = $request->validate([
             'pdf_path' => ['required', 'url:http,https', 'max:500'],
+            // Identity fallback so backfilling works even if the court's PDF link changed since import.
+            'court' => ['nullable', 'string', 'max:10'],
+            'case_number' => ['nullable', 'string', 'max:60'],
+            'title' => ['nullable', 'string', 'max:500'],
             'ocr_used' => ['sometimes', 'boolean'],
             'status' => ['nullable', 'string', 'max:20'],
             'pages' => ['required', 'array', 'min:1', 'max:400'],
@@ -32,10 +36,10 @@ class JudgmentTextController extends Controller
             'keywords.*.frequency' => ['sometimes', 'integer', 'min:1'],
         ]);
 
-        $judgment = ReportedJudgment::query()->where('pdf_path', $data['pdf_path'])->first();
+        $judgment = ReportedJudgment::locate($data['pdf_path'], $data['court'] ?? null, $data['case_number'] ?? null, $data['title'] ?? null);
 
         if (! $judgment instanceof ReportedJudgment) {
-            return response()->json(['status' => 'not_found', 'message' => 'No judgment with that PDF URL; import the metadata first.'], 404);
+            return response()->json(['status' => 'not_found', 'message' => 'No matching judgment; import the metadata first.'], 404);
         }
 
         $pages = collect($data['pages'])

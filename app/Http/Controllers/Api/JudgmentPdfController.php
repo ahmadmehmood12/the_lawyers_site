@@ -24,13 +24,17 @@ class JudgmentPdfController extends Controller
     {
         $data = $request->validate([
             'pdf_path' => ['required', 'url:http,https', 'max:500'],
+            // Identity fallback so backfilling works even if the court's PDF link changed since import.
+            'court' => ['nullable', 'string', 'max:10'],
+            'case_number' => ['nullable', 'string', 'max:60'],
+            'title' => ['nullable', 'string', 'max:500'],
             'pdf' => ['required', 'file', 'mimetypes:application/pdf', 'max:25600'],
         ]);
 
-        $judgment = ReportedJudgment::query()->where('pdf_path', $data['pdf_path'])->first();
+        $judgment = ReportedJudgment::locate($data['pdf_path'], $data['court'] ?? null, $data['case_number'] ?? null, $data['title'] ?? null);
 
         if (! $judgment instanceof ReportedJudgment) {
-            return response()->json(['status' => 'not_found', 'message' => 'No judgment with that PDF URL; import the metadata first.'], 404);
+            return response()->json(['status' => 'not_found', 'message' => 'No matching judgment; import the metadata first.'], 404);
         }
 
         $file = $request->file('pdf');

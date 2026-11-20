@@ -77,6 +77,43 @@ class ReportedJudgment extends Model
         return filled($this->stored_pdf_path);
     }
 
+    /** Case number / title compared ignoring case, spaces and punctuation ("207-04" == "207/04"). */
+    public static function normalizeKey(string $value): string
+    {
+        return preg_replace('/[^a-z0-9]+/', '', Str::lower($value)) ?? '';
+    }
+
+    /**
+     * Find a judgment by its PDF URL, or — when that has changed since import — by its identity
+     * (court + normalized case number + normalized title). Used by the import duplicate check and by
+     * the /text and /pdf endpoints so backfilling works even if the court's PDF link later changes.
+     */
+    public static function locate(?string $pdfPath, ?string $court, ?string $caseNumber, ?string $title): ?self
+    {
+        if (filled($pdfPath)) {
+            $byPdf = static::query()->where('pdf_path', $pdfPath)->orWhere('source_pdf_url', $pdfPath)->first();
+            if ($byPdf instanceof self) {
+                return $byPdf;
+            }
+        }
+
+        if (blank($court) || blank($caseNumber) || blank($title)) {
+            return null;
+        }
+
+        $caseKey = static::normalizeKey($caseNumber);
+        $titleKey = static::normalizeKey($title);
+
+        return static::query()
+            ->where('court', $court)
+            ->whereRaw(
+                "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(case_number, '-', ''), '/', ''), '.', ''), ' ', ''), '(', ''), ')', '')) = ?",
+                [$caseKey],
+            )
+            ->get()
+            ->first(fn (self $row) => static::normalizeKey($row->title) === $titleKey);
+    }
+
     /**
      * Shown on the public Reported judgments pages: published and approved for reporting.
      *
