@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Wakeel Diary",
+    "slug": "wakeel-diary",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "wakeeldiary",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0f1e36"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "pk.wakeeldiary.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to unlock Wakeel Diary securely."
+      }
+    },
+    "android": {
+      "package": "pk.wakeeldiary.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f1e36"
+      }
+    },
+    "plugins": [
+      "expo-local-authentication",
+      "expo-font"
+    ],
+    "extra": {
+      "apiBaseUrl": "https://example.com/api"
+    }
+  }
+}
