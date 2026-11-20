@@ -60,7 +60,11 @@ class JudgmentImportController extends Controller
         ]);
 
         $court = $data['court'] ?? 'lhc';
-        $data['citation'] = filled($data['citation'] ?? null) ? trim($data['citation']) : ReportedJudgment::citationFromPdfUrl($data['pdf_path']);
+        // Court pages put "Nil", "N/A", "awaited" etc. in empty fields; store those as NULL, never as text.
+        foreach (['citation', 'other_citation', 'sc_citation', 'apex_court_case', 'apex_court_status', 'tag_line', 'remarks'] as $field) {
+            $data[$field] = $this->blankIfPlaceholder($data[$field] ?? null);
+        }
+        $data['citation'] = filled($data['citation']) ? trim($data['citation']) : ReportedJudgment::citationFromPdfUrl($data['pdf_path']);
         $data['cited_citations'] = array_values(array_unique(array_filter(array_map('trim', $data['cited_citations'] ?? [])))) ?: null;
         $data['summary'] = $this->summary($data['summary'] ?? null);
         $existing = $this->findDuplicate($data, $court);
@@ -218,5 +222,15 @@ class JudgmentImportController extends Controller
     private function normalize(string $value): string
     {
         return preg_replace('/[^a-z0-9]+/', '', Str::lower($value)) ?? '';
+    }
+
+    /** Court placeholder text ("Nil", "N/A", "awaited", …) and blanks become NULL. */
+    private const PLACEHOLDERS = ['', 'nil', 'n/a', 'na', 'n.a', 'n.a.', '-', '--', '---', 'null', 'none', 'awaited', 'not available', 'not reported', 'not applicable', 'not yet'];
+
+    private function blankIfPlaceholder(?string $value): ?string
+    {
+        $trimmed = trim((string) $value);
+
+        return in_array(Str::lower(trim($trimmed, ' .')), self::PLACEHOLDERS, true) ? null : ($trimmed === '' ? null : $trimmed);
     }
 }

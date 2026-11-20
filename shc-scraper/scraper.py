@@ -30,7 +30,7 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-from scraper_common import JudgmentRecord, Pipeline, Settings, build_session, clean_text, configure_logging, merge_benches, single_instance_lock, slugify
+from scraper_common import JudgmentRecord, Pipeline, Settings, build_session, clean_optional, clean_text, configure_logging, merge_benches, single_instance_lock, slugify
 
 BASE_DIR = Path(__file__).resolve().parent
 STORAGE = BASE_DIR / "storage"
@@ -124,13 +124,14 @@ def parse_judge_page(page_html: str, judge_name: str) -> list[JudgmentRecord]:
             continue
 
         case_number, is_division = case_number_and_bench(cells[2].get_text(" "))
-        citation = clean_text(cells[1].get_text(" ")) or None
+        # These columns are often "Nil" on the site; store them as NULL, not the literal text.
+        citation = clean_optional(cells[1].get_text(" "))
         case_type = clean_text(cells[3].get_text(" ")) or "Case"
         title = clean_text(cells[5].get_text(" "))
-        tag_line = clean_text(cells[8].get_text(" ")) or None
+        tag_line = clean_optional(cells[8].get_text(" "))
         judges = clean_text(cells[9].get_text(" ")) or judge_name
-        apex_case = clean_text(cells[10].get_text(" ")) or None
-        apex_status = clean_text(cells[11].get_text(" ")) or None
+        apex_case = clean_optional(cells[10].get_text(" "))
+        apex_status = clean_optional(cells[11].get_text(" "))
         reported = clean_text(cells[7].get_text(" ")).lower().startswith("y")
 
         if not title:

@@ -154,6 +154,17 @@ def clean_text(value: str | None) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
 
 
+# Placeholder values courts put in an empty field; these must be stored as NULL, not as text.
+PLACEHOLDERS = {"", "nil", "n/a", "na", "n.a", "n.a.", "-", "--", "---", "null", "none", "awaited", "not available", "not reported", "not applicable", "not yet"}
+
+
+def clean_optional(value: str | None) -> str | None:
+    """Cleaned text, or None when the value is empty or a placeholder ('Nil', 'N/A', 'awaited', ...)."""
+    text = clean_text(value)
+
+    return None if text.lower().strip(" .") in PLACEHOLDERS else text
+
+
 def slugify(value: str) -> str:
     value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     value = re.sub(r"[^\w\s-]", "", value).strip().lower()
