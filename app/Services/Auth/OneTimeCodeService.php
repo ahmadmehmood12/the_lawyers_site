@@ -2,10 +2,13 @@
 
 namespace App\Services\Auth;
 
+use App\Models\User;
 use App\Notifications\OneTimeCode;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 /**
  * Issues and checks the six-digit codes that replace Laravel's signed links for
@@ -59,5 +62,30 @@ class OneTimeCodeService
         (clone $query)->delete();
 
         return true;
+    }
+
+    /** Confirms a user's email with the emailed code (web and mobile API). Fires Verified (welcome email). */
+    public function verifyUserEmail(User $user, string $code): bool
+    {
+        if (! $this->verify($user->email, self::VerifyEmail, $code)) {
+            return false;
+        }
+
+        $user->markEmailAsVerified();
+        event(new Verified($user));
+
+        return true;
+    }
+
+    /** Exchanges a valid reset code for a password-broker token (web and mobile API). */
+    public function resetTokenFor(string $email, string $code): ?string
+    {
+        $user = User::query()->where('email', strtolower($email))->first();
+
+        if (! $user || ! $this->verify($user->email, self::ResetPassword, $code)) {
+            return null;
+        }
+
+        return Password::broker(config('fortify.passwords'))->createToken($user);
     }
 }

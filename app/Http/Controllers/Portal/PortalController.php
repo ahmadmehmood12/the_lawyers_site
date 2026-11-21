@@ -9,6 +9,9 @@ use App\Enums\HearingStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\ReviewStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Appointments\BookAppointmentRequest;
+use App\Http\Requests\Appointments\CancelAppointmentRequest;
+use App\Http\Requests\Appointments\RescheduleAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Client;
 use App\Models\CourtHoliday;
@@ -29,7 +32,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -44,15 +46,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class PortalController extends Controller
 {
     /** @return Builder<LegalCase> */
-    private function cases(Request $request): Builder
+    public static function cases(Request $request): Builder
     {
         return LegalCase::query()->sharedWithClientUser($request->user());
     }
 
     /** @return Builder<Hearing> */
-    private function hearings(Request $request): Builder
+    public static function hearings(Request $request): Builder
     {
-        return Hearing::query()->where('visible_to_client', true)->whereIn('legal_case_id', $this->cases($request)->select('legal_cases.id'));
+        return Hearing::query()->where('visible_to_client', true)->whereIn('legal_case_id', self::cases($request)->select('legal_cases.id'));
     }
 
     public function dashboard(Request $request): Response
@@ -211,24 +213,20 @@ class PortalController extends Controller
         ]);
     }
 
-    public function storeBooking(Request $request, LawyerProfile $lawyer, AppointmentService $service): RedirectResponse
+    public function storeBooking(BookAppointmentRequest $request, LawyerProfile $lawyer, AppointmentService $service): RedirectResponse
     {
         abort_unless(LawyerProfile::query()->listed()->whereKey($lawyer->id)->exists(), 404);
-        $validated = $request->validate([
-            'starts_at' => ['required', 'date', 'after:now'],
-            'mode' => ['required', Rule::enum(AppointmentMode::class)],
-            'message' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validated();
 
         $service->request($request->user(), $lawyer, Carbon::parse($validated['starts_at']), AppointmentMode::from($validated['mode']), $validated['message'] ?? null);
 
         return redirect()->route('portal.appointments.index')->with('success', __('Request sent. You will be notified when the lawyer confirms.'));
     }
 
-    public function cancelAppointment(Request $request, Appointment $appointment, AppointmentService $service): RedirectResponse
+    public function cancelAppointment(CancelAppointmentRequest $request, Appointment $appointment, AppointmentService $service): RedirectResponse
     {
         $this->authorize('manageAsClient', $appointment);
-        $service->transition($appointment, AppointmentStatus::Cancelled, $request->validate(['reason' => ['required', 'string', 'max:255']])['reason'], $request->user());
+        $service->transition($appointment, AppointmentStatus::Cancelled, $request->validated('reason'), $request->user());
 
         return back()->with('success', __('Appointment cancelled.'));
     }
@@ -242,10 +240,10 @@ class PortalController extends Controller
     }
 
     /** Client asks for a new time; the lawyer must accept it (status becomes requested). */
-    public function rescheduleAppointment(Request $request, Appointment $appointment, AppointmentService $service): RedirectResponse
+    public function rescheduleAppointment(RescheduleAppointmentRequest $request, Appointment $appointment, AppointmentService $service): RedirectResponse
     {
         $this->authorize('manageAsClient', $appointment);
-        $validated = $request->validate(['starts_at' => ['required', 'date', 'after:now'], 'reason' => ['nullable', 'string', 'max:255']]);
+        $validated = $request->validated();
         $service->reschedule($appointment, Carbon::parse($validated['starts_at']), $request->user(), $validated['reason'] ?? null);
 
         return back()->with('success', __('New time requested. The lawyer will confirm it.'));
@@ -290,7 +288,7 @@ class PortalController extends Controller
     }
 
     /** @return Builder<Document> */
-    private function sharedDocuments(Request $request): Builder
+    public static function sharedDocuments(Request $request): Builder
     {
         $user = $request->user();
 
@@ -301,13 +299,13 @@ class PortalController extends Controller
     }
 
     /** @return Builder<Invoice> */
-    private function clientInvoices(Request $request): Builder
+    public static function clientInvoices(Request $request): Builder
     {
         return Invoice::query()->whereIn('client_id', Client::query()->where('user_id', $request->user()->id)->select('id'))->where('status', '!=', InvoiceStatus::Draft->value);
     }
 
     /** @return array<string, mixed> */
-    private function hearing(Hearing $h): array
+    public static function hearing(Hearing $h): array
     {
         return [
             'id' => $h->id, 'hearing_date' => $h->hearing_date->toDateString(), 'hearing_time' => $h->hearing_time ? substr($h->hearing_time, 0, 5) : null,
@@ -318,13 +316,13 @@ class PortalController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function document(Document $d): array
+    public static function document(Document $d): array
     {
         return ['id' => $d->id, 'title' => $d->title, 'category' => $d->category->label(), 'mime' => $d->currentVersion?->mime, 'size' => $d->currentVersion?->size, 'source' => $d->source, 'updated_at' => $d->updated_at->toIso8601String()];
     }
 
     /** @return array<string, mixed> */
-    private function appointment(Appointment $a): array
+    public static function appointment(Appointment $a): array
     {
         return [
             'id' => $a->id, 'starts_at' => $a->starts_at->toIso8601String(), 'status' => $a->status->value, 'status_label' => $a->status->label(),

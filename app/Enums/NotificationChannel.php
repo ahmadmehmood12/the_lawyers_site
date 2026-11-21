@@ -12,6 +12,7 @@ enum NotificationChannel: string
     case Email = 'email';
     case WhatsApp = 'whatsapp';
     case Sms = 'sms';
+    case Push = 'push';
 
     public static function translationGroup(): string
     {

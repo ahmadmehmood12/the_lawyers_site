@@ -5,11 +5,13 @@ namespace App\Services\Appointments;
 use App\Enums\AppointmentMode;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\AvailabilitySlot;
 use App\Models\Client;
 use App\Models\LawyerProfile;
 use App\Models\Organization;
 use App\Models\User;
 use App\Notifications\AppointmentUpdated;
+use App\Services\Access\OrganizationAccess;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -112,8 +114,45 @@ class AppointmentService
         return $appointment;
     }
 
-    public function transition(Appointment $appointment, AppointmentStatus $to, ?string $reason, User $actor): Appointment
+    /**
+     * The lawyer an appointment is created for: the actor, or (for members allowed to manage
+     * appointments) another lawyer of the same organization.
+     */
+    public function resolveLawyer(User $actor, Organization $organization, ?int $lawyerId): User
     {
+        if (! $lawyerId || $lawyerId === $actor->id) {
+            return $actor;
+        }
+
+        $access = app(OrganizationAccess::class);
+        abort_unless($access->allows($actor, $organization, 'appointments.manage'), 403);
+        $lawyer = User::findOrFail($lawyerId);
+        abort_unless($access->isMember($lawyer, $organization), 404);
+
+        return $lawyer;
+    }
+
+    /**
+     * Replaces a lawyer's weekly working hours.
+     *
+     * @param  list<array{weekday: int, starts_at: string, ends_at: string, mode: string}>  $slots
+     */
+    public function saveAvailability(User $lawyer, array $slots): void
+    {
+        DB::transaction(function () use ($lawyer, $slots): void {
+            AvailabilitySlot::query()->where('user_id', $lawyer->id)->delete();
+            foreach ($slots as $slot) {
+                AvailabilitySlot::create([...$slot, 'user_id' => $lawyer->id]);
+            }
+        });
+    }
+
+    public function transition(Appointment $appointment, AppointmentStatus $to, ?string $reason, User $actor, ?string $meetingLink = null): Appointment
+    {
+        if (filled($meetingLink)) {
+            $appointment->update(['meeting_link' => $meetingLink]);
+        }
+
         $allowed = match ($appointment->status) {
             AppointmentStatus::Requested => [AppointmentStatus::Confirmed, AppointmentStatus::Declined, AppointmentStatus::Cancelled],
             AppointmentStatus::Confirmed => [AppointmentStatus::Completed, AppointmentStatus::Cancelled, AppointmentStatus::NoShow],

@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { fontFamily, useTheme } from '@/theme';
 import { Txt } from './Txt';
 
 type Props = TextInputProps & {
@@ -38,7 +38,7 @@ export function Input({ label, icon, error, hint, password, style, ...rest }: Pr
       >
         {icon ? <Feather name={icon} size={18} color={c.textFaint} style={{ marginRight: spacing.sm }} /> : null}
         <TextInput
-          style={[{ flex: 1, color: c.text, fontSize: fontSize.base, paddingVertical: 13 }, style]}
+          style={[{ flex: 1, color: c.text, fontSize: fontSize.base, fontFamily: fontFamily.medium, paddingVertical: 13 }, style]}
           placeholderTextColor={c.textFaint}
           secureTextEntry={hidden}
           onFocus={() => setFocused(true)}

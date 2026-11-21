@@ -6,6 +6,7 @@ use App\Enums\PlanFeature;
 use App\Http\Controllers\Controller;
 use App\Models\ReportedJudgment;
 use App\Models\User;
+use App\Services\Judgments\JudgmentSnippets;
 use App\Services\Subscriptions\SubscriptionService;
 use App\Support\PublicFile;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,12 +36,16 @@ class ReportedJudgmentController extends Controller
             // Searching a citation shows that judgment first, then the judgments that cite it.
             ->when(filled($filters['citation'] ?? null), fn ($q) => $q->orderByRaw('('.self::compactColumn('citation').' = ? OR '.self::compactColumn('other_citation').' = ? OR '.self::compactColumn('sc_citation').' = ?) DESC', array_fill(0, 3, self::compactCitation((string) $filters['citation']))))
             ->orderByDesc('uploaded_on')->orderByDesc('id')
-            ->paginate(25)->withQueryString()
-            ->through(fn (ReportedJudgment $j) => $textMatch === null ? $j->toListItem() : [
-                ...$j->toListItem(),
-                'match_pages' => $textMatch['pages'][$j->id] ?? [],
-                'match_keywords' => $textMatch['keywords'][$j->id] ?? [],
-            ]);
+            ->paginate(25)->withQueryString();
+
+        // The line around each hit (keyword in context), only for the judgments on this page.
+        $snippets = $textMatch === null ? [] : app(JudgmentSnippets::class)->for($judgments->pluck('id')->all(), $textMatch['pages'], $textMatch['terms']);
+        $judgments->through(fn (ReportedJudgment $j) => $textMatch === null ? $j->toListItem() : [
+            ...$j->toListItem(),
+            'match_pages' => $textMatch['pages'][$j->id] ?? [],
+            'match_keywords' => $textMatch['keywords'][$j->id] ?? [],
+            'match_snippets' => $snippets[$j->id] ?? [],
+        ]);
 
         $counts = Cache::remember('judgment-counts', now()->addMinutes(10), fn () => ReportedJudgment::query()->listed()
             ->selectRaw('court, COUNT(*) as total')->groupBy('court')->pluck('total', 'court')->all());
@@ -166,7 +171,7 @@ class ReportedJudgmentController extends Controller
      * judgment ids (most relevant first), the pages each phrase hit, and the keywords that matched.
      * Phrases wrapped in "quotes" are matched as exact phrases; bare words must all appear (AND).
      *
-     * @return array{ids: list<int>, pages: array<int, list<int>>, keywords: array<int, list<string>>}
+     * @return array{ids: list<int>, pages: array<int, list<int>>, keywords: array<int, list<string>>, terms: array{phrases: list<string>, words: list<string>}}
      */
     public static function textMatch(string $query): array
     {
@@ -184,7 +189,7 @@ class ReportedJudgmentController extends Controller
 
         $terms = [...array_map(fn ($p) => '"'.$p.'"', $phrases), ...array_map(fn ($w) => '+'.$w.'*', $words)];
         if ($terms === []) {
-            return ['ids' => [], 'pages' => [], 'keywords' => []];
+            return ['ids' => [], 'pages' => [], 'keywords' => [], 'terms' => ['phrases' => [], 'words' => []]];
         }
         $boolean = implode(' ', $terms);
 
@@ -228,7 +233,7 @@ class ReportedJudgmentController extends Controller
         arsort($scores);
         $ids = array_map('intval', array_keys($scores));
 
-        return ['ids' => $ids, 'pages' => $pages, 'keywords' => $keywords];
+        return ['ids' => $ids, 'pages' => $pages, 'keywords' => $keywords, 'terms' => ['phrases' => $phrases, 'words' => $words]];
     }
 
     /** Court names in law report citations, compared in their short form ("PLD 2026 Lahore 172" = "PLD 2026 Lah. 172"). */

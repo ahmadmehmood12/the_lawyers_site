@@ -176,6 +176,7 @@ return [
         'email' => 'ای میل',
         'whatsapp' => 'واٹس ایپ',
         'sms' => 'ایس ایم ایس',
+        'push' => 'موبائل پش',
     ],
     'review_status' => [
         'pending' => 'زیرِ التوا',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Enums\NotificationChannel;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationPreference;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -52,28 +53,42 @@ class NotificationController extends Controller
         return back();
     }
 
-    public function updatePreferences(Request $request): RedirectResponse
+    /** @return array<string, mixed> */
+    public static function preferenceRules(): array
     {
-        $validated = $request->validate([
+        return [
             'preferences' => ['array'],
             'preferences.*.event' => ['required', Rule::in(self::EVENTS)],
             'preferences.*.channel' => ['required', Rule::enum(NotificationChannel::class)],
             'preferences.*.enabled' => ['required', 'boolean'],
-        ]);
+        ];
+    }
 
-        $canWhatsApp = $request->user()->hasWhatsAppConsent();
+    /**
+     * Saves per-event channel switches (web and mobile API).
+     *
+     * @param  list<array{event: string, channel: string, enabled: bool}>  $preferences
+     */
+    public static function savePreferences(User $user, array $preferences): void
+    {
+        $canWhatsApp = $user->hasWhatsAppConsent();
 
-        foreach ($validated['preferences'] ?? [] as $preference) {
+        foreach ($preferences as $preference) {
             // WhatsApp per event switches only count after the account level opt in.
             if ($preference['channel'] === 'whatsapp' && $preference['enabled'] && ! $canWhatsApp) {
                 $preference['enabled'] = false;
             }
 
             NotificationPreference::query()->updateOrCreate(
-                ['user_id' => $request->user()->id, 'event' => $preference['event'], 'channel' => $preference['channel']],
+                ['user_id' => $user->id, 'event' => $preference['event'], 'channel' => $preference['channel']],
                 ['enabled' => $preference['enabled']],
             );
         }
+    }
+
+    public function updatePreferences(Request $request): RedirectResponse
+    {
+        self::savePreferences($request->user(), $request->validate(self::preferenceRules())['preferences'] ?? []);
 
         return back()->with('success', __('Notification preferences saved.'));
     }

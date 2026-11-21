@@ -10,7 +10,8 @@ import { formatDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 
-export type Judgment = { id: number; slug: string; court: string; court_name: string; court_short: string; case_type: string; case_number: string; title: string; judges: string; bench: boolean; bench_label: string | null; apex_court_case: string | null; apex_court_status: string | null; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; pdf_is_link: boolean; pdf_stored?: boolean; download_url?: string | null; source_url: string | null; match_pages?: number[]; match_keywords?: string[] };
+export type Judgment = { id: number; slug: string; court: string; court_name: string; court_short: string; case_type: string; case_number: string; title: string; judges: string; bench: boolean; bench_label: string | null; apex_court_case: string | null; apex_court_status: string | null; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; pdf_is_link: boolean; pdf_stored?: boolean; download_url?: string | null; source_url: string | null; match_pages?: number[]; match_keywords?: string[]; match_snippets?: MatchSnippet[] };
+type MatchSnippet = { page: number; segments: { text: string; hit: boolean }[] };
 type Court = { key: string; name: string; short: string; province: string; count: number };
 type Filters = Partial<Record<'court' | 'year' | 'judge' | 'citation' | 'case' | 'title' | 'text' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
 
@@ -54,13 +55,31 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
     const courtBadge = (j: Judgment) => <span className="inline-flex items-center rounded bg-navy-900 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white dark:bg-gold-500 dark:text-navy-950" title={j.court_name}>{j.court_short}</span>;
     // Division (D.B.) / Single (S.B.) bench tag; only Sindh High Court currently records it.
     const benchBadge = (j: Judgment) => j.bench_label && <span className="inline-flex items-center rounded bg-navy-100 px-1.5 py-0.5 text-[11px] font-semibold text-navy-700 dark:bg-navy-800 dark:text-navy-200" title={j.bench ? t('Division Bench') : t('Single Bench')}>{j.bench_label}</span>;
-    // After a full-text search: the pages a phrase hit and the keywords that matched.
-    const matchInfo = (j: Judgment) => (j.match_pages?.length || j.match_keywords?.length) ? (
-        <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
-            {j.match_pages && j.match_pages.length > 0 && <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{t('On :label', { label: j.match_pages.length === 1 ? `${t('page')} ${j.match_pages[0]}` : `${t('pages')} ${j.match_pages.join(', ')}` })}</span>}
-            {j.match_keywords?.slice(0, 8).map((k) => <span key={k} className="rounded bg-navy-50 px-1.5 py-0.5 text-navy-600 dark:bg-navy-800 dark:text-navy-300">{k}</span>)}
-        </p>
-    ) : null;
+    // After a full-text search: the line around each hit with the searched words highlighted, then the other matching pages.
+    const matchInfo = (j: Judgment) => {
+        const snippets = j.match_snippets ?? [];
+        const shown = new Set(snippets.map((s) => s.page));
+        const otherPages = (j.match_pages ?? []).filter((p) => !shown.has(p));
+        if (!snippets.length && !otherPages.length && !j.match_keywords?.length) return null;
+        return (
+            <div className="mt-2 space-y-1.5">
+                {snippets.map((s) => (
+                    <blockquote key={s.page} className="rounded-r-md border-s-2 border-gold-500 bg-navy-50/60 py-1.5 pe-3 ps-3 text-[13px] leading-relaxed text-navy-700 dark:bg-navy-900/60 dark:text-navy-200">
+                        <span className="me-1.5 align-middle text-[10px] font-semibold uppercase tracking-wider text-navy-400">{t('Page')} {s.page}</span>
+                        {s.segments.map((seg, i) => seg.hit
+                            ? <mark key={i} className="rounded-sm bg-gold-200/80 px-0.5 font-semibold text-navy-950 dark:bg-gold-500/30 dark:text-gold-100">{seg.text}</mark>
+                            : <span key={i}>{seg.text}</span>)}
+                    </blockquote>
+                ))}
+                {(otherPages.length > 0 || (j.match_keywords?.length ?? 0) > 0) && (
+                    <p className="flex flex-wrap items-center gap-1.5 text-xs text-navy-500 dark:text-navy-400">
+                        {otherPages.length > 0 && <span>{t('Also on :label', { label: `${otherPages.length === 1 ? t('page') : t('pages')} ${otherPages.slice(0, 8).join(', ')}${otherPages.length > 8 ? '…' : ''}` })}</span>}
+                        {j.match_keywords?.slice(0, 6).map((k) => <span key={k} className="rounded bg-navy-50 px-1.5 py-0.5 text-navy-600 dark:bg-navy-800 dark:text-navy-300">{k}</span>)}
+                    </p>
+                )}
+            </div>
+        );
+    };
     const pdfLink = (j: Judgment, className: string) => (j.pdf_url || j.source_url) && (
         <a href={j.pdf_url ?? j.source_url ?? '#'} target="_blank" rel="noreferrer" className={className}>
             {j.pdf_url ? <FileText className="size-4 text-red-600" /> : <ExternalLink className="size-4" />}{j.pdf_url ? 'PDF' : t('Open judgment')}

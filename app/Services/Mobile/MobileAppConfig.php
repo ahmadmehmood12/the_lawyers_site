@@ -31,6 +31,19 @@ class MobileAppConfig
             && Setting::hasSecret('fcm_credentials_json');
     }
 
+    /**
+     * Whether a push can be sent to this device token: Expo tokens need only the admin switch,
+     * raw FCM tokens also need the FCM project + service account.
+     */
+    public function canPush(string $token): bool
+    {
+        if (Setting::get('push_enabled', '0') !== '1') {
+            return false;
+        }
+
+        return PushSender::isExpoToken($token) || $this->pushReady();
+    }
+
     public function appName(): string
     {
         return (string) (Setting::get('mobile_app_name') ?: (Setting::get('site_name') ?: config('app.name')));

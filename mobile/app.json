@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "scheme": "wakeeldiary",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#0f1e36"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -18,21 +13,62 @@
       "supportsTablet": true,
       "bundleIdentifier": "pk.wakeeldiary.app",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Use Face ID to unlock Wakeel Diary securely."
+        "NSFaceIDUsageDescription": "Use Face ID to unlock Wakeel Diary securely.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
       "package": "pk.wakeeldiary.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0f1e36"
-      }
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f2c1e"
+      },
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "plugins": [
       "expo-local-authentication",
-      "expo-font"
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 140,
+          "backgroundColor": "#0f2c1e",
+          "resizeMode": "contain",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#08180f"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0f2c1e",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "extra": {
-      "apiBaseUrl": "https://example.com/api"
+      "apiBaseUrl": "",
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#0f2c1e",
+    "primaryColor": "#0f2c1e",
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#0f2c1e"
     }
   }
 }

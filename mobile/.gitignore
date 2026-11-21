@@ -7,3 +7,7 @@ web-build/
 expo-env.d.ts
 ios/
 android/
+
+# local env
+.env
+.env*.local

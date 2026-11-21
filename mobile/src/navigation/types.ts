@@ -3,36 +3,38 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 /** Every stack-level route across the three roles (shared detail screens have one definition). */
 export type RootStackParamList = {
-  // Tab containers (one per role)
   ClientTabs: undefined;
   LawyerTabs: undefined;
-  FirmTabs: undefined;
-  // Shared + detail screens pushed over the tabs
-  LawyerProfile: { lawyerId: string };
-  BookAppointment: { lawyerId: string };
-  AppointmentDetail: { id: string };
-  CaseDetail: { id: string };
-  ClientDetail: { id: string };
-  TeamMemberDetail: { id: string };
-  AssignCase: undefined;
+  LawyerProfile: { slug: string };
+  FirmProfile: { slug: string };
+  BookAppointment: { slug: string; name?: string };
+  CaseDetail: { id: number };
+  ClientDetail: { id: number };
   Clients: undefined;
-  Documents: undefined;
-  Finance: undefined;
-  Payments: undefined;
   Diary: undefined;
-  Analytics: undefined;
+  Team: undefined;
+  Invoices: undefined;
+  Favourites: undefined;
   Notifications: undefined;
-  Availability: undefined;
   NotificationPrefs: undefined;
-  RolesPermissions: undefined;
-  Settings: undefined;
+  Availability: undefined;
   EditProfile: undefined;
+  ChangePassword: undefined;
+  TwoFactorSetup: undefined;
+};
+
+export type BootstrapStackParamList = {
+  Splash: undefined;
+  Onboarding: undefined;
 };
 
 export type AuthStackParamList = {
   Login: undefined;
+  TwoFactor: { challenge: string };
   Register: undefined;
   ForgotPassword: undefined;
+  ResetCode: { email: string };
+  NewPassword: { email: string; token: string };
 };
 
 export type AuthNavigation = NativeStackNavigationProp<AuthStackParamList>;
@@ -44,7 +46,7 @@ export function useAuthNavigation(): AuthNavigation {
 
 export type ClientTabsParamList = {
   ClientHome: undefined;
-  FindLawyers: undefined;
+  FindLawyers: { specialization?: string } | undefined;
   ClientAppointments: undefined;
   ClientCases: undefined;
   ClientProfile: undefined;
@@ -56,14 +58,6 @@ export type LawyerTabsParamList = {
   LawyerCalendar: undefined;
   LawyerAppointments: undefined;
   LawyerMore: undefined;
-};
-
-export type FirmTabsParamList = {
-  FirmHome: undefined;
-  FirmCases: undefined;
-  FirmTeam: undefined;
-  FirmAppointments: undefined;
-  FirmMore: undefined;
 };
 
 export type AppNavigation = NativeStackNavigationProp<RootStackParamList>;

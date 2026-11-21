@@ -12,7 +12,7 @@ type Item = { id: string; data: { title: string; body: string; url?: string }; r
 export default function NotificationsPage({ notifications, preferences, events, channels, area, whatsappConsent }: { whatsappConsent: boolean; notifications: Paginated<Item>; preferences: { event: string; channel: string; enabled: boolean }[]; events: string[]; channels: Option[]; area: 'workspace' | 'portal' | 'admin' }) {
     const t = useT();
     const { locale } = useLocale();
-    const defaults: Record<string, boolean> = { in_app: true, email: true, whatsapp: false, sms: false };
+    const defaults: Record<string, boolean> = { in_app: true, email: true, whatsapp: false, sms: false, push: true };
     const usable = channels.filter((c) => c.value !== 'sms');
     const form = useForm({ preferences: events.flatMap((event) => usable.map((c) => ({ event, channel: c.value, enabled: preferences.find((p) => p.event === event && p.channel === c.value)?.enabled ?? defaults[c.value] }))) });
     const toggle = (event: string, channel: string) => form.setData('preferences', form.data.preferences.map((p) => (p.event === event && p.channel === channel ? { ...p, enabled: !p.enabled } : p)));

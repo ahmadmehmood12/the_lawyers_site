@@ -1,90 +1,56 @@
-import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Button, Input, Screen, SegmentedControl, Txt } from '@/components';
+import { fieldErrors, errorMessage } from '@/api';
+import { Alert, Button, Input, Txt } from '@/components';
 import { useAuth } from '@/context/AuthContext';
-import type { Role } from '@/data/types';
 import { useAuthNavigation } from '@/navigation/types';
 import { useTheme } from '@/theme';
-
-const ROLE_OPTIONS: { value: Role; label: string }[] = [
-  { value: 'client', label: 'Client' },
-  { value: 'lawyer', label: 'Lawyer' },
-  { value: 'firm', label: 'Law firm' },
-];
+import { AuthShell } from './AuthShell';
 
 export function LoginScreen() {
-  const { c, spacing, radius } = useTheme();
-  const { login, biometricAvailable, unlock } = useAuth();
   const nav = useAuthNavigation();
-  const [role, setRole] = useState<Role>('client');
+  const { signIn } = useAuth();
+  const { spacing } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState<string | null>(null);
 
-  const signIn = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      login(role);
-    }, 650);
-  };
-
-  const biometric = async () => {
-    const ok = await unlock();
-    if (ok) {
-      login(role);
+  const submit = async () => {
+    setBusy(true);
+    setErrors({});
+    setMessage(null);
+    try {
+      const outcome = await signIn(email, password);
+      if (outcome.twoFactor) {
+        nav.navigate('TwoFactor', { challenge: outcome.challenge });
+      }
+    } catch (e) {
+      const fields = fieldErrors(e);
+      setErrors(fields);
+      setMessage(Object.keys(fields).length ? null : errorMessage(e));
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <Screen padded contentStyle={{ paddingTop: spacing['3xl'] }}>
-      <View style={{ alignItems: 'center', marginBottom: spacing['3xl'] }}>
-        <View style={{ width: 72, height: 72, borderRadius: radius.lg, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <Feather name="shield" size={34} color={c.primaryText} />
-        </View>
-        <Txt variant="title" style={{ marginTop: spacing.lg }}>
-          Wakeel Diary
-        </Txt>
-        <Txt variant="body" tone="muted" center style={{ marginTop: spacing.xs }}>
-          Pakistan’s legal practice, in your pocket
-        </Txt>
-      </View>
-
-      <Txt variant="label" tone="muted" style={{ marginBottom: spacing.sm }}>
-        Sign in as
-      </Txt>
-      <SegmentedControl options={ROLE_OPTIONS} value={role} onChange={setRole} />
-
-      <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
-        <Input label="Email" icon="mail" placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-        <Input label="Password" icon="lock" placeholder="••••••••" password value={password} onChangeText={setPassword} />
-        <Pressable onPress={() => nav.navigate('ForgotPassword')} hitSlop={6} style={{ alignSelf: 'flex-end' }}>
-          <Txt variant="caption" tone="accent" weight="600">
-            Forgot password?
-          </Txt>
-        </Pressable>
-        <Button title="Sign in" icon="log-in" loading={loading} onPress={signIn} full />
-        {biometricAvailable ? (
-          <Button title="Unlock with Face ID / fingerprint" icon="smartphone" variant="secondary" onPress={biometric} full />
-        ) : null}
-      </View>
-
-      <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: spacing['2xl'] }}>
-        <Txt variant="body" tone="muted">
-          New here?{' '}
-        </Txt>
-        <Pressable onPress={() => nav.navigate('Register')} hitSlop={6}>
-          <Txt variant="body" tone="accent" weight="700">
-            Create an account
-          </Txt>
+    <AuthShell title="Welcome back" subtitle="Sign in to your cases, diary and consultations.">
+      {message ? <Alert tone="danger" message={message} /> : null}
+      <Input label="Email" icon="mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" error={errors.email} />
+      <Input label="Password" icon="lock" value={password} onChangeText={setPassword} password autoComplete="password" error={errors.password} onSubmitEditing={() => void submit()} />
+      <Pressable onPress={() => nav.navigate('ForgotPassword')} style={{ alignSelf: 'flex-end' }} hitSlop={8}>
+        <Txt variant="label" tone="accent">Forgot password?</Txt>
+      </Pressable>
+      <Button title="Sign in" onPress={() => void submit()} loading={busy} disabled={!email || !password} full size="lg" />
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: spacing.sm }}>
+        <Txt tone="muted">New to Wakeel Diary?</Txt>
+        <Pressable onPress={() => nav.navigate('Register')} hitSlop={8}>
+          <Txt weight="700" tone="primary">Create an account</Txt>
         </Pressable>
       </View>
-
-      <Txt variant="caption" tone="faint" center style={{ marginTop: spacing['3xl'] }}>
-        Prototype — pick a role and sign in to explore. No real credentials needed.
-      </Txt>
-    </Screen>
+    </AuthShell>
   );
 }

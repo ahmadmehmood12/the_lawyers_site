@@ -15,3 +15,7 @@ export { Skeleton, SkeletonCard } from './Skeleton';
 export { Divider, ProgressBar, IconButton, KeyValue } from './Misc';
 export { Alert } from './Alert';
 export { AppHeader } from './AppHeader';
+export * from './OtpInput';
+export * from './LawyerCard';
+export * from './FirmCard';
+export * from './Sheets';

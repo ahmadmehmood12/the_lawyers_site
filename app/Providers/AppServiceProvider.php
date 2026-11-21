@@ -27,6 +27,10 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
+use L5Swagger\GeneratorFactory;
+use OpenApi\Analysers\AttributeAnnotationFactory;
+use OpenApi\Analysers\DocBlockAnnotationFactory;
+use OpenApi\Analysers\ReflectionAnalyser;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,6 +47,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Swagger: read the docblock @OA annotations in app/Swagger (docs/API/API-Documentation.md). Set only
+        // when docs are generated, because an object in config would break `php artisan config:cache`.
+        $this->app->beforeResolving(GeneratorFactory::class, fn () => config(['l5-swagger.defaults.scanOptions.analyser' => new ReflectionAnalyser([new DocBlockAnnotationFactory, new AttributeAnnotationFactory])]));
+
         try {
             app(MailSettings::class)->apply();
         } catch (\Throwable) {

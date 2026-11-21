@@ -9,7 +9,7 @@ import { useTheme } from '@/theme';
 /** Shown on relaunch when biometric lock is enabled; the app stays blurred until unlocked. */
 export function BiometricUnlockScreen() {
   const { c, spacing, radius } = useTheme();
-  const { unlock, logout, user } = useAuth();
+  const { unlock, signOut, user } = useAuth();
 
   useEffect(() => {
     // Prompt automatically the first time the lock screen appears.
@@ -29,8 +29,8 @@ export function BiometricUnlockScreen() {
         {user?.name ?? 'Wakeel Diary'} is locked. Unlock with Face ID or your fingerprint to continue.
       </Txt>
       <View style={{ width: '100%', gap: spacing.md, marginTop: spacing['3xl'] }}>
-        <Button title="Unlock" icon="unlock" onPress={unlock} full />
-        <Button title="Sign out" variant="ghost" onPress={logout} full />
+        <Button title="Unlock" icon="unlock" onPress={() => void unlock()} full />
+        <Button title="Sign out" variant="ghost" onPress={() => void signOut()} full />
       </View>
     </Screen>
   );

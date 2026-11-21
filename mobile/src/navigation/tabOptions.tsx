@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
 import { StyleSheet } from 'react-native';
 
-import type { ThemeColors } from '@/theme';
+import { fontFamily, type ThemeColors } from '@/theme';
 
 /** Shared bottom-tab styling so all three role tab bars look identical. */
 export function tabScreenOptions(c: ThemeColors): BottomTabNavigationOptions {
@@ -18,7 +18,7 @@ export function tabScreenOptions(c: ThemeColors): BottomTabNavigationOptions {
       paddingTop: 6,
       paddingBottom: 10,
     },
-    tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+    tabBarLabelStyle: { fontSize: 11, fontFamily: fontFamily.semibold },
   };
 }
 

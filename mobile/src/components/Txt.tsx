@@ -1,13 +1,13 @@
-import { Text, type TextProps, type TextStyle } from 'react-native';
+import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { fontFor, useTheme } from '@/theme';
 
 type Variant = 'display' | 'title' | 'heading' | 'subtitle' | 'body' | 'label' | 'caption';
 type Tone = 'default' | 'muted' | 'faint' | 'inverse' | 'primary' | 'accent' | 'success' | 'danger' | 'warning';
 
 const SIZES: Record<Variant, { size: keyof ReturnType<typeof useTheme>['fontSize']; weight: TextStyle['fontWeight']; lineHeight?: number }> = {
-  display: { size: '3xl', weight: '700', lineHeight: 38 },
-  title: { size: '2xl', weight: '700', lineHeight: 32 },
+  display: { size: '3xl', weight: '800', lineHeight: 38 },
+  title: { size: '2xl', weight: '800', lineHeight: 32 },
   heading: { size: 'xl', weight: '700', lineHeight: 28 },
   subtitle: { size: 'lg', weight: '600', lineHeight: 24 },
   body: { size: 'base', weight: '400', lineHeight: 21 },
@@ -38,12 +38,15 @@ export function Txt({ variant = 'body', tone = 'default', weight, center, style,
     warning: c.warning,
   }[tone];
 
+  const resolvedWeight = StyleSheet.flatten(style)?.fontWeight ?? weight ?? spec.weight;
+
   return (
     <Text
       style={[
-        { color, fontSize: fontSize[spec.size], fontWeight: weight ?? spec.weight, lineHeight: spec.lineHeight },
+        { color, fontSize: fontSize[spec.size], fontFamily: fontFor(resolvedWeight), lineHeight: spec.lineHeight, letterSpacing: variant === 'display' || variant === 'title' ? -0.4 : 0 },
         center && { textAlign: 'center' },
         style,
+        { fontWeight: undefined },
       ]}
       {...rest}
     />

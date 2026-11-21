@@ -1,7 +1,7 @@
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 
-import type { ClientTabsParamList, FirmTabsParamList, LawyerTabsParamList } from './types';
+import type { ClientTabsParamList, LawyerTabsParamList } from './types';
 
 /** Typed hooks so a tab screen can switch to a sibling tab. */
 export function useClientTabNavigation(): BottomTabNavigationProp<ClientTabsParamList> {
@@ -10,8 +10,4 @@ export function useClientTabNavigation(): BottomTabNavigationProp<ClientTabsPara
 
 export function useLawyerTabNavigation(): BottomTabNavigationProp<LawyerTabsParamList> {
   return useNavigation<BottomTabNavigationProp<LawyerTabsParamList>>();
-}
-
-export function useFirmTabNavigation(): BottomTabNavigationProp<FirmTabsParamList> {
-  return useNavigation<BottomTabNavigationProp<FirmTabsParamList>>();
 }

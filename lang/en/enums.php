@@ -176,6 +176,7 @@ return [
         'email' => 'Email',
         'whatsapp' => 'WhatsApp',
         'sms' => 'SMS',
+        'push' => 'Mobile push',
     ],
     'review_status' => [
         'pending' => 'Pending',

@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from '
 import { useTheme } from '@/theme';
 import { Txt } from './Txt';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent' | 'inverse';
 type Size = 'sm' | 'md' | 'lg';
 
 type Props = {
@@ -31,6 +31,7 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', icon,
     danger: c.danger,
     secondary: c.surface,
     ghost: 'transparent',
+    inverse: 'transparent',
   }[variant];
   const fg = {
     primary: c.primaryText,
@@ -38,6 +39,7 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', icon,
     danger: '#ffffff',
     secondary: c.text,
     ghost: c.primary,
+    inverse: '#ffffff',
   }[variant];
   const border = variant === 'secondary' ? c.borderStrong : undefined;
 

@@ -10,6 +10,7 @@ use App\Models\Article;
 use App\Models\LawyerProfile;
 use App\Models\LegalCase;
 use App\Models\OrganizationMember;
+use App\Models\User;
 use App\Support\DirectoryPresenter;
 use App\Support\ReferenceOptions;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,13 +30,18 @@ class LawyerDirectoryController extends Controller
 {
     public const LANGUAGES = ['English', 'Urdu', 'Punjabi', 'Sindhi', 'Pashto', 'Balochi', 'Saraiki', 'Hindko', 'Arabic'];
 
-    public function index(Request $request, ?string $embedded = null): Response
+    /**
+     * The public lawyer directory (web /lawyers and GET /api/v1/lawyers): listed profiles with
+     * the directory filters, verified first, then most reviewed.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Builder<LawyerProfile>
+     */
+    public static function search(array $filters): Builder
     {
-        $filters = $request->only(['search', 'city', 'province', 'district', 'court', 'specialization', 'experience', 'bar_council', 'category', 'language', 'online', 'fee_max', 'verified', 'sort']);
-
         $closed = array_map(fn (CaseStatus $s) => $s->value, array_filter(CaseStatus::cases(), fn (CaseStatus $s) => $s->isClosed()));
 
-        $lawyers = LawyerProfile::query()->select('lawyer_profiles.*')->listed()
+        return LawyerProfile::query()->select('lawyer_profiles.*')->listed()
             ->addSelect([
                 'cases_handled' => DB::table('case_lawyer')->selectRaw('COUNT(DISTINCT case_lawyer.legal_case_id)')->whereColumn('case_lawyer.user_id', 'lawyer_profiles.user_id'),
                 'cases_completed' => DB::table('case_lawyer')->join('legal_cases', 'legal_cases.id', '=', 'case_lawyer.legal_case_id')
@@ -64,7 +70,14 @@ class LawyerDirectoryController extends Controller
             ->when(($filters['verified'] ?? null) === '1', fn (Builder $q) => $q->where('verification_status', VerificationStatus::Approved->value))
             ->when(($filters['sort'] ?? null) === 'experience', fn (Builder $q) => $q->orderByRaw('practice_since IS NULL, practice_since'))
             ->when(($filters['sort'] ?? null) === 'rating', fn (Builder $q) => $q->orderByDesc('rating_average'))
-            ->orderByRaw("verification_status = 'approved' DESC")->orderByDesc('rating_count')->orderBy('id')
+            ->orderByRaw("verification_status = 'approved' DESC")->orderByDesc('rating_count')->orderBy('id');
+    }
+
+    public function index(Request $request, ?string $embedded = null): Response
+    {
+        $filters = $request->only(['search', 'city', 'province', 'district', 'court', 'specialization', 'experience', 'bar_council', 'category', 'language', 'online', 'fee_max', 'verified', 'sort']);
+
+        $lawyers = self::search($filters)
             ->paginate(12)->withQueryString()
             ->through(fn (LawyerProfile $p) => [
                 ...DirectoryPresenter::lawyer($p),
@@ -90,10 +103,13 @@ class LawyerDirectoryController extends Controller
         ]);
     }
 
-    public function show(Request $request, LawyerProfile $lawyer, ?string $embedded = null): Response
+    /**
+     * Full public profile (web profile page and GET /api/v1/lawyers/{slug}).
+     *
+     * @return array<string, mixed>
+     */
+    public static function profile(LawyerProfile $lawyer, ?User $user): array
     {
-        abort_unless(LawyerProfile::query()->listed()->whereKey($lawyer->id)->exists(), 404);
-
         $lawyer->load([
             'user:id,name,avatar_path',
             'user.memberships' => fn ($q) => $q->where('status', 'active')
@@ -115,9 +131,7 @@ class LawyerDirectoryController extends Controller
             'courts_represented' => (clone $platformCases)->whereNotNull('court_id')->distinct()->count('court_id'),
         ];
 
-        $user = $request->user();
-
-        return Inertia::render('Public/Lawyers/Show', [
+        return [
             'lawyer' => [
                 ...DirectoryPresenter::lawyer($lawyer),
                 'bio' => app()->getLocale() === 'ur' && $lawyer->bio_ur ? $lawyer->bio_ur : $lawyer->bio,
@@ -135,13 +149,22 @@ class LawyerDirectoryController extends Controller
                 'credentials' => $lawyer->credentials->map->only(['type', 'title', 'issuer', 'year', 'url']),
                 'verified_at' => $lawyer->verified_at?->toDateString(),
                 'firms' => $firms,
-                'reviews' => $lawyer->approvedReviews->map(fn ($r) => ['id' => $r->id, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'author' => $this->initials($r->author->name), 'response' => $r->response, 'created_at' => $r->created_at->toDateString()]),
+                'reviews' => $lawyer->approvedReviews->map(fn ($r) => ['id' => $r->id, 'rating' => $r->rating, 'title' => $r->title, 'comment' => $r->comment, 'author' => self::initials($r->author->name), 'response' => $r->response, 'created_at' => $r->created_at->toDateString()]),
             ],
             'articles' => Article::query()->published()->where('author_id', $lawyer->user_id)->with('category:id,name')->latest('published_at')->limit(6)->get()
                 ->map(fn (Article $a) => $a->toCard($lawyer->user->name)),
             'stats' => $stats,
             'isFavourite' => $user ? $user->favouriteLawyers()->whereKey($lawyer->id)->exists() : false,
             'canBook' => $lawyer->accepting_clients,
+        ];
+    }
+
+    public function show(Request $request, LawyerProfile $lawyer, ?string $embedded = null): Response
+    {
+        abort_unless(LawyerProfile::query()->listed()->whereKey($lawyer->id)->exists(), 404);
+
+        return Inertia::render('Public/Lawyers/Show', [
+            ...self::profile($lawyer, $request->user()),
             'canonical' => route('lawyers.show', $lawyer),
             'embedded' => $embedded,
         ]);
@@ -155,7 +178,7 @@ class LawyerDirectoryController extends Controller
         return back();
     }
 
-    private function initials(string $name): string
+    private static function initials(string $name): string
     {
         $parts = preg_split('/\s+/', trim($name)) ?: [];
 

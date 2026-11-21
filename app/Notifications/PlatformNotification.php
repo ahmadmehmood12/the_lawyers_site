@@ -6,7 +6,9 @@ use App\Enums\NotificationChannel;
 use App\Models\EmailTemplate;
 use App\Models\Setting;
 use App\Models\User;
+use App\Notifications\Channels\PushChannel;
 use App\Notifications\Channels\WhatsAppChannel;
+use App\Services\Mobile\MobileAppConfig;
 use App\Support\PublicFile;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -71,6 +73,11 @@ abstract class PlatformNotification extends Notification implements ShouldQueue
 
         if ($notifiable->hasWhatsAppConsent() && $enabled(NotificationChannel::WhatsApp, false) && $notifiable->phone && $this->whatsAppTemplate($notifiable)) {
             $channels[] = WhatsAppChannel::class;
+        }
+
+        // Mobile push (FCM / Expo) to the user's registered device; on by default per event.
+        if ($notifiable->fcm_token && $enabled(NotificationChannel::Push, true) && app(MobileAppConfig::class)->canPush($notifiable->fcm_token)) {
+            $channels[] = PushChannel::class;
         }
 
         return $channels;

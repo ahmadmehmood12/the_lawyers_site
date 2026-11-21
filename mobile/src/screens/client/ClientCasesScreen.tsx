@@ -1,54 +1,33 @@
 import { View } from 'react-native';
 
-import { Badge, Card, EmptyState, ProgressBar, Screen, Txt } from '@/components';
-import { cases, currentClientId } from '@/data/mock';
-import { formatDate, relativeDay } from '@/lib/format';
-import { caseTone, label } from '@/lib/status';
+import { clientApi } from '@/api';
+import { Badge, Card, EmptyState, ErrorState, Screen, SkeletonCard, Txt } from '@/components';
+import { useQuery } from '@/hooks/useQuery';
+import { statusTone } from '@/lib/status';
 import { useAppNavigation } from '@/navigation/types';
 import { useTheme } from '@/theme';
 
 export function ClientCasesScreen() {
-  const { spacing } = useTheme();
   const nav = useAppNavigation();
-  const mine = cases.filter((cs) => cs.clientId === currentClientId);
+  const { spacing } = useTheme();
+  const q = useQuery(() => clientApi.cases());
 
   return (
-    <Screen>
-      <Txt variant="title" style={{ marginBottom: spacing.lg }}>
-        My cases
-      </Txt>
-      {mine.length === 0 ? (
-        <EmptyState icon="folder" title="No cases yet" message="When a lawyer adds you to a case, it will appear here with its progress and hearing dates." />
+    <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
+      <Txt variant="title" style={{ marginBottom: spacing.lg }}>My cases</Txt>
+      {q.loading ? <View style={{ gap: spacing.md }}><SkeletonCard /><SkeletonCard /></View> : q.error ? <ErrorState message={q.error} onRetry={q.reload} /> : !q.data?.cases.length ? (
+        <EmptyState icon="folder" title="No cases shared yet" message="When your lawyer shares a case with you it appears here with hearings and documents." />
       ) : (
         <View style={{ gap: spacing.md }}>
-          {mine.map((cs) => (
-            <Card key={cs.id} onPress={() => nav.navigate('CaseDetail', { id: cs.id })}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Txt variant="caption" tone="faint">
-                  {cs.reference}
-                </Txt>
-                <Badge label={label(cs.status)} tone={caseTone(cs.status)} />
+          {q.data.cases.map((k) => (
+            <Card key={k.id} onPress={() => nav.navigate('CaseDetail', { id: k.id })}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
+                <Txt variant="subtitle" style={{ flex: 1 }} numberOfLines={2}>{k.title}</Txt>
+                <Badge label={k.status_label} tone={statusTone(k.status)} />
               </View>
-              <Txt variant="subtitle" style={{ marginTop: 4 }} numberOfLines={2}>
-                {cs.title}
-              </Txt>
-              <Txt variant="caption" tone="muted" style={{ marginTop: 2 }}>
-                {cs.court} · {cs.type}
-              </Txt>
-              <View style={{ marginTop: spacing.md, marginBottom: spacing.sm, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Txt variant="caption" tone="muted">
-                  {cs.stage}
-                </Txt>
-                <Txt variant="caption" weight="600">
-                  {cs.progress}%
-                </Txt>
-              </View>
-              <ProgressBar value={cs.progress} tone={cs.status === 'won' ? 'success' : 'accent'} />
-              {cs.nextHearing ? (
-                <Txt variant="caption" tone="accent" weight="600" style={{ marginTop: spacing.md }}>
-                  Next hearing {relativeDay(cs.nextHearing)} · {formatDate(cs.nextHearing)}
-                </Txt>
-              ) : null}
+              <Txt variant="label" tone="muted" weight="500" style={{ marginTop: 4 }}>{[k.case_number, k.court].filter(Boolean).join(' · ')}</Txt>
+              <Txt variant="caption" tone="faint" style={{ marginTop: 6 }}>{k.lawyers.join(', ')} · {k.organization}</Txt>
+              {k.next_hearing_at ? <Txt variant="label" tone="accent" style={{ marginTop: spacing.sm }}>Next hearing: {new Date(k.next_hearing_at).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short' })}</Txt> : null}
             </Card>
           ))}
         </View>

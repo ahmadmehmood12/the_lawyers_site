@@ -1,57 +1,94 @@
 import { DarkTheme, DefaultTheme, NavigationContainer, type Theme as NavTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import type { Role } from '@/data/types';
+import { useAppConfig } from '@/hooks/useAppConfig';
+import { onPushTapped } from '@/lib/push';
+import { isOnboardingCompleted } from '@/lib/storage';
+import { AccountScreen } from '@/screens/account/AccountScreen';
+import { NotificationPrefsScreen, NotificationsScreen } from '@/screens/account/NotificationsScreens';
+import { ChangePasswordScreen, EditProfileScreen } from '@/screens/account/ProfileForms';
+import { TwoFactorSetupScreen } from '@/screens/account/TwoFactorSetupScreen';
 import { BiometricUnlockScreen } from '@/screens/auth/BiometricUnlockScreen';
-import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
+import { ForgotPasswordScreen, NewPasswordScreen, ResetCodeScreen } from '@/screens/auth/ForgotPasswordScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { RegisterScreen } from '@/screens/auth/RegisterScreen';
-import { AnalyticsScreen } from '@/screens/firm/AnalyticsScreen';
-import { AssignCaseScreen } from '@/screens/firm/AssignCaseScreen';
-import { RolesPermissionsScreen } from '@/screens/firm/RolesPermissionsScreen';
-import { TeamMemberDetailScreen } from '@/screens/firm/TeamMemberDetailScreen';
+import { TwoFactorScreen } from '@/screens/auth/TwoFactorScreen';
+import { VerifyEmailScreen } from '@/screens/auth/VerifyEmailScreen';
+import { OnboardingScreen } from '@/screens/bootstrap/OnboardingScreen';
+import { SplashScreen } from '@/screens/bootstrap/SplashScreen';
 import { BookAppointmentScreen } from '@/screens/client/BookAppointmentScreen';
-import { ClientPaymentsScreen } from '@/screens/client/ClientPaymentsScreen';
+import { ClientCaseDetailScreen } from '@/screens/client/ClientCaseDetailScreen';
+import { FirmProfileScreen } from '@/screens/client/FirmProfileScreen';
+import { FavouritesScreen, InvoicesScreen } from '@/screens/client/InvoicesScreen';
 import { LawyerProfileScreen } from '@/screens/client/LawyerProfileScreen';
-import { AvailabilityScreen } from '@/screens/lawyer/AvailabilityScreen';
-import { NotificationPrefsScreen } from '@/screens/lawyer/NotificationPrefsScreen';
-import { AppointmentDetailScreen } from '@/screens/shared/AppointmentDetailScreen';
-import { CaseDetailScreen } from '@/screens/shared/CaseDetailScreen';
-import { ClientDetailScreen } from '@/screens/shared/ClientDetailScreen';
-import { ClientsScreen } from '@/screens/shared/ClientsScreen';
-import { CourtDiaryScreen } from '@/screens/lawyer/CourtDiaryScreen';
-import { DocumentsScreen } from '@/screens/shared/DocumentsScreen';
-import { EditProfileScreen } from '@/screens/shared/EditProfileScreen';
-import { FinanceScreen } from '@/screens/shared/FinanceScreen';
-import { NotificationsScreen } from '@/screens/shared/NotificationsScreen';
-import { SettingsScreen } from '@/screens/shared/SettingsScreen';
-import { useTheme } from '@/theme';
+import { AvailabilityScreen } from '@/screens/workspace/AvailabilityScreen';
+import { ClientDetailScreen, ClientsScreen } from '@/screens/workspace/ClientsScreen';
+import { CourtDiaryScreen } from '@/screens/workspace/CourtDiaryScreen';
+import { TeamScreen } from '@/screens/workspace/TeamScreen';
+import { WorkspaceCaseDetailScreen } from '@/screens/workspace/WorkspaceCaseDetailScreen';
+import { fontFamily, useTheme } from '@/theme';
 import { ClientTabs } from './ClientTabs';
-import { FirmTabs } from './FirmTabs';
 import { LawyerTabs } from './LawyerTabs';
-import type { AuthStackParamList, RootStackParamList } from './types';
+import { navigationRef } from './navigationRef';
+import type { AuthStackParamList, BootstrapStackParamList, RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Auth = createNativeStackNavigator<AuthStackParamList>();
+const Bootstrap = createNativeStackNavigator<BootstrapStackParamList>();
+
+type BootstrapProps = {
+  stage: 'splash' | 'onboarding';
+  appConfig: ReturnType<typeof useAppConfig>;
+  onSplashFinish: () => void;
+  onOnboardingFinish: () => void;
+};
+
+function BootstrapStack({ stage, appConfig, onSplashFinish, onOnboardingFinish }: BootstrapProps) {
+  return (
+    <Bootstrap.Navigator key={stage} screenOptions={{ headerShown: false }}>
+      {stage === 'splash' ? (
+        <Bootstrap.Screen name="Splash">
+          {() => (
+            <SplashScreen
+              config={appConfig.config}
+              loading={appConfig.loading}
+              error={appConfig.error}
+              onRetry={appConfig.refetch}
+              onFinish={onSplashFinish}
+            />
+          )}
+        </Bootstrap.Screen>
+      ) : (
+        <Bootstrap.Screen name="Onboarding">{() => <OnboardingScreen onFinish={onOnboardingFinish} />}</Bootstrap.Screen>
+      )}
+    </Bootstrap.Navigator>
+  );
+}
 
 function AuthStack() {
   const { c } = useTheme();
   return (
-    <Auth.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: c.bg },
-        headerTintColor: c.text,
-        headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '700' },
-        contentStyle: { backgroundColor: c.bg },
-      }}
-    >
-      <Auth.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      <Auth.Screen name="Register" component={RegisterScreen} options={{ title: '' }} />
-      <Auth.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: '' }} />
+    <Auth.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg }, animation: 'slide_from_right' }}>
+      <Auth.Screen name="Login" component={LoginScreen} />
+      <Auth.Screen name="TwoFactor" component={TwoFactorScreen} />
+      <Auth.Screen name="Register" component={RegisterScreen} />
+      <Auth.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Auth.Screen name="ResetCode" component={ResetCodeScreen} />
+      <Auth.Screen name="NewPassword" component={NewPasswordScreen} />
     </Auth.Navigator>
   );
+}
+
+function CaseDetail({ route }: { route: { params: RootStackParamList['CaseDetail'] } }) {
+  const { role } = useAuth();
+  return role === 'client' ? <ClientCaseDetailScreen id={route.params.id} /> : <WorkspaceCaseDetailScreen id={route.params.id} />;
+}
+
+function ClientDetail({ route }: { route: { params: RootStackParamList['ClientDetail'] } }) {
+  return <ClientDetailScreen id={route.params.id} />;
 }
 
 function AppStack({ role }: { role: Role }) {
@@ -63,40 +100,71 @@ function AppStack({ role }: { role: Role }) {
         headerTintColor: c.text,
         headerShadowVisible: false,
         headerBackButtonDisplayMode: 'minimal',
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontFamily: fontFamily.bold, fontSize: 17 },
         contentStyle: { backgroundColor: c.bg },
+        animation: 'slide_from_right',
       }}
     >
-      {role === 'client' ? <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} /> : null}
-      {role === 'lawyer' ? <Stack.Screen name="LawyerTabs" component={LawyerTabs} options={{ headerShown: false }} /> : null}
-      {role === 'firm' ? <Stack.Screen name="FirmTabs" component={FirmTabs} options={{ headerShown: false }} /> : null}
-
-      <Stack.Screen name="LawyerProfile" component={LawyerProfileScreen} options={{ title: 'Lawyer' }} />
+      {role === 'client'
+        ? <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} />
+        : <Stack.Screen name="LawyerTabs" component={LawyerTabs} options={{ headerShown: false }} />}
+      <Stack.Screen name="LawyerProfile" component={LawyerProfileScreen} options={{ title: '' }} />
+      <Stack.Screen name="FirmProfile" component={FirmProfileScreen} options={{ title: '' }} />
       <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} options={{ title: 'Book consultation' }} />
-      <Stack.Screen name="AppointmentDetail" component={AppointmentDetailScreen} options={{ title: 'Appointment' }} />
-      <Stack.Screen name="CaseDetail" component={CaseDetailScreen} options={{ title: 'Case' }} />
-      <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: 'Client' }} />
-      <Stack.Screen name="TeamMemberDetail" component={TeamMemberDetailScreen} options={{ title: 'Team member' }} />
-      <Stack.Screen name="AssignCase" component={AssignCaseScreen} options={{ title: 'Assign case' }} />
+      <Stack.Screen name="CaseDetail" component={CaseDetail} options={{ title: 'Case' }} />
+      <Stack.Screen name="ClientDetail" component={ClientDetail} options={{ title: 'Client' }} />
       <Stack.Screen name="Clients" component={ClientsScreen} options={{ title: 'Clients' }} />
-      <Stack.Screen name="Documents" component={DocumentsScreen} options={{ title: 'Documents' }} />
-      <Stack.Screen name="Finance" component={FinanceScreen} options={{ title: 'Finance' }} />
-      <Stack.Screen name="Payments" component={ClientPaymentsScreen} options={{ title: 'Payments' }} />
-      <Stack.Screen name="Diary" component={CourtDiaryScreen} options={{ title: 'Court diary' }} />
-      <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ title: 'Analytics' }} />
+      <Stack.Screen name="Diary" component={CourtDiaryScreen} options={{ title: '' }} />
+      <Stack.Screen name="Team" component={TeamScreen} options={{ title: '' }} />
+      <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ title: 'Invoices' }} />
+      <Stack.Screen name="Favourites" component={FavouritesScreen} options={{ title: 'Saved lawyers' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
-      <Stack.Screen name="Availability" component={AvailabilityScreen} options={{ title: 'Availability' }} />
-      <Stack.Screen name="NotificationPrefs" component={NotificationPrefsScreen} options={{ title: 'Notifications' }} />
-      <Stack.Screen name="RolesPermissions" component={RolesPermissionsScreen} options={{ title: 'Roles & permissions' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-      <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Profile' }} />
+      <Stack.Screen name="NotificationPrefs" component={NotificationPrefsScreen} options={{ title: 'Notification settings' }} />
+      <Stack.Screen name="Availability" component={AvailabilityScreen} options={{ title: 'Consultation hours' }} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change password' }} />
+      <Stack.Screen name="TwoFactorSetup" component={TwoFactorSetupScreen} options={{ title: 'Two-factor authentication' }} />
     </Stack.Navigator>
   );
 }
 
 export function RootNavigator() {
   const { c, isDark } = useTheme();
-  const { user, locked, biometricEnabled } = useAuth();
+  const { status, user, role, locked, biometricEnabled, refreshUser } = useAuth();
+  const appConfig = useAppConfig();
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [stage, setStage] = useState<'splash' | 'onboarding' | 'app'>('splash');
+
+  useEffect(() => {
+    let active = true;
+    isOnboardingCompleted().then((done) => {
+      if (active) {
+        setOnboardingDone(done);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const finishSplash = async () => {
+    const done = onboardingDone ?? (await isOnboardingCompleted());
+    setOnboardingDone(done);
+    setStage(done ? 'app' : 'onboarding');
+  };
+
+  const finishOnboarding = () => {
+    setOnboardingDone(true);
+    setStage('app');
+  };
+
+  // A tapped push opens the notifications list and refreshes the unread counters.
+  useEffect(() => onPushTapped(() => {
+    void refreshUser().catch(() => undefined);
+    if (navigationRef.isReady()) {
+      navigationRef.navigate('Notifications');
+    }
+  }), [refreshUser]);
 
   const base = isDark ? DarkTheme : DefaultTheme;
   const navTheme: NavTheme = {
@@ -105,8 +173,27 @@ export function RootNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navTheme}>
-      {!user ? <AuthStack /> : locked && biometricEnabled ? <BiometricUnlockScreen /> : <AppStack role={user.role} />}
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
+      {stage === 'splash' || stage === 'onboarding' ? (
+        <BootstrapStack
+          stage={stage}
+          appConfig={appConfig}
+          onSplashFinish={() => void finishSplash()}
+          onOnboardingFinish={finishOnboarding}
+        />
+      ) : status === 'loading' ? (
+        <SplashScreen config={appConfig.config} loading error={null} onRetry={appConfig.refetch} onFinish={() => undefined} />
+      ) : !user ? (
+        <AuthStack />
+      ) : !user.email_verified ? (
+        <VerifyEmailScreen />
+      ) : locked && biometricEnabled ? (
+        <BiometricUnlockScreen />
+      ) : role ? (
+        <AppStack role={role} />
+      ) : (
+        <AccountScreen />
+      )}
     </NavigationContainer>
   );
 }

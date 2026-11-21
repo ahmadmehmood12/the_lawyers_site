@@ -9,6 +9,7 @@ use App\Http\Controllers\Webhooks\PaymentWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Webhooks\WhatsAppWebhookController;
 use App\Http\Middleware\EnsureJudgmentImportToken;
+use App\Http\Middleware\SetApiLocale;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -45,3 +46,8 @@ Route::post('judgments/pdf', JudgmentPdfController::class)
 | (app name/icon, iOS/Android versions + store links, flags). No secrets.
 */
 Route::get('app/config', AppConfigController::class)->middleware('throttle:120,1')->name('api.app.config');
+
+/*
+| Mobile apps REST API v1 (Sanctum). See routes/api/v1.php and /api/documentation.
+*/
+Route::prefix('v1')->name('api.v1.')->middleware(SetApiLocale::class)->group(base_path('routes/api/v1.php'));

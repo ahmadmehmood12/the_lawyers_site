@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Services\Auth\OneTimeCodeService;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,12 +30,9 @@ class OneTimeCodeController extends Controller
             return redirect()->intended(route('home.redirect'));
         }
 
-        if (! $this->codes->verify($user->email, OneTimeCodeService::VerifyEmail, (string) $request->input('code'))) {
+        if (! $this->codes->verifyUserEmail($user, (string) $request->input('code'))) {
             throw ValidationException::withMessages(['code' => __('That code is wrong or has expired. Check the latest email or send a new code.')]);
         }
-
-        $user->markEmailAsVerified();
-        event(new Verified($user));
 
         return redirect()->intended(route('home.redirect'))->with('success', __('Your email address is verified.'));
     }
@@ -57,14 +51,12 @@ class OneTimeCodeController extends Controller
     public function verifyReset(Request $request): RedirectResponse
     {
         $data = $request->validate(['email' => ['required', 'email'], 'code' => ['required', 'digits:6']]);
-        $user = User::query()->where('email', strtolower($data['email']))->first();
+        $token = $this->codes->resetTokenFor($data['email'], $data['code']);
 
-        if (! $user || ! $this->codes->verify($user->email, OneTimeCodeService::ResetPassword, $data['code'])) {
+        if (! $token) {
             throw ValidationException::withMessages(['code' => __('That code is wrong or has expired. Check the latest email or send a new code.')]);
         }
 
-        $token = Password::broker(config('fortify.passwords'))->createToken($user);
-
-        return redirect()->route('password.reset', ['token' => $token, 'email' => $user->email]);
+        return redirect()->route('password.reset', ['token' => $token, 'email' => strtolower($data['email'])]);
     }
 }
