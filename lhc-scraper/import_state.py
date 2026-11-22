@@ -22,6 +22,8 @@ class ImportState:
         self.imported: set[str] = set(data.get("imported", []))
         self.indexed: set[str] = set(data.get("indexed", []))
         self.stored: set[str] = set(data.get("stored", []))
+        # Scanned PDFs indexed without OCR (Tesseract missing); re-indexed once OCR is available.
+        self.needs_ocr: set[str] = set(data.get("needs_ocr", []))
         self.flags: dict[str, str] = dict(data.get("flags", {}))
 
     def is_imported(self, pdf_url: str) -> bool:
@@ -53,5 +55,5 @@ class ImportState:
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(".tmp")
-        temporary.write_text(json.dumps({"flags": self.flags, "imported": sorted(self.imported), "indexed": sorted(self.indexed), "stored": sorted(self.stored)}, indent=0), encoding="utf-8")
+        temporary.write_text(json.dumps({"flags": self.flags, "imported": sorted(self.imported), "indexed": sorted(self.indexed), "stored": sorted(self.stored), "needs_ocr": sorted(self.needs_ocr)}, indent=0), encoding="utf-8")
         temporary.replace(self.path)

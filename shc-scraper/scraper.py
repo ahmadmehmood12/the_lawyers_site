@@ -199,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-store-pdf", action="store_true", help="Do not download and store the PDF on the site (on by default); keep only the court link.")
     parser.add_argument("--no-index-text", action="store_true", help="Do not extract and send full text + keywords for search (on by default).")
     parser.add_argument("--index-only", action="store_true", help="Only add text + keywords (and the stored PDF) for judgments already on the site; do not import metadata. For backfilling.")
+    parser.add_argument("--reindex-scanned", action="store_true", help="OCR again the judgments whose text on the site is partial / empty (scanned PDFs read without OCR). Needs tesseract.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -216,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
             if not records:
                 logger.error("No judgments parsed; the SHC pages may have changed or be unavailable.")
                 return 1
-            return pipeline.run(records, groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output, index_only=args.index_only)
+            return pipeline.run(records, groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output, index_only=args.index_only, reindex_scanned=args.reindex_scanned)
         except Exception:
             logger.exception("Unhandled scraper error.")
             return 1

@@ -53,7 +53,7 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
         </p>
     );
     const courtBadge = (j: Judgment) => <span className="inline-flex items-center rounded bg-navy-900 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white dark:bg-gold-500 dark:text-navy-950" title={j.court_name}>{j.court_short}</span>;
-    // Division (D.B.) / Single (S.B.) bench tag; only Sindh High Court currently records it.
+    // Division (D.B.) / Single (S.B.) bench tag; Sindh and Islamabad High Courts record it.
     const benchBadge = (j: Judgment) => j.bench_label && <span className="inline-flex items-center rounded bg-navy-100 px-1.5 py-0.5 text-[11px] font-semibold text-navy-700 dark:bg-navy-800 dark:text-navy-200" title={j.bench ? t('Division Bench') : t('Single Bench')}>{j.bench_label}</span>;
     // After a full-text search: the line around each hit with the searched words highlighted, then the other matching pages.
     const matchInfo = (j: Judgment) => {

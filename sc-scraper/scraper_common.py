@@ -155,7 +155,7 @@ def clean_text(value: str | None) -> str:
 
 
 # Placeholder values courts put in an empty field; these must be stored as NULL, not as text.
-PLACEHOLDERS = {"", "nil", "n/a", "na", "n.a", "n.a.", "-", "--", "---", "null", "none", "awaited", "not available", "not reported", "not applicable", "not yet"}
+PLACEHOLDERS = {"", "nil", "n/a", "na", "n.a", "n.a.", "-", "--", "---", "null", "none", "awaited", "not available", "not reported", "not applicable", "not yet", "citation awaited", "awaited citation"}
 
 
 def clean_optional(value: str | None) -> str | None:
@@ -181,6 +181,33 @@ def parse_date(value: str | None) -> str | None:
         return date(year, month, day).isoformat()
     except ValueError:
         return None
+
+
+MONTHS = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], start=1)}
+DECISION_LABEL = re.compile(r"date\s+of\s+(?:the\s+)?(?:decision|judg(?:e)?ment|announcement)\s*[:.\-]*\s*(.{0,40})", flags=re.IGNORECASE)
+DAY_MONTH_YEAR = re.compile(r"(\d{1,2})(?:st|nd|rd|th)?\s*(?:of\s+)?([a-z]{3,9})\.?,?\s*(\d{4})", flags=re.IGNORECASE)
+MONTH_DAY_YEAR = re.compile(r"([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})", flags=re.IGNORECASE)
+
+
+def decision_date_from_text(text: str) -> str | None:
+    """The date printed after "Date of Decision:" (or "Date of Judgment/Announcement") in a judgment.
+
+    Handles 10.04.2025, 10-04-2025, 10/4/2025, 10th April, 2025, 10 Apr 2025 and April 10, 2025."""
+    for match in DECISION_LABEL.finditer(text or ""):
+        tail = match.group(1)
+        found = parse_date(tail)
+        if found:
+            return found
+        named = DAY_MONTH_YEAR.search(tail)
+        parts = (named.group(1), named.group(2), named.group(3)) if named else None
+        if parts is None and (named := MONTH_DAY_YEAR.search(tail)):
+            parts = (named.group(2), named.group(1), named.group(3))
+        if parts and (month := MONTHS.get(parts[1][:3].lower())):
+            try:
+                return date(int(parts[2]), month, int(parts[0])).isoformat()
+            except ValueError:
+                continue
+    return None
 
 
 def merge_benches(records: list[JudgmentRecord]) -> list[JudgmentRecord]:
@@ -346,13 +373,19 @@ class Pipeline:
 
         return sorted(todo, key=lambda r: (r.decision_date or "0000-00-00", r.case_number))
 
+    def text_done(self, pdf_url: str) -> bool:
+        """Text already sent — unless it was a scanned PDF waiting for OCR and OCR is now installed."""
+        if pdf_url in self.state.needs_ocr and text_indexer.ocr_available():
+            return False
+        return self.state.is_indexed(pdf_url)
+
     def enrich(self, record: JudgmentRecord) -> JudgmentRecord:
         """Cited case law (remarks/tag line + PDF) and the AI summary; each PDF is read at most once per run."""
         own = {_key(c) for c in (record.citation, record.other_citation, record.sc_citation) if c}
         cited = extract_citations(" ".join(filter(None, [record.tag_line, record.remarks])))
         cached = self.citations.data.get(record.pdf_path)
         summary = self.summarizer.cached(record.pdf_path)
-        wants_index = self.index_text and record.pdf_path not in self.text_results and not self.state.is_indexed(record.pdf_path)
+        wants_index = self.index_text and record.pdf_path not in self.text_results and not self.text_done(record.pdf_path)
         wants_store = self.store_active and record.pdf_path not in self.pdf_bytes and not self.state.is_stored(record.pdf_path)
         needs_text = (self.read_pdfs and cached is None) or (self.summarizer.enabled and summary is None) or wants_index or wants_store
 
@@ -389,7 +422,10 @@ class Pipeline:
                 "Tag line": record.tag_line, "Remarks (court headnote)": record.remarks,
             })
 
-        return replace(record, cited_citations=tuple(unique[:MAX_CITED]), summary=summary)
+        # Courts that list no decision date (or a wrong one) print it in the judgment: "Date of Decision: …".
+        decided = record.decision_date or decision_date_from_text(text[:20000])
+
+        return replace(record, cited_citations=tuple(unique[:MAX_CITED]), summary=summary, decision_date=decided)
 
     def save_caches(self) -> None:
         self.citations.save()
@@ -399,6 +435,12 @@ class Pipeline:
     def send_text(self, record: JudgmentRecord) -> None:
         """POST a judgment's extracted page text + keywords to the site's /text endpoint (idempotent)."""
         result = self.text_results.get(record.pdf_path)
+        if result is not None and result.status == "needs_ocr":
+            # Remember it so this PDF is not downloaded again every run, and is retried once OCR exists.
+            self.state.needs_ocr.add(record.pdf_path)
+            self.state.mark_indexed(record.pdf_path)
+        elif result is not None:
+            self.state.needs_ocr.discard(record.pdf_path)
         if result is None or not result.pages or not self.text_url:
             return
 
@@ -421,7 +463,7 @@ class Pipeline:
         if response.status_code == 200:
             self.state.mark_indexed(record.pdf_path)
             body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
-            logger.info("    Indexed text: %s pages, %s keywords%s.", body.get("pages", "?"), body.get("keywords", "?"), " (OCR)" if result.ocr_used else "")
+            logger.info("    Indexed text: %s pages, %s keywords%s.", body.get("pages", "?"), body.get("keywords", "?"), " (OCR)" if result.ocr_used else (" (scanned — waiting for OCR)" if result.status == "needs_ocr" else ""))
         elif response.status_code == 404:
             logger.warning("Text index: no judgment yet for %s (metadata import must land first).", record.case_number)
         else:
@@ -484,7 +526,20 @@ class Pipeline:
 
         return "failed", last_error
 
-    def index_existing(self, found: list[JudgmentRecord], *, limit: int | None, resend: bool) -> int:
+    def scanned_on_site(self, court: str) -> set[str] | None:
+        """PDF links of this court's judgments whose text on the site is partial / empty / waiting for OCR."""
+        if not self.text_url:
+            return None
+        url = self.text_url.rsplit("/", 1)[0] + "/needs-text"
+        try:
+            response = self.session.get(url, params={"court": court.lower()}, headers={"Authorization": f"Bearer {self.settings.import_token}", "Accept": "application/json"}, timeout=120)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            logger.error("Could not fetch the list of judgments that need text: %s", exc)
+            return None
+        return {path for row in response.json().get("judgments", []) for path in (row.get("pdf_path"), row.get("source_pdf_url")) if path}
+
+    def index_existing(self, found: list[JudgmentRecord], *, limit: int | None, resend: bool, force: set[str] | None = None) -> int:
         """Backfill text + keywords (and the stored PDF) for judgments ALREADY on the site, without
         re-importing their metadata. Matches by PDF URL on the /text and /pdf endpoints, so it never
         touches columns the site already has — ideal for LHC/PHC whose metadata was imported earlier."""
@@ -496,8 +551,13 @@ class Pipeline:
 
         todo = [
             r for r in found
-            if (self.index_text and (resend or not self.state.is_indexed(r.pdf_path))) or (self.store_pdf and (resend or not self.state.is_stored(r.pdf_path)))
+            if (force is not None and r.pdf_path in force)
+            or (force is None and ((self.index_text and (resend or not self.text_done(r.pdf_path))) or (self.store_pdf and (resend or not self.state.is_stored(r.pdf_path)))))
         ]
+        if force is not None:
+            # Re-extract the text of these even though they were indexed before (scanned PDFs → OCR).
+            for r in todo:
+                self.state.indexed.discard(r.pdf_path)
         todo = sorted(todo, key=lambda r: (r.decision_date or "0000-00-00", r.case_number))
         if resend:
             self.state.indexed.clear()
@@ -522,8 +582,18 @@ class Pipeline:
 
         return 0
 
-    def run(self, found: list[JudgmentRecord], *, groups: dict[str, int], dry_run: bool, limit: int | None, resend: bool, output: Path | None, index_only: bool = False) -> int:
+    def run(self, found: list[JudgmentRecord], *, groups: dict[str, int], dry_run: bool, limit: int | None, resend: bool, output: Path | None, index_only: bool = False, reindex_scanned: bool = False) -> int:
         """Counts, new judgments only, oldest first, enrich, then dry run report or import."""
+        if reindex_scanned:
+            if not text_indexer.ocr_available():
+                logger.error("--reindex-scanned needs Tesseract OCR (apt install tesseract-ocr / brew install tesseract).")
+                return 1
+            court = found[0].court if found else ""
+            force = self.scanned_on_site(court)
+            if force is None:
+                return 1
+            logger.info("The site lists %d %s judgments with partial / empty text.", len(force), court)
+            return self.index_existing(found, limit=limit, resend=False, force=force)
         if index_only:
             return self.index_existing(found, limit=limit, resend=resend)
         self.store_active = self.store_pdf and not dry_run  # a dry run never uploads files
@@ -581,6 +651,14 @@ class Pipeline:
 
         self.save_caches()
         logger.info("Completed. Imported=%d Already there=%d Failed=%d.", counts["imported"], counts["duplicate"], counts["failed"])
+
+        # Scanned PDFs that were waiting for OCR: index them now that Tesseract is available.
+        waiting = [r for r in found if r.pdf_path in self.state.needs_ocr]
+        if waiting and self.index_text and text_indexer.ocr_available():
+            logger.info("OCR is available: indexing %d scanned judgments that were waiting for it.", len(waiting))
+            self.index_existing(waiting, limit=None, resend=False)
+        elif waiting:
+            logger.warning("%d scanned judgments are waiting for OCR; install tesseract-ocr to index their text.", len(waiting))
 
         return 1 if counts["failed"] else 0
 

@@ -200,7 +200,7 @@ class JudgmentImportController extends Controller
     }
 
     /** Court placeholder text ("Nil", "N/A", "awaited", …) and blanks become NULL. */
-    private const PLACEHOLDERS = ['', 'nil', 'n/a', 'na', 'n.a', 'n.a.', '-', '--', '---', 'null', 'none', 'awaited', 'not available', 'not reported', 'not applicable', 'not yet'];
+    private const PLACEHOLDERS = ['', 'nil', 'n/a', 'na', 'n.a', 'n.a.', '-', '--', '---', 'null', 'none', 'awaited', 'not available', 'not reported', 'not applicable', 'not yet', 'citation awaited', 'awaited citation'];
 
     private function blankIfPlaceholder(?string $value): ?string
     {

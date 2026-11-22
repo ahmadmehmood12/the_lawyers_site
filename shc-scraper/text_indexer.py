@@ -45,6 +45,10 @@ except Exception:  # noqa: BLE001
 MAX_PAGES = 400
 # A page with fewer real letters than this is treated as scanned and sent to OCR (when available).
 MIN_CHARS_FOR_TEXT = 40
+OCR_DPI = 300
+# Stamps court upload systems print on scanned PDFs (e.g. IHC: 'Uploaded By: "Zulqarnain Shah"').
+# They are not judgment text: removed before deciding whether a page is scanned, and never indexed.
+UPLOAD_STAMP = re.compile(r"^[ \t]*(?:uploaded|scanned|verified)\s+by\s*:?.*$", flags=re.IGNORECASE | re.MULTILINE)
 MAX_KEYWORDS = 120
 MAX_KEYWORD_LEN = 190
 
@@ -96,7 +100,7 @@ class TextResult:
     pages: list[tuple[int, str]] = field(default_factory=list)
     keywords: list[tuple[str, int]] = field(default_factory=list)
     ocr_used: bool = False
-    status: str = "ok"  # ok | ocr | partial | empty | error
+    status: str = "ok"  # ok | ocr | partial | needs_ocr | empty | error
 
     @property
     def page_count(self) -> int:
@@ -111,18 +115,28 @@ def _letters(text: str) -> int:
     return sum(1 for ch in text if ch.isalpha())
 
 
-def _pages_pymupdf(content: bytes) -> tuple[list[str], bool]:
-    """Page texts via PyMuPDF, with per-page Tesseract OCR for scanned pages when available."""
+def strip_stamps(text: str) -> str:
+    return UPLOAD_STAMP.sub("", text or "").strip()
+
+
+def _pages_pymupdf(content: bytes) -> tuple[list[str], bool, int]:
+    """Page texts via PyMuPDF, with per-page Tesseract OCR for scanned pages when available.
+
+    Returns (texts, ocr_used, scanned pages that could not be OCR'd because Tesseract is missing)."""
     ocr_used = False
+    missed = 0
     texts: list[str] = []
+    can_ocr = ocr_available()
     with fitz.open(stream=content, filetype="pdf") as doc:  # type: ignore[union-attr]
         for page in list(doc)[:MAX_PAGES]:
-            text = page.get_text("text") or ""
-            if _letters(text) < MIN_CHARS_FOR_TEXT and ocr_available():
+            text = strip_stamps(page.get_text("text") or "")
+            if _letters(text) < MIN_CHARS_FOR_TEXT and not can_ocr and page.get_images():
+                missed += 1
+            if _letters(text) < MIN_CHARS_FOR_TEXT and can_ocr:
                 try:
-                    pixmap = page.get_pixmap(dpi=200)
+                    pixmap = page.get_pixmap(dpi=OCR_DPI)
                     image = Image.open(io.BytesIO(pixmap.tobytes("png")))  # type: ignore[union-attr]
-                    ocr_text = pytesseract.image_to_string(image) or ""  # type: ignore[union-attr]
+                    ocr_text = strip_stamps(pytesseract.image_to_string(image, config="--psm 3") or "")  # type: ignore[union-attr]
                     if _letters(ocr_text) > _letters(text):
                         text = ocr_text
                         ocr_used = True
@@ -130,21 +144,22 @@ def _pages_pymupdf(content: bytes) -> tuple[list[str], bool]:
                     logger.warning("OCR failed on a page: %s", exc)
             texts.append(text)
 
-    return texts, ocr_used
+    return texts, ocr_used, missed
 
 
 def _pages_pypdf(content: bytes) -> list[str]:
     reader = PdfReader(io.BytesIO(content))  # type: ignore[misc]
 
-    return [(page.extract_text() or "") for page in reader.pages[:MAX_PAGES]]
+    return [strip_stamps(page.extract_text() or "") for page in reader.pages[:MAX_PAGES]]
 
 
 def extract(content: bytes) -> TextResult:
     """Full page-by-page text and supplementary keywords for one judgment PDF."""
     ocr_used = False
+    missed = 0
     try:
         if fitz is not None:
-            texts, ocr_used = _pages_pymupdf(content)
+            texts, ocr_used, missed = _pages_pymupdf(content)
         elif PdfReader is not None:
             texts = _pages_pypdf(content)
         else:
@@ -154,6 +169,11 @@ def extract(content: bytes) -> TextResult:
         return TextResult(status="error")
 
     pages = [(index, re.sub(r"[ \t]+", " ", text).strip()) for index, text in enumerate(texts, start=1) if text and text.strip()]
+    if missed:
+        # Scanned pages and no Tesseract: do not index a stamp-only or half-read judgment; the
+        # scraper retries it automatically once OCR is installed (status needs_ocr).
+        logger.warning("Scanned PDF (%d image-only pages) but Tesseract OCR is not installed; it will be indexed once OCR is available.", missed)
+        return TextResult(pages=pages, keywords=extract_keywords("\n".join(t for _, t in pages)) if pages else [], ocr_used=ocr_used, status="needs_ocr")
     if not pages:
         return TextResult(ocr_used=ocr_used, status="empty")
 

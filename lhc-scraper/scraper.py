@@ -163,6 +163,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--index-text", action="store_true", help="Also extract each PDF's full text + keywords and send them for phrase/keyword search.")
     parser.add_argument("--store-pdf", action="store_true", help="Also download each PDF and upload it to the site, so the site stores and serves the file.")
     parser.add_argument("--index-only", action="store_true", help="Only add text + keywords (and the stored PDF) for judgments already on the site; do not import metadata. For backfilling.")
+    parser.add_argument("--reindex-scanned", action="store_true", help="OCR again the judgments whose text on the site is partial / empty (scanned PDFs read without OCR). Needs tesseract.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -182,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
             if not records:
                 logger.error("No judgments parsed; the LHC pages may have changed or be unavailable.")
                 return 1
-            code = pipeline.run(records, groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output, index_only=args.index_only)
+            code = pipeline.run(records, groups=groups, dry_run=args.dry_run, limit=args.limit, resend=args.resend, output=args.output, index_only=args.index_only, reindex_scanned=args.reindex_scanned)
             if code == 0 and not args.dry_run and not args.limit and not args.judge and "former" in which:
                 pipeline.state.set_flag("lhc_former_done")
                 pipeline.state.save()

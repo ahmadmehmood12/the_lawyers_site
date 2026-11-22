@@ -15,6 +15,9 @@ use Illuminate\Support\Str;
 class ReportedJudgment extends Model
 {
     /** @var array<string, array{name: string, short: string, province: string}> */
+    /** Courts whose scrapers record Division / Single bench (the D.B. / S.B. badge). */
+    public const BENCH_COURTS = ['shc', 'ihc'];
+
     public const COURTS = [
         'scp' => ['name' => 'Supreme Court of Pakistan', 'short' => 'SCP', 'province' => 'Pakistan'],
         'fcc' => ['name' => 'Federal Constitutional Court', 'short' => 'FCC', 'province' => 'Pakistan'],
@@ -132,7 +135,7 @@ class ReportedJudgment extends Model
             'id' => $this->id, 'slug' => $this->slug, 'court' => $this->court, 'court_name' => self::COURTS[$this->court]['name'] ?? strtoupper((string) $this->court), 'court_short' => self::COURTS[$this->court]['short'] ?? strtoupper((string) $this->court),
             'case_type' => $this->case_type, 'case_number' => $this->case_number, 'title' => $this->title, 'judges' => $this->judges,
             // Only the Sindh High Court listing records the bench type (Division / Single); other courts leave it blank.
-            'bench' => $this->bench, 'bench_label' => $this->court === 'shc' ? ($this->bench ? 'D.B.' : 'S.B.') : null, 'apex_court_case' => $this->apex_court_case, 'apex_court_status' => $this->apex_court_status,
+            'bench' => $this->bench, 'bench_label' => in_array($this->court, self::BENCH_COURTS, true) ? ($this->bench ? 'D.B.' : 'S.B.') : null, 'apex_court_case' => $this->apex_court_case, 'apex_court_status' => $this->apex_court_status,
             'citation' => $this->citation, 'other_citation' => $this->other_citation, 'sc_citation' => $this->sc_citation, 'cited_citations' => array_values($this->cited_citations ?? []), 'tag_line' => $this->tag_line,
             // Lists show the start of the remarks (PHC headnotes run to several paragraphs); the detail page sends it whole.
             'remarks' => $this->remarks ? Str::limit($this->remarks, 360) : null,

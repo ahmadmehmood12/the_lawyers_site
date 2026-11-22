@@ -43,4 +43,5 @@ Thumbs.db
 /phc-scraper/venv
 /phc-scraper/.venv
 /sc-scraper/venv
-/sc-scraper/.venv
+/sc-scraper/.venv/ihc-scraper/venv
+/ihc-scraper/.venv
