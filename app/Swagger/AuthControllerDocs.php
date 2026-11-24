@@ -88,6 +88,32 @@ namespace App\Swagger;
  * )
  *
  * @OA\Post(
+ *     path="/api/v1/auth/google",
+ *     summary="Continue with Google",
+ *     description="Send the Google ID token from the app's Google sign-in. Existing account: signs in (or returns a two-factor challenge). New email: returns google_signup=true with a signup_token (30 min) to send as google_token to /auth/register (no password needed). 404 when Google sign-in is disabled in Admin.",
+ *     operationId="authGoogle",
+ *     tags={"Auth"},
+ *     @OA\RequestBody(required=true, @OA\JsonContent(required={"id_token"},
+ *         @OA\Property(property="id_token", type="string", example="eyJhbGciOiJSUzI1NiIs…"),
+ *         @OA\Property(property="device_name", type="string", example="iPhone 16")
+ *     )),
+ *     @OA\Response(response=200, description="Signed in, two-factor challenge, or sign-up needed", @OA\JsonContent(type="object",
+ *         @OA\Property(property="status", type="string", example="Success"),
+ *         @OA\Property(property="message", type="string", example="Signed in."),
+ *         @OA\Property(property="data", type="object",
+ *             @OA\Property(property="token", type="string", example="12|Xk9…"),
+ *             @OA\Property(property="two_factor", type="boolean", example=false),
+ *             @OA\Property(property="google_signup", type="boolean", example=false),
+ *             @OA\Property(property="signup_token", type="string", example="eyJpdiI6…")
+ *         ))),
+ *     @OA\Response(response=404, description="Google sign-in is not enabled"),
+ *     @OA\Response(response=422, description="Invalid token, unverified email or suspended account", @OA\JsonContent(type="object",
+ *         @OA\Property(property="status", type="string", example="Failed"),
+ *         @OA\Property(property="message", type="string", example="Your Google account has no verified email address."),
+ *         @OA\Property(property="errors", type="object", @OA\Property(property="id_token", type="array", @OA\Items(type="string")))))
+ * )
+ *
+ * @OA\Post(
  *     path="/api/v1/auth/two-factor-challenge",
  *     summary="Complete two-factor sign-in",
  *     description="Send the challenge_token from /auth/login with either a 6-digit authenticator code or one recovery code (each recovery code works once).",
@@ -236,7 +262,8 @@ namespace App\Swagger;
  *             @OA\Property(property="firm_invite_code", type="string", example="AB12CD"),
  *             @OA\Property(property="referral_code", type="string", example=""),
  *             @OA\Property(property="coupon_code", type="string", example=""),
- *             @OA\Property(property="device_name", type="string", example="iPhone 16")
+ *             @OA\Property(property="device_name", type="string", example="iPhone 16"),
+ *             @OA\Property(property="google_token", type="string", example="eyJpdiI6…", description="signup_token from /auth/google: registers without a password")
  *         )
  *     ),
  *

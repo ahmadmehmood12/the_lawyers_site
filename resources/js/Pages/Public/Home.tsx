@@ -367,7 +367,12 @@ function Questions({ faqs }: { faqs: { id: number; question: string; answer: str
                 </div>
                 <div className="divide-y divide-navy-100 border-y border-navy-100 dark:divide-navy-800 dark:border-navy-800">
                     {faqs.map((faq) => (
-                        <details key={faq.id} className="hm-faq group" onToggle={(e) => setOpen((current) => ({ ...current, [faq.id]: e.currentTarget.open }))}>
+                        <details key={faq.id} className="hm-faq group" onToggle={(e) => {
+                            // Read the state now: React clears e.currentTarget once the handler returns, and the
+                            // updater below can run later (e.g. on a fast double click) — reading it there crashed the page.
+                            const isOpen = e.currentTarget.open;
+                            setOpen((current) => ({ ...current, [faq.id]: isOpen }));
+                        }}>
                             <summary className="flex items-center justify-between gap-6 py-5 text-lg font-medium hover:text-gold-700 dark:hover:text-gold-300">
                                 {faq.question}
                                 <Plus className="hm-plus size-5 shrink-0 text-navy-400" aria-hidden />

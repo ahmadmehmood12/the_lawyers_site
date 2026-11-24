@@ -13019,6 +13019,664 @@
                 ]
             }
         },
+        "/api/v1/workspace/analytics": {
+            "get": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Analytics Index",
+                "description": "Runs the web action AnalyticsController@App\\Http\\Controllers\\Workspace\\AnalyticsController (web route analytics.index) — identical validation, permissions and notifications.",
+                "operationId": "webAnalyticsIndexGet",
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/workspace/profile": {
+            "get": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Profile Edit",
+                "description": "Runs the web action LawyerProfileController@edit (web route lawyer.profile.edit) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerProfileEditGet",
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/workspace/profile/steps/{step}": {
+            "put": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Profile Update",
+                "description": "Runs the web action LawyerProfileController@update (web route lawyer.profile.update) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerProfileUpdatePut",
+                "parameters": [
+                    {
+                        "name": "step",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/workspace/profile/photo": {
+            "post": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Profile Photo",
+                "description": "Runs the web action LawyerProfileController@photo (web route lawyer.profile.photo) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerProfilePhotoPost",
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/workspace/profile/verification": {
+            "get": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Verification Show",
+                "description": "Runs the web action VerificationController@show (web route lawyer.verification.show) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerVerificationShowGet",
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/workspace/profile/verification/documents": {
+            "post": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Verification Upload",
+                "description": "Runs the web action VerificationController@upload (web route lawyer.verification.upload) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerVerificationUploadPost",
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/workspace/profile/verification/documents/{document}": {
+            "get": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Verification Documents Download",
+                "description": "Runs the web action VerificationController@download (web route lawyer.verification.documents.download) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerVerificationDocumentsDownloadGet",
+                "parameters": [
+                    {
+                        "name": "document",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Verification Documents Destroy",
+                "description": "Runs the web action VerificationController@destroyDocument (web route lawyer.verification.documents.destroy) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerVerificationDocumentsDestroyDelete",
+                "parameters": [
+                    {
+                        "name": "document",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/workspace/profile/verification/submit": {
+            "post": {
+                "tags": [
+                    "V1 Workspace"
+                ],
+                "summary": "Lawyer Verification Submit",
+                "description": "Runs the web action VerificationController@submit (web route lawyer.verification.submit) — identical validation, permissions and notifications.",
+                "operationId": "webLawyerVerificationSubmitPost",
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/client/documents/{document}/download": {
             "get": {
                 "tags": [
