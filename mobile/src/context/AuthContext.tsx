@@ -1,4 +1,5 @@
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
@@ -6,6 +7,7 @@ import * as Device from 'expo-device';
 
 import { authApi, setAuthToken, setUnauthorizedHandler, type LoginResult, type User } from '@/api';
 import type { Role } from '@/data/types';
+import { useBrand } from '@/context/AppConfigContext';
 import { registerForPush } from '@/lib/push';
 
 /**
@@ -18,6 +20,7 @@ const BIOMETRIC_KEY = 'wd.biometric';
 
 type Status = 'loading' | 'signedOut' | 'signedIn';
 export type SignInOutcome = { twoFactor: true; challenge: string } | { twoFactor: false };
+export type GoogleOutcome = { kind: 'signed_in' } | { kind: 'two_factor'; challenge: string } | { kind: 'signup'; token: string; name: string; email: string };
 
 type Auth = {
   status: Status;
@@ -28,6 +31,7 @@ type Auth = {
   biometricEnabled: boolean;
   signIn: (email: string, password: string) => Promise<SignInOutcome>;
   completeTwoFactor: (challenge: string, input: { code?: string; recovery_code?: string }) => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<GoogleOutcome>;
   register: (input: Record<string, unknown>) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -54,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const pushRegistered = useRef(false);
+  const brandName = useBrand().name;
 
   const clearSession = useCallback(async () => {
     setAuthToken(null);
@@ -110,6 +115,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [status, user?.email_verified]);
 
+  // Live counters (messages, notifications, appointment requests): every 30 s while the app is open,
+  // when it returns to the foreground, and whenever a push arrives. The app icon badge shows the total.
+  useEffect(() => {
+    if (status !== 'signedIn') {
+      void Notifications.setBadgeCountAsync(0).catch(() => undefined);
+      return undefined;
+    }
+    const refresh = () => { void authApi.me().then(setUserState).catch(() => undefined); };
+    const timer = setInterval(refresh, 30000);
+    const appState = AppState.addEventListener('change', (s) => { if (s === 'active') refresh(); });
+    const received = Notifications.addNotificationReceivedListener(refresh);
+    return () => { clearInterval(timer); appState.remove(); received.remove(); };
+  }, [status]);
+
+  useEffect(() => {
+    const total = user ? user.unread.notifications + user.unread.messages + user.unread.appointments : 0;
+    void Notifications.setBadgeCountAsync(total).catch(() => undefined);
+  }, [user?.unread.notifications, user?.unread.messages, user?.unread.appointments]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Lock again when the app goes to the background (if the user enabled biometrics).
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -136,6 +160,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await accept(data);
         return { twoFactor: false };
       },
+      signInWithGoogle: async (idToken) => {
+        const { data } = await authApi.google(idToken, deviceName());
+        const d = data as Record<string, unknown>;
+        if (d.google_signup) return { kind: 'signup', token: String(d.signup_token), name: String(d.name), email: String(d.email) };
+        if (d.two_factor) return { kind: 'two_factor', challenge: String(d.challenge_token) };
+        await accept(data as LoginResult);
+        return { kind: 'signed_in' };
+      },
       completeTwoFactor: async (challenge, input) => {
         const { data } = await authApi.twoFactor(challenge, input);
         await accept(data);
@@ -157,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void SecureStore.setItemAsync(BIOMETRIC_KEY, on ? '1' : '0');
       },
       unlock: async () => {
-        const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Unlock Wakeel Diary', fallbackLabel: 'Use passcode' }).catch(
+        const result = await LocalAuthentication.authenticateAsync({ promptMessage: `Unlock ${brandName}`, fallbackLabel: 'Use passcode' }).catch(
           () => ({ success: false }) as LocalAuthentication.LocalAuthenticationResult,
         );
         if (result.success) {
@@ -166,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return result.success;
       },
     }),
-    [status, user, locked, biometricAvailable, biometricEnabled, accept, clearSession],
+    [status, user, locked, biometricAvailable, biometricEnabled, accept, clearSession, brandName],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

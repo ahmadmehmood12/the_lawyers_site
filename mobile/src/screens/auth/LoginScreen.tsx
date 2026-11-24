@@ -3,15 +3,18 @@ import { Pressable, View } from 'react-native';
 
 import { fieldErrors, errorMessage } from '@/api';
 import { Alert, Button, Input, Txt } from '@/components';
+import { useBrand } from '@/context/AppConfigContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAuthNavigation } from '@/navigation/types';
 import { useTheme } from '@/theme';
 import { AuthShell } from './AuthShell';
+import { GoogleButton } from './GoogleButton';
 
 export function LoginScreen() {
   const nav = useAuthNavigation();
   const { signIn } = useAuth();
   const { spacing } = useTheme();
+  const brand = useBrand();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -45,8 +48,9 @@ export function LoginScreen() {
         <Txt variant="label" tone="accent">Forgot password?</Txt>
       </Pressable>
       <Button title="Sign in" onPress={() => void submit()} loading={busy} disabled={!email || !password} full size="lg" />
+      <GoogleButton onError={setMessage} />
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: spacing.sm }}>
-        <Txt tone="muted">New to Wakeel Diary?</Txt>
+        <Txt tone="muted">New to {brand.name}?</Txt>
         <Pressable onPress={() => nav.navigate('Register')} hitSlop={8}>
           <Txt weight="700" tone="primary">Create an account</Txt>
         </Pressable>

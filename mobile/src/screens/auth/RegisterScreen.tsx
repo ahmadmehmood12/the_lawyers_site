@@ -5,19 +5,23 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { authApi, errorMessage, fieldErrors, type Option } from '@/api';
 import { Alert, Button, Chip, Input, SegmentedControl, Txt } from '@/components';
 import { useAuth } from '@/context/AuthContext';
-import { useAuthNavigation } from '@/navigation/types';
+import { useRoute, type RouteProp } from '@react-navigation/native';
+import { useAuthNavigation, type AuthStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 import { AuthShell } from './AuthShell';
+import { GoogleButton } from './GoogleButton';
 
 type Kind = 'client' | 'lawyer' | 'firm';
 
 /** Sign-up for clients, advocates and law firms — same fields and rules as the website. */
 export function RegisterScreen() {
   const nav = useAuthNavigation();
+  const { params } = useRoute<RouteProp<AuthStackParamList, 'Register'>>();
+  const viaGoogle = !!params?.googleToken;
   const { register } = useAuth();
   const { c, spacing } = useTheme();
   const [kind, setKind] = useState<Kind>('client');
-  const [form, setForm] = useState<Record<string, string>>({});
+  const [form, setForm] = useState<Record<string, string>>(viaGoogle ? { name: params?.name ?? '', email: params?.email ?? '' } : {});
   const [barCouncils, setBarCouncils] = useState<Option<number>[]>([]);
   const [barCouncil, setBarCouncil] = useState<number | null>(null);
   const [terms, setTerms] = useState(false);
@@ -37,7 +41,7 @@ export function RegisterScreen() {
     setErrors({});
     setMessage(null);
     try {
-      await register({ ...form, registration_type: kind, bar_council_id: barCouncil, terms });
+      await register({ ...form, registration_type: kind, bar_council_id: barCouncil, terms, google_token: params?.googleToken });
     } catch (e) {
       const fields = fieldErrors(e);
       setErrors(fields);
@@ -56,7 +60,7 @@ export function RegisterScreen() {
       />
       {message ? <Alert tone="danger" message={message} /> : null}
       <Input label="Full name" icon="user" {...field('name')} autoComplete="name" />
-      <Input label="Email" icon="mail" {...field('email')} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
+      <Input label="Email" icon="mail" {...field('email')} autoCapitalize="none" keyboardType="email-address" autoComplete="email" editable={!viaGoogle} hint={viaGoogle ? 'Confirmed by Google — no password needed.' : undefined} />
       <Input label="Mobile number" icon="phone" {...field('phone')} keyboardType="phone-pad" placeholder="03XX XXXXXXX" />
       {kind === 'firm' ? (
         <>
@@ -78,8 +82,12 @@ export function RegisterScreen() {
           {kind === 'lawyer' ? <Input label="Firm invite code (optional)" icon="users" {...field('firm_invite_code')} autoCapitalize="characters" /> : null}
         </>
       ) : null}
-      <Input label="Password" icon="lock" {...field('password')} password hint="At least 8 characters with letters and numbers." />
-      <Input label="Confirm password" icon="lock" {...field('password_confirmation')} password />
+      {!viaGoogle ? (
+        <>
+          <Input label="Password" icon="lock" {...field('password')} password hint="At least 8 characters with letters and numbers." />
+          <Input label="Confirm password" icon="lock" {...field('password_confirmation')} password />
+        </>
+      ) : null}
       <Input label="Referral code (optional)" icon="gift" {...field('referral_code')} autoCapitalize="characters" />
       <Pressable onPress={() => setTerms(!terms)} style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }} hitSlop={6}>
         <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: terms ? c.primary : c.borderStrong, backgroundColor: terms ? c.primary : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
@@ -89,6 +97,7 @@ export function RegisterScreen() {
       </Pressable>
       {errors.terms ? <Txt variant="caption" tone="danger">{errors.terms}</Txt> : null}
       <Button title="Create account" onPress={() => void submit()} loading={busy} disabled={!terms} full size="lg" />
+      {!viaGoogle ? <GoogleButton onError={setMessage} /> : null}
       <Pressable onPress={() => nav.goBack()} style={{ alignSelf: 'center' }} hitSlop={8}>
         <Txt variant="label" tone="accent">I already have an account</Txt>
       </Pressable>

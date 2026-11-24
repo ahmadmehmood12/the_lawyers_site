@@ -6,6 +6,8 @@ import { accountApi, errorMessage, type AppNotification } from '@/api';
 import { Alert, Button, Card, EmptyState, ErrorState, Loading, Screen, SkeletonCard, Txt } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@/hooks/useQuery';
+import { openNotificationTarget } from '@/lib/notificationTarget';
+import { useAppNavigation } from '@/navigation/types';
 import { useTheme } from '@/theme';
 
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = { appointment: 'calendar', hearing_reminder: 'bell', hearing_update: 'briefcase', payment: 'credit-card', message: 'message-circle', case_update: 'folder', document_request: 'file', review: 'star' };
@@ -13,7 +15,8 @@ const ICONS: Record<string, keyof typeof Feather.glyphMap> = { appointment: 'cal
 /** In-app notifications (the same list as the web bell). */
 export function NotificationsScreen() {
   const { c, spacing } = useTheme();
-  const { refreshUser } = useAuth();
+  const { refreshUser, role } = useAuth();
+  const nav = useAppNavigation();
   const q = useQuery(() => accountApi.notifications());
   const items = q.data?.items ?? [];
 
@@ -34,7 +37,7 @@ export function NotificationsScreen() {
       {q.loading ? <SkeletonCard /> : q.error ? <ErrorState message={q.error} onRetry={q.reload} /> : !items.length ? <EmptyState icon="bell" title="You're all caught up" message="Appointment, hearing and payment updates appear here." /> : (
         <View style={{ gap: spacing.sm }}>
           {items.map((n) => (
-            <Pressable key={n.id} onPress={() => void markRead(n)}>
+            <Pressable key={n.id} onPress={() => { void markRead(n); openNotificationTarget(nav, n.data, role); }}>
               <Card style={{ flexDirection: 'row', gap: spacing.md, backgroundColor: n.read_at ? c.surface : c.primarySoft }}>
                 <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.border }}>
                   <Feather name={ICONS[n.data.event ?? ''] ?? 'bell'} size={16} color={c.primary} />

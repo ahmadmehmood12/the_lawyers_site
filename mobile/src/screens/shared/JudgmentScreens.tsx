@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { errorMessage, openFile, webPage } from '@/api';
 import { Alert, Badge, Button, Card, Chip, EmptyState, ErrorState, Input, KeyValue, Loading, Picker, Screen, SectionHeader, SkeletonCard, Txt } from '@/components';
@@ -12,7 +12,7 @@ import { useTheme } from '@/theme';
 
 type JOption = { value: string; label: string; courts: string[] };
 type Judgment = { id: number; slug: string; court_short: string; court_name: string; case_type: string; case_number: string; title: string; judges: string; bench_label: string | null; citation: string | null; decision_date: string | null; match_snippets?: { page: number; segments: { text: string; hit: boolean }[] }[] };
-type Page = { judgments: { data: Judgment[]; total: number }; courts: { key: string; short: string; count: number }[]; judges: JOption[]; pairs: JOption[] };
+type Page = { judgments: { data: Judgment[]; total: number }; courts: { key: string; short: string; count: number }[]; judges: JOption[]; pairs: JOption[]; years: number[] };
 
 /** Reported judgments (web /reported-judgments): full-text search with highlighted excerpts and the same filters. */
 export function JudgmentsScreen() {
@@ -24,9 +24,15 @@ export function JudgmentsScreen() {
   const [bench, setBench] = useState('');
   const [pair, setPair] = useState<string | null>(null);
   const [citation, setCitation] = useState('');
+  const [more, setMore] = useState(false);
+  const [extra, setExtra] = useState({ year: '', case: '', title: '', decided_from: '', decided_to: '', uploaded_from: '', uploaded_to: '' });
   const t = useDebouncedValue(text, 450);
   const cit = useDebouncedValue(citation, 450);
-  const q = useQuery(() => webPage<Page>('/judgments', { text: t, court, judge: judge ?? undefined, bench: bench || undefined, pair: pair ?? undefined, citation: cit }), [t, court, judge, bench, pair, cit]);
+  const ex = useDebouncedValue(extra, 450);
+  const setX = (k: keyof typeof extra, v: string) => setExtra((e) => ({ ...e, [k]: v }));
+  const activeExtra = Object.values(extra).filter(Boolean).length;
+  // The same query parameters as the web filters (Public\ReportedJudgmentController::filtered()).
+  const q = useQuery(() => webPage<Page>('/judgments', { text: t, court, judge: judge ?? undefined, bench: bench || undefined, pair: pair ?? undefined, citation: cit, ...ex }), [t, court, judge, bench, pair, cit, ex]);
   const pickCourt = (key: string) => { setCourt(key); setJudge(null); setPair(null); };
 
   return (
@@ -43,6 +49,29 @@ export function JudgmentsScreen() {
         </View>
         <Picker label="Division bench judges" value={pair} options={(q.data?.pairs ?? []).map((p) => ({ value: p.value, label: p.label }))} onChange={setPair} placeholder="All pairs" />
         <Input icon="hash" placeholder="Citation, e.g. 2025 PTD 876" value={citation} onChangeText={setCitation} />
+        <Pressable onPress={() => setMore(!more)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} hitSlop={6}>
+          <Feather name={more ? 'chevron-up' : 'sliders'} size={15} color={c.accent} />
+          <Txt variant="label" tone="accent">{more ? 'Fewer filters' : `More filters${activeExtra ? ` (${activeExtra})` : ''}`}</Txt>
+        </Pressable>
+        {more ? (
+          <View style={{ gap: spacing.md }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+              <Chip label="Any year" selected={!extra.year} onPress={() => setX('year', '')} />
+              {q.data?.years.map((y) => <Chip key={y} label={String(y)} selected={extra.year === String(y)} onPress={() => setX('year', String(y))} />)}
+            </ScrollView>
+            <Input label="Case number" placeholder="e.g. 21229/26 or Civil Revision" value={extra.case} onChangeText={(v) => setX('case', v)} />
+            <Input label="Title" placeholder="Party names, e.g. Muhammad Irfan" value={extra.title} onChangeText={(v) => setX('title', v)} />
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <View style={{ flex: 1 }}><Input label="Decided from" placeholder="YYYY-MM-DD" value={extra.decided_from} onChangeText={(v) => setX('decided_from', v)} maxLength={10} /></View>
+              <View style={{ flex: 1 }}><Input label="Decided to" placeholder="YYYY-MM-DD" value={extra.decided_to} onChangeText={(v) => setX('decided_to', v)} maxLength={10} /></View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <View style={{ flex: 1 }}><Input label="Uploaded from" placeholder="YYYY-MM-DD" value={extra.uploaded_from} onChangeText={(v) => setX('uploaded_from', v)} maxLength={10} /></View>
+              <View style={{ flex: 1 }}><Input label="Uploaded to" placeholder="YYYY-MM-DD" value={extra.uploaded_to} onChangeText={(v) => setX('uploaded_to', v)} maxLength={10} /></View>
+            </View>
+            {activeExtra ? <Button title="Clear these filters" variant="ghost" size="sm" onPress={() => setExtra({ year: '', case: '', title: '', decided_from: '', decided_to: '', uploaded_from: '', uploaded_to: '' })} /> : null}
+          </View>
+        ) : null}
         {q.data ? <Txt variant="caption" tone="muted">{q.data.judgments.total} judgments</Txt> : null}
       </View>
       <View style={{ gap: spacing.md, marginTop: spacing.lg }}>
@@ -70,7 +99,7 @@ export function JudgmentsScreen() {
   );
 }
 
-type Detail = { judgment: Judgment & { cited_citations: string[]; tag_line: string | null; remarks: string | null; keywords: string[]; other_citation: string | null; sc_citation: string | null; apex_court_status: string | null; uploaded_on: string; summary: { headline?: string; points?: string[] } | null }; related: Judgment[]; canDownloadPdf: boolean };
+type Detail = { judgment: Judgment & { cited_citations: string[]; tag_line: string | null; remarks: string | null; other_citation: string | null; sc_citation: string | null; apex_court_status: string | null; uploaded_on: string; summary: { headline?: string; points?: string[] } | null }; related: Judgment[]; canDownloadPdf: boolean };
 
 export function JudgmentDetailScreen() {
   const { params } = useRoute<RouteProp<RootStackParamList, 'JudgmentDetail'>>();
@@ -93,7 +122,7 @@ export function JudgmentDetailScreen() {
       <Txt variant="title" style={{ marginTop: spacing.sm }}>{j.title}</Txt>
       {error ? <View style={{ marginTop: spacing.md }}><Alert tone="danger" message={error} /></View> : null}
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg }}>
-        <Button title="Read PDF" icon="book-open" style={{ flex: 1 }} onPress={() => void pdf(false)} />
+        <Button title="Read PDF" icon="book-open" style={{ flex: 1 }} onPress={() => nav.navigate('PdfViewer', { path: `/judgments/${j.slug}/pdf`, title: j.citation ?? `${j.case_type} ${j.case_number}`, shareable: q.data!.canDownloadPdf })} />
         {q.data.canDownloadPdf ? <Button title="Download" icon="download" variant="secondary" onPress={() => void pdf(true)} /> : null}
       </View>
       {!q.data.canDownloadPdf ? <Txt variant="caption" tone="muted" style={{ marginTop: 6 }}><Feather name="lock" size={11} /> Downloading the PDF is available on paid plans.</Txt> : null}
@@ -109,7 +138,6 @@ export function JudgmentDetailScreen() {
       {j.tag_line ? <Section title="Head note"><Card><Txt>{j.tag_line}</Txt></Card></Section> : null}
       {j.remarks ? <Section title="Remarks"><Card><Txt>{j.remarks}</Txt></Card></Section> : null}
       {j.cited_citations.length ? <Section title={`Case law cited (${j.cited_citations.length})`}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{j.cited_citations.map((x) => <Chip key={x} label={x} />)}</View></Section> : null}
-      {j.keywords?.length ? <Section title="Keywords"><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{j.keywords.slice(0, 18).map((x) => <Chip key={x} label={x} />)}</View></Section> : null}
       {q.data.related.length ? <Section title="More from this bench">{q.data.related.map((r) => <Card key={r.id} onPress={() => nav.push('JudgmentDetail', { slug: r.slug })}><Txt variant="label">{r.title}</Txt><Txt variant="caption" tone="muted">{r.citation ?? `${r.case_type} ${r.case_number}`}</Txt></Card>)}</Section> : null}
     </Screen>
   );

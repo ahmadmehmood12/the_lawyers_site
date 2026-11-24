@@ -28,7 +28,7 @@ type MobileApp = {
     app_name: string; icon_url: string | null; push_enabled: boolean; push_ready: boolean;
     fcm_project_id: string; has_fcm_credentials: boolean;
     ios_app_version: string; ios_min_version: string; ios_app_url: string;
-    android_app_version: string; android_min_version: string; android_app_url: string;
+    android_app_version: string; android_min_version: string; android_app_url: string; google_ios_client_id: string; google_android_client_id: string;
     force_update: boolean; maintenance: boolean; maintenance_message: string;
 };
 
@@ -65,12 +65,13 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
     });
     const testMail = useForm({ to: auth.user?.email ?? '' });
     const googleForm = useForm({ enabled: google.enabled ? '1' : '0', client_id: google.client_id, client_secret: '', clear_secret: false });
-    const appForm = useForm<{ app_name: string; icon: File | null; remove_icon: boolean; push_enabled: string; fcm_project_id: string; fcm_credentials_json: string; clear_fcm_credentials: boolean; ios_app_version: string; ios_min_version: string; ios_app_url: string; android_app_version: string; android_min_version: string; android_app_url: string; app_force_update: string; app_maintenance: string; app_maintenance_message: string }>({
+    const appForm = useForm<{ app_name: string; icon: File | null; remove_icon: boolean; push_enabled: string; fcm_project_id: string; fcm_credentials_json: string; clear_fcm_credentials: boolean; ios_app_version: string; ios_min_version: string; ios_app_url: string; android_app_version: string; android_min_version: string; android_app_url: string; app_force_update: string; app_maintenance: string; app_maintenance_message: string; google_ios_client_id: string; google_android_client_id: string }>({
         app_name: mobileApp.app_name, icon: null, remove_icon: false,
         push_enabled: mobileApp.push_enabled ? '1' : '0', fcm_project_id: mobileApp.fcm_project_id, fcm_credentials_json: '', clear_fcm_credentials: false,
         ios_app_version: mobileApp.ios_app_version, ios_min_version: mobileApp.ios_min_version, ios_app_url: mobileApp.ios_app_url,
         android_app_version: mobileApp.android_app_version, android_min_version: mobileApp.android_min_version, android_app_url: mobileApp.android_app_url,
         app_force_update: mobileApp.force_update ? '1' : '0', app_maintenance: mobileApp.maintenance ? '1' : '0', app_maintenance_message: mobileApp.maintenance_message,
+        google_ios_client_id: mobileApp.google_ios_client_id ?? '', google_android_client_id: mobileApp.google_android_client_id ?? '',
     });
     const media = useForm<{ enabled: string; mode: string; heading: string; description: string; heading_ur: string; description_ur: string; image: File | null; video: File | null; poster: File | null; remove_image: boolean; remove_video: boolean; remove_poster: boolean }>({
         enabled: authMedia.enabled ? '1' : '0',
@@ -325,6 +326,15 @@ export default function Settings({ settings, plans, env, whatsapp, mail, brandin
                                 <Input label={t('Current version')} value={appForm.data.android_app_version} onChange={(e) => appForm.setData('android_app_version', e.target.value)} error={appForm.errors.android_app_version} placeholder="1.0.0" />
                                 <Input label={t('Minimum supported')} value={appForm.data.android_min_version} onChange={(e) => appForm.setData('android_min_version', e.target.value)} error={appForm.errors.android_min_version} placeholder="1.0.0" hint={t('Below this, the app asks users to update.')} />
                                 <Input wrapperClassName="sm:col-span-3" label={t('Play Store link')} value={appForm.data.android_app_url} onChange={(e) => appForm.setData('android_app_url', e.target.value)} error={appForm.errors.android_app_url} placeholder="https://play.google.com/store/apps/details?id=..." />
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border border-navy-100 p-4 dark:border-navy-800">
+                            <p className="mb-1 text-sm font-semibold text-navy-900 dark:text-white">{t('Continue with Google (apps)')}</p>
+                            <p className="mb-3 text-xs text-navy-500">{t('OAuth client IDs of type iOS and Android from Google Cloud Console, in the same project as the website Google sign-in. Leave empty to hide the button in the apps.')}</p>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Input label={t('iOS client ID')} value={appForm.data.google_ios_client_id} onChange={(e) => appForm.setData('google_ios_client_id', e.target.value)} error={appForm.errors.google_ios_client_id} placeholder="1234-abc.apps.googleusercontent.com" />
+                                <Input label={t('Android client ID')} value={appForm.data.google_android_client_id} onChange={(e) => appForm.setData('google_android_client_id', e.target.value)} error={appForm.errors.google_android_client_id} placeholder="1234-xyz.apps.googleusercontent.com" />
                             </div>
                         </div>
 

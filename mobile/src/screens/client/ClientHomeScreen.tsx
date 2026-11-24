@@ -2,8 +2,10 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { clientApi, directoryApi } from '@/api';
-import { Avatar, Badge, Card, ErrorState, FirmCard, IconButton, LawyerCard, Screen, SectionHeader, Skeleton, SkeletonCard, Txt } from '@/components';
+import { clientApi, directoryApi, webPage } from '@/api';
+import { ArticleRow, type ArticleCard } from '@/screens/shared/ArticleScreens';
+import { Avatar, Badge, Button, Card, ErrorState, FirmCard, IconButton, LawyerCard, Screen, SectionHeader, Skeleton, SkeletonCard, Txt } from '@/components';
+import { useBrand } from '@/context/AppConfigContext';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@/hooks/useQuery';
 import { statusTone } from '@/lib/status';
@@ -18,22 +20,25 @@ export function ClientHomeScreen() {
   const tabs = useClientTabNavigation();
   const { c, spacing, radius } = useTheme();
   const home = useQuery(() => directoryApi.home());
-  const mine = useQuery(() => clientApi.dashboard());
-  const refresh = () => { void home.refresh(); void mine.refresh(); };
+  // Signed-out visitors see the public directory only (no account data is requested).
+  const mine = useQuery(() => (user ? clientApi.dashboard() : Promise.resolve(null)), [user?.id]);
+  const articles = useQuery(() => webPage<{ articles: { data: ArticleCard[] } }>('/articles'));
+  const refresh = () => { void home.refresh(); void mine.refresh(); void articles.refresh(); };
   const firstName = user?.name.split(' ')[0] ?? '';
+  const brand = useBrand();
 
   return (
     <Screen padded={false} refreshing={home.refreshing} onRefresh={refresh} edges={[]}>
       <LinearGradient colors={[forest[800], forest[900]]} style={{ paddingTop: 60, paddingHorizontal: spacing.xl, paddingBottom: 56 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <Avatar name={user?.name ?? 'You'} uri={user?.avatar_url} size={42} tone="accent" />
+            {user ? <Avatar name={user.name} uri={user.avatar_url} size={42} tone="accent" /> : null}
             <View>
               <Txt variant="caption" style={{ color: forest[200] }}>Assalam-o-Alaikum</Txt>
-              <Txt variant="subtitle" style={{ color: white }}>{firstName}</Txt>
+              <Txt variant="subtitle" style={{ color: white }}>{user ? firstName : `Welcome to ${brand.name}`}</Txt>
             </View>
           </View>
-          <IconButton icon="bell" tone="onPrimary" badge={(user?.unread.notifications ?? 0) > 0} onPress={() => nav.navigate('Notifications')} />
+          {user ? <IconButton icon="bell" tone="onPrimary" badge={(user.unread.notifications ?? 0) > 0} onPress={() => nav.navigate('Notifications')} /> : <Button title="Sign in" size="sm" variant="inverse" onPress={() => nav.navigate('Login')} />}
         </View>
         <Txt variant="title" style={{ color: white, marginTop: spacing.xl }}>Find the right lawyer</Txt>
         <Txt style={{ color: forest[200], marginTop: 4 }}>Verified advocates across Pakistan</Txt>
@@ -95,6 +100,15 @@ export function ClientHomeScreen() {
             <SectionHeader title="Law firms" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
               {home.data.firms.map((f) => <FirmCard key={f.slug} firm={f} compact onPress={() => nav.navigate('FirmProfile', { slug: f.slug })} />)}
+            </ScrollView>
+          </View>
+        ) : null}
+
+        {articles.data?.articles.data.length ? (
+          <View style={{ gap: spacing.md }}>
+            <SectionHeader title="Legal articles" actionLabel="All" onAction={() => nav.navigate('Articles')} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+              {articles.data.articles.data.slice(0, 6).map((a) => <ArticleRow key={a.slug} article={a} compact onPress={() => nav.navigate('ArticleDetail', { slug: a.slug })} />)}
             </ScrollView>
           </View>
         ) : null}

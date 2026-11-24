@@ -61,7 +61,7 @@ export default function JudgmentsIndex({ judgments, courts, judges, pairs = [], 
         const snippets = j.match_snippets ?? [];
         const shown = new Set(snippets.map((s) => s.page));
         const otherPages = (j.match_pages ?? []).filter((p) => !shown.has(p));
-        if (!snippets.length && !otherPages.length && !j.match_keywords?.length) return null;
+        if (!snippets.length && !otherPages.length) return null;
         return (
             <div className="mt-2 space-y-1.5">
                 {snippets.map((s) => (
@@ -72,10 +72,9 @@ export default function JudgmentsIndex({ judgments, courts, judges, pairs = [], 
                             : <span key={i}>{seg.text}</span>)}
                     </blockquote>
                 ))}
-                {(otherPages.length > 0 || (j.match_keywords?.length ?? 0) > 0) && (
+                {otherPages.length > 0 && (
                     <p className="flex flex-wrap items-center gap-1.5 text-xs text-navy-500 dark:text-navy-400">
                         {otherPages.length > 0 && <span>{t('Also on :label', { label: `${otherPages.length === 1 ? t('page') : t('pages')} ${otherPages.slice(0, 8).join(', ')}${otherPages.length > 8 ? '…' : ''}` })}</span>}
-                        {j.match_keywords?.slice(0, 6).map((k) => <span key={k} className="rounded bg-navy-50 px-1.5 py-0.5 text-navy-600 dark:bg-navy-800 dark:text-navy-300">{k}</span>)}
                     </p>
                 )}
             </div>
@@ -110,7 +109,7 @@ export default function JudgmentsIndex({ judgments, courts, judges, pairs = [], 
                             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-navy-400" />
                             <input value={form.text ?? ''} onChange={(e) => set('text', e.target.value)} placeholder={t('Full text: a phrase in "quotes" or keywords, e.g. pre-arrest bail')} className={cn(controlClasses(false), 'pl-9')} />
                         </div>
-                        <span className="mt-1 block text-xs text-navy-500">{t('Searches the full text of every judgment PDF and its keywords.')}</span>
+                        <span className="mt-1 block text-xs text-navy-500">{t('Searches the full text of every judgment PDF.')}</span>
                     </FilterField>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <FilterField label={t('Court')} labelElement="div">

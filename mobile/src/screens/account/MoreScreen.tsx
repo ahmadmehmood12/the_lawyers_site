@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
 
-import { Avatar, Screen, Txt } from '@/components';
+import { Avatar, BrandFooter, Screen, Txt } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useAppNavigation, type RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -23,6 +23,7 @@ export function MoreScreen() {
         { icon: 'file', label: 'Documents', to: 'Documents' },
         { icon: 'file-text', label: 'Invoices', to: 'Invoices' },
         { icon: 'book', label: 'Judgments', to: 'Judgments' },
+        { icon: 'book-open', label: 'Articles', to: 'Articles' },
         { icon: 'heart', label: 'Saved lawyers', to: 'Favourites' },
         { icon: 'bell', label: 'Notifications', to: 'Notifications', badge: user.unread.notifications },
       ]
@@ -35,8 +36,11 @@ export function MoreScreen() {
         { icon: 'file-text', label: 'Invoices', to: 'WorkspaceInvoices', show: can('finance.view') },
         { icon: 'zap', label: 'AI assistant', to: 'Ai', show: can('ai.use') },
         { icon: 'book', label: 'Judgments', to: 'Judgments' },
+        { icon: 'book-open', label: 'Articles', to: 'Articles' },
         { icon: 'briefcase', label: 'Team', to: 'Team', show: user.organization?.type === 'firm' },
         { icon: 'clock', label: 'Consultation hours', to: 'Availability', show: user.account_type === 'lawyer' },
+        { icon: 'user-check', label: 'My public profile', to: 'ProfileEditor', show: user.account_type === 'lawyer' },
+        { icon: 'bar-chart-2', label: 'Analytics', to: 'Analytics' },
         { icon: 'bell', label: 'Notifications', to: 'Notifications', badge: user.unread.notifications },
       ];
 
@@ -62,6 +66,7 @@ export function MoreScreen() {
           </Pressable>
         ))}
       </View>
+      <BrandFooter />
     </Screen>
   );
 }

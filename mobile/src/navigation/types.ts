@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 /** Every stack-level route across the three roles (shared detail screens have one definition). */
 export type RootStackParamList = {
+  GuestTabs: undefined;
   ClientTabs: undefined;
   LawyerTabs: undefined;
   LawyerProfile: { slug: string };
@@ -38,6 +39,18 @@ export type RootStackParamList = {
   Ai: undefined;
   Judgments: undefined;
   JudgmentDetail: { slug: string };
+  Analytics: undefined;
+  ProfileEditor: undefined;
+  Verification: undefined;
+  PdfViewer: { path: string; title: string; query?: Record<string, string | number>; shareable?: boolean };
+  Articles: undefined;
+  ArticleDetail: { slug: string };
+  Login: undefined;
+  Register: { googleToken?: string; name?: string; email?: string } | undefined;
+  ForgotPassword: undefined;
+  TwoFactor: { challenge: string };
+  ResetCode: { email: string };
+  NewPassword: { email: string; token: string };
 };
 
 export type BootstrapStackParamList = {
@@ -48,7 +61,7 @@ export type BootstrapStackParamList = {
 export type AuthStackParamList = {
   Login: undefined;
   TwoFactor: { challenge: string };
-  Register: undefined;
+  Register: { googleToken?: string; name?: string; email?: string } | undefined;
   ForgotPassword: undefined;
   ResetCode: { email: string };
   NewPassword: { email: string; token: string };
@@ -67,6 +80,14 @@ export type ClientTabsParamList = {
   ClientAppointments: undefined;
   ClientMessages: undefined;
   ClientMore: undefined;
+};
+
+export type GuestTabsParamList = {
+  ClientHome: undefined;
+  FindLawyers: { specialization?: string } | undefined;
+  GuestArticles: undefined;
+  GuestJudgments: undefined;
+  GuestAccount: undefined;
 };
 
 export type LawyerTabsParamList = {

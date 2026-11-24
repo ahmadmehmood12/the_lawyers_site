@@ -44,6 +44,7 @@ export function errorMessage(error: unknown, fallback = 'Something went wrong. P
 
 export const authApi = {
   login: (email: string, password: string, device_name: string) => post<LoginResult>('/auth/login', { email, password, device_name }),
+  google: (id_token: string, device_name: string) => post<LoginResult | { google_signup: true; signup_token: string; name: string; email: string }>('/auth/google', { id_token, device_name }),
   twoFactor: (challenge_token: string, input: { code?: string; recovery_code?: string }) => post<LoginResult>('/auth/two-factor-challenge', { challenge_token, ...input }),
   registerOptions: () => get<{ types: string[]; bar_councils: Option<number>[] }>('/auth/register/options'),
   register: (input: Record<string, unknown>) => post<LoginResult>('/auth/register', input),

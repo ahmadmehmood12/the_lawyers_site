@@ -20,3 +20,4 @@ export * from './LawyerCard';
 export * from './FirmCard';
 export * from './Sheets';
 export * from './Form';
+export * from './BrandFooter';

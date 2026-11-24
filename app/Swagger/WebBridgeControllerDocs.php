@@ -15,7 +15,6 @@ namespace App\Swagger;
  *     operationId="webClientsCreateGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -30,9 +29,7 @@ namespace App\Swagger;
  *     operationId="webClientsStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"type", "name", "company_name", "preferred_locale"},
- *
  *             @OA\Property(property="type", type="string", description="required"),
  *             @OA\Property(property="name", type="string", description="required|string|max:160"),
  *             @OA\Property(property="company_name", type="string", description="nullable|required_if:type,business|string|max:160"),
@@ -47,7 +44,6 @@ namespace App\Swagger;
  *             @OA\Property(property="notes", type="string", description="nullable|string|max:5000"),
  *             @OA\Property(property="whatsapp_consent", type="boolean", description="boolean")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -62,9 +58,7 @@ namespace App\Swagger;
  *     operationId="webClientsEditGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="client", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -79,11 +73,8 @@ namespace App\Swagger;
  *     operationId="webClientsUpdatePut",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="client", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"type", "name", "company_name", "preferred_locale"},
- *
  *             @OA\Property(property="type", type="string", description="required"),
  *             @OA\Property(property="name", type="string", description="required|string|max:160"),
  *             @OA\Property(property="company_name", type="string", description="nullable|required_if:type,business|string|max:160"),
@@ -98,7 +89,6 @@ namespace App\Swagger;
  *             @OA\Property(property="notes", type="string", description="nullable|string|max:5000"),
  *             @OA\Property(property="whatsapp_consent", type="boolean", description="boolean")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -113,9 +103,7 @@ namespace App\Swagger;
  *     operationId="webClientsDestroyDelete",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="client", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -130,9 +118,7 @@ namespace App\Swagger;
  *     operationId="webClientsPortalInvitePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="client", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -147,7 +133,6 @@ namespace App\Swagger;
  *     operationId="webCasesCreateGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -162,9 +147,7 @@ namespace App\Swagger;
  *     operationId="webCasesStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"title", "case_type", "status", "priority", "fir_number", "client_ids"},
- *
  *             @OA\Property(property="title", type="string", description="required|string|max:255"),
  *             @OA\Property(property="case_number", type="string", description="nullable|string|max:100"),
  *             @OA\Property(property="case_type", type="string", description="required"),
@@ -199,7 +182,6 @@ namespace App\Swagger;
  *             @OA\Property(property="lead_lawyer_id", type="integer", description="sometimes|nullable|integer"),
  *             @OA\Property(property="parties", type="array", @OA\Items(type="object"), description="sometimes|array|max:50")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -214,9 +196,7 @@ namespace App\Swagger;
  *     operationId="webCasesEditGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="case", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -231,11 +211,8 @@ namespace App\Swagger;
  *     operationId="webCasesUpdatePut",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="case", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"title", "case_type", "status", "priority", "fir_number", "client_ids"},
- *
  *             @OA\Property(property="title", type="string", description="required|string|max:255"),
  *             @OA\Property(property="case_number", type="string", description="nullable|string|max:100"),
  *             @OA\Property(property="case_type", type="string", description="required"),
@@ -270,7 +247,6 @@ namespace App\Swagger;
  *             @OA\Property(property="lead_lawyer_id", type="integer", description="sometimes|nullable|integer"),
  *             @OA\Property(property="parties", type="array", @OA\Items(type="object"), description="sometimes|array|max:50")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -285,9 +261,7 @@ namespace App\Swagger;
  *     operationId="webCasesArchivePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="case", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -302,11 +276,8 @@ namespace App\Swagger;
  *     operationId="webCasesHearingsStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="case", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"hearing_date", "hearing_type"},
- *
  *             @OA\Property(property="hearing_date", type="string", description="required|date"),
  *             @OA\Property(property="hearing_time", type="string", description="nullable|date_format:H:i"),
  *             @OA\Property(property="hearing_type", type="string", description="required"),
@@ -319,7 +290,6 @@ namespace App\Swagger;
  *             @OA\Property(property="preparation_notes", type="string", description="nullable|string|max:5000"),
  *             @OA\Property(property="visible_to_client", type="boolean", description="boolean")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -334,11 +304,8 @@ namespace App\Swagger;
  *     operationId="webHearingsUpdatePut",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="hearing", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"hearing_date", "hearing_type"},
- *
  *             @OA\Property(property="hearing_date", type="string", description="required|date"),
  *             @OA\Property(property="hearing_time", type="string", description="nullable|date_format:H:i"),
  *             @OA\Property(property="hearing_type", type="string", description="required"),
@@ -351,7 +318,6 @@ namespace App\Swagger;
  *             @OA\Property(property="preparation_notes", type="string", description="nullable|string|max:5000"),
  *             @OA\Property(property="visible_to_client", type="boolean", description="boolean")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -366,9 +332,7 @@ namespace App\Swagger;
  *     operationId="webHearingsReschedulePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="hearing", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -383,9 +347,7 @@ namespace App\Swagger;
  *     operationId="webHearingsCancelPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="hearing", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -400,11 +362,8 @@ namespace App\Swagger;
  *     operationId="webHearingsOutcomePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="hearing", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(type="object", required={"held_on", "next_hearing_date"},
- *
  *             @OA\Property(property="held_on", type="string", description="required|date|before_or_equal:today"),
  *             @OA\Property(property="lawyer_attendance", type="string", description="nullable"),
  *             @OA\Property(property="client_attendance", type="string", description="nullable"),
@@ -424,7 +383,6 @@ namespace App\Swagger;
  *             @OA\Property(property="next_hearing_type", type="string", description="nullable"),
  *             @OA\Property(property="order_photo", type="string", format="binary", description="nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:10240")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -439,7 +397,6 @@ namespace App\Swagger;
  *     operationId="webTasksIndexGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -454,9 +411,7 @@ namespace App\Swagger;
  *     operationId="webTasksStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"title", "priority"},
- *
  *             @OA\Property(property="title", type="string", description="required|string|max:255"),
  *             @OA\Property(property="description", type="string", description="nullable|string|max:5000"),
  *             @OA\Property(property="legal_case_id", type="integer", description="nullable|integer"),
@@ -467,7 +422,6 @@ namespace App\Swagger;
  *             @OA\Property(property="priority", type="string", description="required"),
  *             @OA\Property(property="status", type="string", description="sometimes")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -482,11 +436,8 @@ namespace App\Swagger;
  *     operationId="webTasksUpdatePut",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="task", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"title", "priority"},
- *
  *             @OA\Property(property="title", type="string", description="required|string|max:255"),
  *             @OA\Property(property="description", type="string", description="nullable|string|max:5000"),
  *             @OA\Property(property="legal_case_id", type="integer", description="nullable|integer"),
@@ -497,7 +448,6 @@ namespace App\Swagger;
  *             @OA\Property(property="priority", type="string", description="required"),
  *             @OA\Property(property="status", type="string", description="sometimes")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -512,9 +462,7 @@ namespace App\Swagger;
  *     operationId="webTasksTogglePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="task", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -529,9 +477,7 @@ namespace App\Swagger;
  *     operationId="webTasksStatusPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="task", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -546,7 +492,6 @@ namespace App\Swagger;
  *     operationId="webDocumentsIndexGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -561,7 +506,6 @@ namespace App\Swagger;
  *     operationId="webDocumentsStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -576,9 +520,7 @@ namespace App\Swagger;
  *     operationId="webDocumentsShowGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -593,9 +535,7 @@ namespace App\Swagger;
  *     operationId="webDocumentsUpdatePut",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -610,9 +550,7 @@ namespace App\Swagger;
  *     operationId="webDocumentsDestroyDelete",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -627,9 +565,7 @@ namespace App\Swagger;
  *     operationId="webDocumentsVersionsStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -644,10 +580,8 @@ namespace App\Swagger;
  *     operationId="webDocumentsDownloadGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
  *     @OA\Parameter(name="version", in="path", required=false, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -662,9 +596,7 @@ namespace App\Swagger;
  *     operationId="webDocumentsSharesStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -679,7 +611,6 @@ namespace App\Swagger;
  *     operationId="webDraftsIndexGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -694,7 +625,6 @@ namespace App\Swagger;
  *     operationId="webDraftsCreateGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -709,7 +639,6 @@ namespace App\Swagger;
  *     operationId="webDraftsStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -724,9 +653,7 @@ namespace App\Swagger;
  *     operationId="webDraftsEditGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="draft", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -741,9 +668,7 @@ namespace App\Swagger;
  *     operationId="webDraftsUpdatePut",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="draft", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -758,9 +683,7 @@ namespace App\Swagger;
  *     operationId="webDraftsStatusPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="draft", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -775,10 +698,8 @@ namespace App\Swagger;
  *     operationId="webDraftsExportGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="draft", in="path", required=true, @OA\Schema(type="string")),
  *     @OA\Parameter(name="format", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -793,7 +714,6 @@ namespace App\Swagger;
  *     operationId="webMessagesIndexGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -808,7 +728,6 @@ namespace App\Swagger;
  *     operationId="webMessagesStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -823,7 +742,6 @@ namespace App\Swagger;
  *     operationId="webMessagesLawyersGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -838,7 +756,6 @@ namespace App\Swagger;
  *     operationId="webMessagesDirectPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -853,7 +770,6 @@ namespace App\Swagger;
  *     operationId="webMessagesReadAllPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -868,9 +784,7 @@ namespace App\Swagger;
  *     operationId="webMessagesShowGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -885,9 +799,7 @@ namespace App\Swagger;
  *     operationId="webMessagesSendPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -902,9 +814,7 @@ namespace App\Swagger;
  *     operationId="webMessagesReadPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -919,9 +829,7 @@ namespace App\Swagger;
  *     operationId="webMessagesArchivePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -936,10 +844,8 @@ namespace App\Swagger;
  *     operationId="webMessagesAttachmentGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
  *     @OA\Parameter(name="message", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -954,7 +860,6 @@ namespace App\Swagger;
  *     operationId="webInvoicesCreateGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -969,9 +874,7 @@ namespace App\Swagger;
  *     operationId="webInvoicesStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"client_id", "issue_date", "items"},
- *
  *             @OA\Property(property="client_id", type="integer", description="required|integer"),
  *             @OA\Property(property="legal_case_id", type="integer", description="nullable|integer"),
  *             @OA\Property(property="issue_date", type="string", description="required|date"),
@@ -981,7 +884,6 @@ namespace App\Swagger;
  *             @OA\Property(property="notes", type="string", description="nullable|string|max:2000"),
  *             @OA\Property(property="items", type="array", @OA\Items(type="object"), description="required|array|min:1|max:100")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -996,9 +898,7 @@ namespace App\Swagger;
  *     operationId="webInvoicesEditGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="invoice", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1013,11 +913,8 @@ namespace App\Swagger;
  *     operationId="webInvoicesUpdatePut",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="invoice", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="application/json", @OA\Schema(type="object", required={"client_id", "issue_date", "items"},
- *
  *             @OA\Property(property="client_id", type="integer", description="required|integer"),
  *             @OA\Property(property="legal_case_id", type="integer", description="nullable|integer"),
  *             @OA\Property(property="issue_date", type="string", description="required|date"),
@@ -1027,7 +924,6 @@ namespace App\Swagger;
  *             @OA\Property(property="notes", type="string", description="nullable|string|max:2000"),
  *             @OA\Property(property="items", type="array", @OA\Items(type="object"), description="required|array|min:1|max:100")
  *     ))),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1042,9 +938,7 @@ namespace App\Swagger;
  *     operationId="webInvoicesIssuePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="invoice", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1059,9 +953,7 @@ namespace App\Swagger;
  *     operationId="webInvoicesVoidPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="invoice", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1076,9 +968,7 @@ namespace App\Swagger;
  *     operationId="webInvoicesPaymentsStorePost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="invoice", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1093,9 +983,7 @@ namespace App\Swagger;
  *     operationId="webInvoicesPdfGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="invoice", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1110,9 +998,7 @@ namespace App\Swagger;
  *     operationId="webPaymentsReceiptGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="payment", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1127,7 +1013,6 @@ namespace App\Swagger;
  *     operationId="webAiIndexGet",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1142,7 +1027,135 @@ namespace App\Swagger;
  *     operationId="webAiRunPost",
  *     tags={"V1 Workspace"},
  *     security={{"sanctum": {}}},
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
  *
+ * @OA\Get(
+ *     path="/api/v1/workspace/analytics",
+ *     summary="Analytics Index",
+ *     description="Runs the web action AnalyticsController@App\Http\Controllers\Workspace\AnalyticsController (web route analytics.index) — identical validation, permissions and notifications.",
+ *     operationId="webAnalyticsIndexGet",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/v1/workspace/profile",
+ *     summary="Lawyer Profile Edit",
+ *     description="Runs the web action LawyerProfileController@edit (web route lawyer.profile.edit) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerProfileEditGet",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Put(
+ *     path="/api/v1/workspace/profile/steps/{step}",
+ *     summary="Lawyer Profile Update",
+ *     description="Runs the web action LawyerProfileController@update (web route lawyer.profile.update) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerProfileUpdatePut",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Parameter(name="step", in="path", required=true, @OA\Schema(type="string")),
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/v1/workspace/profile/photo",
+ *     summary="Lawyer Profile Photo",
+ *     description="Runs the web action LawyerProfileController@photo (web route lawyer.profile.photo) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerProfilePhotoPost",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/v1/workspace/profile/verification",
+ *     summary="Lawyer Verification Show",
+ *     description="Runs the web action VerificationController@show (web route lawyer.verification.show) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerVerificationShowGet",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/v1/workspace/profile/verification/documents",
+ *     summary="Lawyer Verification Upload",
+ *     description="Runs the web action VerificationController@upload (web route lawyer.verification.upload) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerVerificationUploadPost",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Delete(
+ *     path="/api/v1/workspace/profile/verification/documents/{document}",
+ *     summary="Lawyer Verification Documents Destroy",
+ *     description="Runs the web action VerificationController@destroyDocument (web route lawyer.verification.documents.destroy) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerVerificationDocumentsDestroyDelete",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/v1/workspace/profile/verification/documents/{document}",
+ *     summary="Lawyer Verification Documents Download",
+ *     description="Runs the web action VerificationController@download (web route lawyer.verification.documents.download) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerVerificationDocumentsDownloadGet",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/v1/workspace/profile/verification/submit",
+ *     summary="Lawyer Verification Submit",
+ *     description="Runs the web action VerificationController@submit (web route lawyer.verification.submit) — identical validation, permissions and notifications.",
+ *     operationId="webLawyerVerificationSubmitPost",
+ *     tags={"V1 Workspace"},
+ *     security={{"sanctum": {}}},
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1157,7 +1170,6 @@ namespace App\Swagger;
  *     operationId="webPortalDocumentsStorePost",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1172,9 +1184,7 @@ namespace App\Swagger;
  *     operationId="webPortalDocumentsDownloadGet",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="document", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1189,9 +1199,7 @@ namespace App\Swagger;
  *     operationId="webPortalInvoicesPdfGet",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="invoice", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1206,9 +1214,7 @@ namespace App\Swagger;
  *     operationId="webPortalReceiptsShowGet",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="payment", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1223,9 +1229,7 @@ namespace App\Swagger;
  *     operationId="webPortalReviewsStorePost",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="lawyer", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1240,7 +1244,6 @@ namespace App\Swagger;
  *     operationId="webPortalMessagesIndexGet",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1255,7 +1258,6 @@ namespace App\Swagger;
  *     operationId="webPortalMessagesStorePost",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1270,7 +1272,6 @@ namespace App\Swagger;
  *     operationId="webPortalMessagesReadAllPost",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1285,9 +1286,7 @@ namespace App\Swagger;
  *     operationId="webPortalMessagesShowGet",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1302,9 +1301,7 @@ namespace App\Swagger;
  *     operationId="webPortalMessagesSendPost",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1319,9 +1316,7 @@ namespace App\Swagger;
  *     operationId="webPortalMessagesReadPost",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1336,10 +1331,8 @@ namespace App\Swagger;
  *     operationId="webPortalMessagesAttachmentGet",
  *     tags={"V1 Client"},
  *     security={{"sanctum": {}}},
- *
  *     @OA\Parameter(name="conversation", in="path", required=true, @OA\Schema(type="string")),
  *     @OA\Parameter(name="message", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=401, description="Unauthenticated"),
  *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
@@ -1353,7 +1346,6 @@ namespace App\Swagger;
  *     description="Runs the web action ReportedJudgmentController@index (web route judgments.index) — identical validation, permissions and notifications.",
  *     operationId="webJudgmentsIndexGet",
  *     tags={"V1 Judgments"},
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=404, description="Not found / belongs to another organization"),
  *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
@@ -1365,9 +1357,7 @@ namespace App\Swagger;
  *     description="Runs the web action ReportedJudgmentController@show (web route judgments.show) — identical validation, permissions and notifications.",
  *     operationId="webJudgmentsShowGet",
  *     tags={"V1 Judgments"},
- *
  *     @OA\Parameter(name="judgment", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=404, description="Not found / belongs to another organization"),
  *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
@@ -1379,9 +1369,7 @@ namespace App\Swagger;
  *     description="Runs the web action ReportedJudgmentController@viewPdf (web route judgments.pdf) — identical validation, permissions and notifications.",
  *     operationId="webJudgmentsPdfGet",
  *     tags={"V1 Judgments"},
- *
  *     @OA\Parameter(name="judgment", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=404, description="Not found / belongs to another organization"),
  *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
@@ -1393,12 +1381,65 @@ namespace App\Swagger;
  *     description="Runs the web action ReportedJudgmentController@downloadPdf (web route judgments.pdf.download) — identical validation, permissions and notifications.",
  *     operationId="webJudgmentsPdfDownloadGet",
  *     tags={"V1 Judgments"},
- *
  *     @OA\Parameter(name="judgment", in="path", required=true, @OA\Schema(type="string")),
- *
  *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
  *     @OA\Response(response=404, description="Not found / belongs to another organization"),
  *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
  * )
+ *
+ * @OA\Get(
+ *     path="/api/v1/articles",
+ *     summary="Articles Index",
+ *     description="Runs the web action ArticleController@index (web route articles.index) — identical validation, permissions and notifications.",
+ *     operationId="webArticlesIndexGet",
+ *     tags={"V1 Articles"},
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/v1/articles/{article}",
+ *     summary="Articles Show",
+ *     description="Runs the web action ArticleController@show (web route articles.show) — identical validation, permissions and notifications.",
+ *     operationId="webArticlesShowGet",
+ *     tags={"V1 Articles"},
+ *     @OA\Parameter(name="article", in="path", required=true, @OA\Schema(type="string")),
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/v1/articles/{article}/comments",
+ *     summary="Articles Comments Store",
+ *     description="Runs the web action ArticleController@comment (web route articles.comments.store) — identical validation, permissions and notifications.",
+ *     operationId="webArticlesCommentsStorePost",
+ *     tags={"V1 Articles"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Parameter(name="article", in="path", required=true, @OA\Schema(type="string")),
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/v1/articles/{article}/like",
+ *     summary="Articles Like",
+ *     description="Runs the web action ArticleController@like (web route articles.like) — identical validation, permissions and notifications.",
+ *     operationId="webArticlesLikePost",
+ *     tags={"V1 Articles"},
+ *     security={{"sanctum": {}}},
+ *     @OA\Parameter(name="article", in="path", required=true, @OA\Schema(type="string")),
+ *     @OA\Response(response=200, description="Success (page data, or the web's flash message + next route); files stream as application/pdf etc.", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object"))),
+ *     @OA\Response(response=401, description="Unauthenticated"),
+ *     @OA\Response(response=403, description="Forbidden (account type, organization permission or plan)"),
+ *     @OA\Response(response=404, description="Not found / belongs to another organization"),
+ *     @OA\Response(response=422, description="Validation error or the web's error message", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="Failed"), @OA\Property(property="message", type="string"), @OA\Property(property="errors", type="object")))
+ * )
  */
-class WebBridgeControllerDocs {}
+class WebBridgeControllerDocs
+{
+}

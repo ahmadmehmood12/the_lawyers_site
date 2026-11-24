@@ -1,10 +1,10 @@
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { directoryApi, errorMessage, type FirmCard as Firm, type LawyerCard as Lawyer, type Specialization } from '@/api';
-import { Chip, EmptyState, ErrorState, FirmCard, Input, LawyerCard, SegmentedControl, SkeletonCard, Txt } from '@/components';
+import { directoryApi, errorMessage, webPage, type FirmCard as Firm, type LawyerCard as Lawyer, type Specialization } from '@/api';
+import { Button, Chip, EmptyState, ErrorState, FirmCard, Input, LawyerCard, Picker, SegmentedControl, SkeletonCard, Txt } from '@/components';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { ClientTabsParamList } from '@/navigation/types';
 import { useAppNavigation } from '@/navigation/types';
@@ -24,6 +24,11 @@ export function FindLawyersScreen() {
   const [online, setOnline] = useState(false);
   const [sort, setSort] = useState<'' | 'rating' | 'experience'>('');
   const [areas, setAreas] = useState<Specialization[]>([]);
+  // Every filter of the web directory (Public\LawyerDirectoryController::search()).
+  const [options, setOptions] = useState<Record<string, { value: string | number; label: string; slug?: string }[]> & { languages?: string[] }>({});
+  const [adv, setAdv] = useState<Record<string, string | number | null>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const advCount = Object.values(adv).filter((v) => v !== null && v !== '').length;
   const [items, setItems] = useState<(Lawyer | Firm)[]>([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -35,14 +40,15 @@ export function FindLawyersScreen() {
 
   useEffect(() => { if (route.params?.specialization) { setMode('lawyers'); setSpecialization(route.params.specialization); } }, [route.params?.specialization]);
   useEffect(() => { directoryApi.specializations().then(setAreas).catch(() => undefined); }, []);
+  useEffect(() => { webPage<Record<string, any>>('/lawyers/filters').then(setOptions).catch(() => undefined); }, []);
 
   const load = useCallback(async (p: number, how: 'reset' | 'more' | 'refresh') => {
     how === 'refresh' ? setRefreshing(true) : how === 'reset' && setLoading(true);
     setError(null);
     try {
       const result = mode === 'lawyers'
-        ? await directoryApi.lawyers({ search: q, specialization, verified: verified ? '1' : undefined, online: online ? '1' : undefined, sort: sort || undefined, page: p, per_page: 12 })
-        : await directoryApi.firms({ search: q, page: p });
+        ? await directoryApi.lawyers({ search: q, specialization, verified: verified ? '1' : undefined, online: online ? '1' : undefined, sort: sort || undefined, page: p, per_page: 12, ...Object.fromEntries(Object.entries(adv).filter(([, v]) => v !== null && v !== '')) })
+        : await directoryApi.firms({ search: q, city: (adv.firm_city as string) || undefined, page: p });
       setItems((prev) => (p === 1 ? result.items : [...prev, ...result.items]));
       setPage(result.meta.current_page);
       setLastPage(result.meta.last_page);
@@ -53,7 +59,7 @@ export function FindLawyersScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [mode, q, specialization, verified, online, sort]);
+  }, [mode, q, specialization, verified, online, sort, adv]);
 
   useEffect(() => { void load(1, 'reset'); }, [load]);
 
@@ -61,7 +67,10 @@ export function FindLawyersScreen() {
     <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
       <Txt variant="title">Find {mode === 'lawyers' ? 'a lawyer' : 'a law firm'}</Txt>
       <SegmentedControl<Mode> value={mode} onChange={(m) => { setItems([]); setMode(m); }} options={[{ value: 'lawyers', label: 'Lawyers' }, { value: 'firms', label: 'Law firms' }]} />
-      <Input icon="search" placeholder={mode === 'lawyers' ? 'Name or expertise' : 'Firm name'} value={search} onChangeText={setSearch} returnKeyType="search" />
+      <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}>
+        <View style={{ flex: 1 }}><Input icon="search" placeholder={mode === 'lawyers' ? 'Name or expertise' : 'Firm name'} value={search} onChangeText={setSearch} returnKeyType="search" /></View>
+        <Button title={advCount ? `Filters (${advCount})` : 'Filters'} icon="sliders" variant={advCount ? 'primary' : 'secondary'} onPress={() => setFiltersOpen(true)} style={{ height: 50 }} />
+      </View>
       {mode === 'lawyers' ? (
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
@@ -82,6 +91,33 @@ export function FindLawyersScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+      <Modal visible={filtersOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setFiltersOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: c.bg }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
+            <Txt variant="heading">Filters</Txt>
+            <Pressable onPress={() => setFiltersOpen(false)} hitSlop={10}><Txt variant="label" tone="accent">Done</Txt></Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
+            {mode === 'lawyers' ? (
+              <>
+                <Picker label="City" value={adv.city as string} options={(options.cities ?? []).map((o) => ({ value: o.slug ?? o.value, label: o.label }))} onChange={(v) => setAdv((a) => ({ ...a, city: v }))} />
+                <Picker label="Province" value={adv.province as number} options={options.provinces ?? []} onChange={(v) => setAdv((a) => ({ ...a, province: v, district: null }))} />
+                <Picker label="District" value={adv.district as number} options={(options.districts ?? []).filter((d: any) => !adv.province || d.province_id === adv.province)} onChange={(v) => setAdv((a) => ({ ...a, district: v }))} />
+                <Picker label="Court" value={adv.court as number} options={options.courts ?? []} onChange={(v) => setAdv((a) => ({ ...a, court: v }))} />
+                <Picker label="Bar Council" value={adv.bar_council as number} options={options.bar_councils ?? []} onChange={(v) => setAdv((a) => ({ ...a, bar_council: v }))} />
+                <Picker label="Advocate category" value={adv.category as string} options={options.categories ?? []} onChange={(v) => setAdv((a) => ({ ...a, category: v }))} />
+                <Picker label="Language" value={adv.language as string} options={(options.languages ?? []).map((l) => ({ value: l, label: l }))} onChange={(v) => setAdv((a) => ({ ...a, language: v }))} />
+                <Picker label="Minimum experience" value={adv.experience as number} options={[2, 5, 10, 15, 20].map((y) => ({ value: y, label: `${y}+ years` }))} onChange={(v) => setAdv((a) => ({ ...a, experience: v }))} />
+                <Input label="Maximum consultation fee (PKR)" keyboardType="number-pad" value={adv.fee_max ? String(adv.fee_max) : ''} onChangeText={(v) => setAdv((a) => ({ ...a, fee_max: v.replace(/\D/g, '') }))} placeholder="e.g. 5000" />
+              </>
+            ) : (
+              <Picker label="City" value={adv.firm_city as string} options={(options.cities ?? []).map((o) => ({ value: o.slug ?? o.value, label: o.label }))} onChange={(v) => setAdv((a) => ({ ...a, firm_city: v }))} />
+            )}
+            <Button title="Clear all filters" variant="ghost" onPress={() => setAdv({})} />
+            <Button title="Show results" full onPress={() => setFiltersOpen(false)} />
+          </ScrollView>
+        </View>
+      </Modal>
       <FlatList
         data={loading ? [] : items}
         keyExtractor={(item) => item.slug}

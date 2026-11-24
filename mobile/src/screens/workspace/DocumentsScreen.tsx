@@ -9,7 +9,7 @@ import { Alert, Badge, Button, Card, Chip, EmptyState, ErrorState, Input, Picker
 import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useQuery } from '@/hooks/useQuery';
-import type { RootStackParamList } from '@/navigation/types';
+import { useAppNavigation, type RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 
 type Doc = { id: number; title: string; category_label: string; is_confidential?: boolean; source?: string; mime: string | null; size: number | null; version?: number | null; case?: { id: number; title: string; reference: string } | null | string; client?: string | null; uploaded_by?: string | null; updated_at: string };
@@ -36,7 +36,12 @@ export function DocumentsScreen() {
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
 
+  const nav = useAppNavigation();
   const open = async (d: Doc) => {
+    if (d.mime?.includes('pdf')) {
+      nav.navigate('PdfViewer', { path: client ? `/client/documents/${d.id}/download` : `/workspace/documents/${d.id}/download`, title: d.title, query: client ? { inline: 1 } : undefined });
+      return;
+    }
     try {
       const ext = d.mime?.includes('pdf') ? 'pdf' : d.mime?.split('/')[1] ?? 'bin';
       await openFile(client ? `/client/documents/${d.id}/download` : `/workspace/documents/${d.id}/download`, `${d.title}.${ext}`, client ? { inline: 1 } : undefined);

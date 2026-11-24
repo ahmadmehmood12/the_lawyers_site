@@ -87,16 +87,6 @@ export default function JudgmentShow({ judgment: j, related, canonical, canDownl
                                 </div>
                             </Card>
                         )}
-                        {j.keywords && j.keywords.length > 0 && (
-                            <Card>
-                                <CardHeader title={t('Keywords')} description={t('Extracted from the judgment text. Select one to search every judgment for it.')} />
-                                <div className="flex flex-wrap gap-1.5 px-5 pb-5">
-                                    {j.keywords.map((k) => (
-                                        <Link key={k} href={route(indexRoute, { text: k })} className="rounded bg-navy-50 px-2 py-1 text-xs font-medium text-navy-700 hover:bg-gold-50 hover:text-gold-700 dark:bg-navy-800 dark:text-navy-200 dark:hover:bg-gold-500/10 dark:hover:text-gold-300">{k}</Link>
-                                    ))}
-                                </div>
-                            </Card>
-                        )}
                         {related.length > 0 && (
                             <Card>
                                 <CardHeader title={t('More from this bench')} />

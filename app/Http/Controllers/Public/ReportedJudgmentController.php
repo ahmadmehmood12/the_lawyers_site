@@ -43,7 +43,6 @@ class ReportedJudgmentController extends Controller
         $judgments->through(fn (ReportedJudgment $j) => $textMatch === null ? $j->toListItem() : [
             ...$j->toListItem(),
             'match_pages' => $textMatch['pages'][$j->id] ?? [],
-            'match_keywords' => $textMatch['keywords'][$j->id] ?? [],
             'match_snippets' => $snippets[$j->id] ?? [],
         ]);
 
@@ -75,7 +74,6 @@ class ReportedJudgmentController extends Controller
                 ...$judgment->toListItem(),
                 'remarks' => $judgment->remarks,
                 'summary' => $judgment->summary,
-                'keywords' => $judgment->keywords()->orderByDesc('frequency')->limit(24)->pluck('keyword'),
             ],
             'related' => ReportedJudgment::query()->listed()->where('court', $judgment->court)->whereKeyNot($judgment->id)
                 ->where('judges', $judgment->judges)->latest('uploaded_on')->limit(5)->get()->map->toListItem(),

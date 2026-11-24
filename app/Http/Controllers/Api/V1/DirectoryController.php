@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\AdvocateCategory;
 use App\Enums\AppointmentMode;
 use App\Enums\CaseStatus;
 use App\Http\Controllers\Public\FirmDirectoryController;
@@ -47,7 +48,9 @@ class DirectoryController extends ApiController
         return $this->success([
             'cities' => ReferenceOptions::cities(),
             'provinces' => ReferenceOptions::provinces(),
+            'districts' => ReferenceOptions::districts(),
             'courts' => ReferenceOptions::courts(),
+            'categories' => AdvocateCategory::options(),
             'specializations' => ReferenceOptions::specializations(),
             'bar_councils' => ReferenceOptions::barCouncils(),
             'languages' => LawyerDirectoryController::LANGUAGES,

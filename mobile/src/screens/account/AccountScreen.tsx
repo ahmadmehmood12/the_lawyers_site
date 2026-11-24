@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Switch, View } from 'react-native';
 
-import { Avatar, Badge, Card, ListRow, Screen, SegmentedControl, Txt } from '@/components';
+import { Avatar, Badge, BrandFooter, Card, ListRow, Screen, SegmentedControl, Txt } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useAppNavigation, type RootStackParamList } from '@/navigation/types';
 import { useTheme, type ThemeMode } from '@/theme';
@@ -71,7 +71,7 @@ export function AccountScreen() {
         <ListRow title="Notifications" leading={<Feather name="inbox" size={18} color={c.text} />} onPress={() => nav.navigate('Notifications')} chevron divider />
         <ListRow title="Sign out" leading={<Feather name="log-out" size={18} color={c.danger} />} onPress={() => void signOut()} />
       </Card>
-      <Txt variant="caption" tone="faint" center style={{ marginTop: spacing.xl }}>Wakeel Diary · v1.0.0</Txt>
+      <BrandFooter />
     </Screen>
   );
 }

@@ -7,16 +7,20 @@ use App\Http\Controllers\Api\V1\ClientPortalController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use App\Http\Controllers\Portal\PortalController;
+use App\Http\Controllers\Public\ArticleController;
 use App\Http\Controllers\Public\ReportedJudgmentController;
 use App\Http\Controllers\Shared\ConversationController;
 use App\Http\Controllers\Workspace\AiController;
+use App\Http\Controllers\Workspace\AnalyticsController;
 use App\Http\Controllers\Workspace\CaseController;
 use App\Http\Controllers\Workspace\ClientController;
 use App\Http\Controllers\Workspace\DocumentController;
 use App\Http\Controllers\Workspace\DraftController;
 use App\Http\Controllers\Workspace\HearingController;
 use App\Http\Controllers\Workspace\InvoiceController;
+use App\Http\Controllers\Workspace\LawyerProfileController;
 use App\Http\Controllers\Workspace\TaskController;
+use App\Http\Controllers\Workspace\VerificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,6 +32,7 @@ use Illuminate\Support\Facades\Route;
 // Public: sign-in / sign-up / password reset (same throttles as the web forms).
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login');
+    Route::post('google', [AuthController::class, 'google'])->middleware('throttle:10,1,v1-auth-google')->name('google');
     Route::post('two-factor-challenge', [AuthController::class, 'twoFactorChallenge'])->middleware('throttle:6,1,v1-two-factor')->name('two-factor');
     Route::get('register/options', [AuthController::class, 'registrationOptions'])->name('register.options');
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:6,1,v1-register')->name('register');
@@ -187,6 +192,20 @@ Route::middleware(['auth:sanctum', 'api.active', 'verified', 'account:lawyer,sta
     // AI assistant
     Route::get('ai', [AiController::class, 'index'])->name('ai.index');
     Route::post('ai/run', [AiController::class, 'run'])->middleware('throttle:20,1,v1-ai-run')->name('ai.run');
+    // Analytics (same plan gate and numbers as the web page)
+    Route::get('analytics', AnalyticsController::class)->name('analytics.index');
+});
+
+// Advocate's own public profile + verification (web /profile, account type lawyer only).
+Route::middleware(['auth:sanctum', 'api.active', 'verified', 'account:lawyer', 'workspace', 'api.web'])->prefix('workspace/profile')->name('web.lawyer.')->group(function () {
+    Route::get('/', [LawyerProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('steps/{step}', [LawyerProfileController::class, 'update'])->name('profile.update');
+    Route::post('photo', [LawyerProfileController::class, 'photo'])->name('profile.photo');
+    Route::get('verification', [VerificationController::class, 'show'])->name('verification.show');
+    Route::post('verification/documents', [VerificationController::class, 'upload'])->middleware('throttle:30,1,v1-verification-upload')->name('verification.upload');
+    Route::delete('verification/documents/{document}', [VerificationController::class, 'destroyDocument'])->name('verification.documents.destroy');
+    Route::get('verification/documents/{document}', [VerificationController::class, 'download'])->name('verification.documents.download');
+    Route::post('verification/submit', [VerificationController::class, 'submit'])->name('verification.submit');
 });
 
 Route::middleware(['auth:sanctum', 'api.active', 'verified', 'account:client', 'api.web'])->prefix('client')->name('web.portal.')->group(function () {
@@ -210,4 +229,12 @@ Route::middleware(['throttle:120,1,v1-judgments', 'api.web'])->name('web.')->gro
     Route::get('judgments/{judgment:slug}', [ReportedJudgmentController::class, 'show'])->name('judgments.show');
     Route::get('judgments/{judgment:slug}/pdf', [ReportedJudgmentController::class, 'viewPdf'])->name('judgments.pdf');
     Route::get('judgments/{judgment:slug}/pdf/download', [ReportedJudgmentController::class, 'downloadPdf'])->middleware('throttle:60,1,v1-judgments-download')->name('judgments.pdf.download');
+    // Articles: public to read (signed in or not), like the website.
+    Route::get('articles', [ArticleController::class, 'index'])->name('articles.index');
+    Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
+});
+
+Route::middleware(['auth:sanctum', 'api.active', 'api.web'])->name('web.')->group(function () {
+    Route::post('articles/{article:slug}/comments', [ArticleController::class, 'comment'])->middleware('throttle:10,1,v1-article-comments')->name('articles.comments.store');
+    Route::post('articles/{article:slug}/like', [ArticleController::class, 'like'])->middleware('throttle:30,1,v1-article-like')->name('articles.like');
 });

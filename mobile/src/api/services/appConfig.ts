@@ -32,5 +32,9 @@ export async function fetchAppConfig(signal?: AbortSignal): Promise<AppConfig> {
     maintenance_message: typeof payload.maintenance_message === 'string' ? payload.maintenance_message : null,
     ios: platform(payload.ios),
     android: platform(payload.android),
+    site: { name: payload.app_name, tagline: null, logo_url: null, favicon_url: null, theme: null, url: null, ...(isRecord(payload.site) ? (payload.site as AppConfig['site']) : {}) },
+    contact: { email: null, phone: null, address: null, ...(isRecord(payload.contact) ? (payload.contact as AppConfig['contact']) : {}) },
+    social: isRecord(payload.social) ? (payload.social as AppConfig['social']) : {},
+    google: { enabled: false, web_client_id: null, ios_client_id: null, android_client_id: null, ...(isRecord(payload.google) ? (payload.google as AppConfig['google']) : {}) },
   };
 }

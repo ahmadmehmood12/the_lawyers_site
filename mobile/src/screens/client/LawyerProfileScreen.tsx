@@ -6,6 +6,7 @@ import { directoryApi } from '@/api';
 import { Avatar, Badge, Button, Card, ErrorState, KeyValue, Loading, Screen, SectionHeader, Txt } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@/hooks/useQuery';
+import { setPending } from '@/lib/pending';
 import { formatPkr } from '@/lib/format';
 import { useAppNavigation, type RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -14,7 +15,7 @@ import { useTheme } from '@/theme';
 export function LawyerProfileScreen() {
   const { params } = useRoute<RouteProp<RootStackParamList, 'LawyerProfile'>>();
   const nav = useAppNavigation();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { c, spacing, radius } = useTheme();
   const q = useQuery(() => directoryApi.lawyer(params.slug), [params.slug]);
 
@@ -32,13 +33,21 @@ export function LawyerProfileScreen() {
   };
 
   return (
-    <Screen edges={[]} footer={role === 'client' && canBook ? (
+    <Screen edges={[]} footer={(role === 'client' || !user) && canBook ? (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <View style={{ flex: 1 }}>
           <Txt variant="caption" tone="muted">Consultation</Txt>
           <Txt variant="subtitle">{lawyer.fee_min ? formatPkr(lawyer.fee_min) : 'On request'}</Txt>
         </View>
-        <Button title="Book consultation" icon="calendar" onPress={() => nav.navigate('BookAppointment', { slug: lawyer.slug, name: lawyer.name })} />
+        <Button title="Book consultation" icon="calendar" onPress={() => {
+          if (!user) {
+            // Browsing is open to everyone; booking needs an account. Resume this booking after sign-in.
+            setPending({ screen: 'BookAppointment', params: { slug: lawyer.slug, name: lawyer.name } });
+            nav.navigate('Login');
+            return;
+          }
+          nav.navigate('BookAppointment', { slug: lawyer.slug, name: lawyer.name });
+        }} />
       </View>
     ) : undefined}>
       <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md }}>

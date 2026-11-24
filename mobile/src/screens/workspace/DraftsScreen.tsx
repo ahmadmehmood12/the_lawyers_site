@@ -140,7 +140,7 @@ export function DraftEditorScreen() {
       <WebView ref={web} originWhitelist={['*']} source={{ html: editorHtml(d.body, d.language === 'ur', c.text, c.bg) }} onMessage={(e: { nativeEvent: { data: string } }) => { body.current = e.nativeEvent.data; }} style={{ flex: 1, backgroundColor: c.bg }} hideKeyboardAccessoryView keyboardDisplayRequiresUserAction={false} />
       <View style={{ flexDirection: 'row', gap: spacing.sm, padding: spacing.md, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.surface }}>
         <Button title="Save" icon="save" style={{ flex: 1 }} loading={busy} onPress={() => void save()} />
-        <Button title="PDF" icon="file-text" variant="secondary" onPress={() => void openFile(`/workspace/drafts/${d.id}/export/pdf`, `${title || 'draft'}.pdf`).catch((e) => setNotice({ tone: 'danger', text: errorMessage(e) }))} />
+        <Button title="PDF" icon="file-text" variant="secondary" onPress={() => nav.navigate('PdfViewer', { path: `/workspace/drafts/${d.id}/export/pdf`, title: title || 'Draft' })} />
         <Button title="Word" icon="file" variant="secondary" onPress={() => void openFile(`/workspace/drafts/${d.id}/export/docx`, `${title || 'draft'}.docx`).catch((e) => setNotice({ tone: 'danger', text: errorMessage(e) }))} />
       </View>
       {d.status === 'draft' || d.status === 'in_review' ? (

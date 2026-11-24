@@ -49,10 +49,10 @@ export function SplashScreen({ config, loading, error, onRetry, onFinish }: Prop
       <SafeAreaView style={styles.container}>
         <Animated.View style={[styles.content, { opacity: fade, transform: [{ translateY: rise }] }]}>
           <View style={styles.mark}>
-            <Image source={require('../../../assets/splash-icon.png')} style={styles.logo} resizeMode="contain" />
+            <Image source={config?.icon_url || config?.site.logo_url ? { uri: (config.icon_url || config.site.logo_url)! } : require('../../../assets/splash-icon.png')} style={styles.logo} resizeMode="contain" />
           </View>
-          <Txt variant="display" center style={styles.name}>{config?.app_name ?? 'Wakeel Diary'}</Txt>
-          <Txt variant="label" center style={styles.tagline}>YOUR LEGAL PRACTICE · IN YOUR POCKET</Txt>
+          <Txt variant="display" center style={styles.name}>{config?.app_name || config?.site.name || 'Wakeel Diary'}</Txt>
+          <Txt variant="label" center style={styles.tagline}>{(config?.site.tagline || 'Your legal practice · in your pocket').toUpperCase()}</Txt>
         </Animated.View>
 
         <View style={styles.footer}>

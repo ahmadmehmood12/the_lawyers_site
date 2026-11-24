@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useEffect, useRef, useState } from 'react';
@@ -30,11 +30,13 @@ const when = (iso: string | null) => {
 export function MessagesScreen() {
   const base = useBase();
   const nav = useAppNavigation();
+  const { refreshUser } = useAuth();
   const { spacing } = useTheme();
   const q = useQuery(() => webPage<Inbox>(base), [base]);
   const [starting, setStarting] = useState(false);
 
-  useEffect(() => nav.addListener('focus', () => void q.refresh()), [nav]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => nav.addListener('focus', () => { void q.refresh(); void refreshUser().catch(() => undefined); }), [nav]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const t = setInterval(() => void q.refresh(), 15000); return () => clearInterval(t); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
@@ -88,6 +90,14 @@ function StartSheet({ visible, inbox, base, onClose, onStarted }: { visible: boo
   );
 }
 
+/** Same as the web chat: one grey tick = sent, two grey = delivered, two blue = read. */
+function Ticks({ status }: { status: string | null }) {
+  const { c } = useTheme();
+  if (status === 'read') return <MaterialCommunityIcons name="check-all" size={16} color="#34B7F1" accessibilityLabel="Read" />;
+  if (status === 'delivered') return <MaterialCommunityIcons name="check-all" size={16} color={c.textFaint} accessibilityLabel="Delivered" />;
+  return <MaterialCommunityIcons name="check" size={16} color={c.textFaint} accessibilityLabel="Sent" />;
+}
+
 export function ThreadScreen() {
   const { params } = useRoute<RouteProp<RootStackParamList, 'Thread'>>();
   const base = useBase();
@@ -99,7 +109,9 @@ export function ThreadScreen() {
   const [error, setError] = useState<string | null>(null);
   const list = useRef<FlatList<Message>>(null);
 
+  const { refreshUser } = useAuth();
   useEffect(() => { nav.setOptions({ title: q.data?.active.with ?? params.title }); }, [q.data, nav, params.title]);
+  useEffect(() => { if (q.data) void refreshUser().catch(() => undefined); }, [q.data?.active.messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => void q.refresh(), 8000); return () => clearInterval(t); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async (file?: DocumentPicker.DocumentPickerAsset) => {
@@ -145,7 +157,10 @@ export function ThreadScreen() {
                 </Pressable>
               ) : null}
             </View>
-            <Txt variant="caption" tone="faint" style={{ alignSelf: m.mine ? 'flex-end' : 'flex-start', marginTop: 2 }}>{when(m.created_at)}{m.mine && m.status ? ` · ${m.status}` : ''}</Txt>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: m.mine ? 'flex-end' : 'flex-start', marginTop: 2 }}>
+              <Txt variant="caption" tone="faint">{when(m.created_at)}</Txt>
+              {m.mine ? <Ticks status={m.status} /> : null}
+            </View>
           </View>
         )}
       />

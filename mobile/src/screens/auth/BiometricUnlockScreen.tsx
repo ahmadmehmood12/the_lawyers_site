@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 
 import { Button, Screen, Txt } from '@/components';
+import { useBrand } from '@/context/AppConfigContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/theme';
 
@@ -10,6 +11,7 @@ import { useTheme } from '@/theme';
 export function BiometricUnlockScreen() {
   const { c, spacing, radius } = useTheme();
   const { unlock, signOut, user } = useAuth();
+  const brand = useBrand();
 
   useEffect(() => {
     // Prompt automatically the first time the lock screen appears.
@@ -26,7 +28,7 @@ export function BiometricUnlockScreen() {
         Welcome back
       </Txt>
       <Txt variant="body" tone="muted" center style={{ marginTop: spacing.xs }}>
-        {user?.name ?? 'Wakeel Diary'} is locked. Unlock with Face ID or your fingerprint to continue.
+        {user?.name ?? brand.name} — {brand.name} is locked. Unlock with Face ID or your fingerprint to continue.
       </Txt>
       <View style={{ width: '100%', gap: spacing.md, marginTop: spacing['3xl'] }}>
         <Button title="Unlock" icon="unlock" onPress={() => void unlock()} full />

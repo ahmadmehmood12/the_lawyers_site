@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Workspace\AppointmentController;
 use App\Models\BarCouncil;
 use App\Models\User;
 use App\Services\Access\CurrentOrganization;
 use App\Services\Access\OrganizationAccess;
+use App\Services\Auth\GoogleSignIn;
 use App\Services\Auth\OneTimeCodeService;
 use App\Services\Messaging\MessagingService;
+use App\Services\Mobile\MobileAppConfig;
 use App\Support\PublicFile;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -19,6 +22,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -98,6 +102,53 @@ class AuthController extends ApiController
         return $this->issueToken($user, $challenge['device'] ?? null);
     }
 
+    /**
+     * "Continue with Google" from the app: verifies the Google ID token, then follows the web
+     * callback (Auth\GoogleController): existing account → sign in (two-factor still applies, suspended
+     * refused); new email → a short-lived signup token for /auth/register (no password, email verified).
+     */
+    public function google(Request $request, GoogleSignIn $google, MobileAppConfig $config): JsonResponse
+    {
+        abort_unless($google->isEnabled(), 404);
+        $request->validate(['id_token' => ['required', 'string', 'max:4096'], 'device_name' => ['nullable', 'string', 'max:100']]);
+
+        $claims = Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', ['id_token' => $request->string('id_token')->toString()])->json() ?? [];
+        $valid = in_array($claims['aud'] ?? null, $config->googleAudiences(), true)
+            && in_array($claims['iss'] ?? null, ['accounts.google.com', 'https://accounts.google.com'], true)
+            && (int) ($claims['exp'] ?? 0) > now()->timestamp
+            && filter_var($claims['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $email = strtolower((string) ($claims['email'] ?? ''));
+        if (! $valid || $email === '' || empty($claims['sub'])) {
+            throw ValidationException::withMessages(['id_token' => __('Your Google account has no verified email address.')]);
+        }
+
+        $user = User::query()->where('google_id', $claims['sub'])->first() ?? User::query()->where('email', $email)->first();
+        if (! $user) {
+            $profile = ['id' => (string) $claims['sub'], 'name' => (string) ($claims['name'] ?? $email), 'email' => $email];
+
+            return $this->success([
+                'google_signup' => true,
+                'signup_token' => Crypt::encryptString((string) json_encode([...$profile, 'exp' => now()->addMinutes(30)->timestamp])),
+                'name' => $profile['name'],
+                'email' => $email,
+            ], __('Google confirmed :email. Choose your account type and add the remaining details to finish.', ['email' => $email]));
+        }
+
+        if ($user->status !== UserStatus::Active) {
+            throw ValidationException::withMessages(['id_token' => __('Your account has been suspended. Please contact support.')]);
+        }
+        $user->forceFill(['google_id' => $user->google_id ?: (string) $claims['sub'], 'email_verified_at' => $user->email_verified_at ?? now()])->save();
+
+        if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
+            return $this->success([
+                'two_factor' => true,
+                'challenge_token' => Crypt::encryptString((string) json_encode(['id' => $user->id, 'exp' => now()->addMinutes(self::ChallengeMinutes)->timestamp, 'device' => $request->input('device_name')])),
+            ], __('Enter the code from your authenticator app.'));
+        }
+
+        return $this->issueToken($user, $request->input('device_name'));
+    }
+
     public function registrationOptions(): JsonResponse
     {
         return $this->success([
@@ -110,6 +161,20 @@ class AuthController extends ApiController
     /** Same action as the web sign-up (CreateNewUser); Registered sends the 6-digit verification code. */
     public function register(Request $request, CreateNewUser $creator): JsonResponse
     {
+        // After "Continue with Google": hand CreateNewUser the same google_signup session data the web uses.
+        if ($request->filled('google_token')) {
+            try {
+                $google = json_decode(Crypt::decryptString($request->string('google_token')->toString()), true);
+            } catch (DecryptException) {
+                $google = null;
+            }
+            if (! is_array($google) || ($google['exp'] ?? 0) < now()->timestamp) {
+                throw ValidationException::withMessages(['email' => __('Google sign in was cancelled or did not finish. Please try again.')]);
+            }
+            $request->setLaravelSession($session = app('session.store'));
+            $session->put('google_signup', ['id' => $google['id'], 'name' => $google['name'], 'email' => $google['email']]);
+        }
+
         $user = $creator->create($request->all());
         event(new Registered($user));
 

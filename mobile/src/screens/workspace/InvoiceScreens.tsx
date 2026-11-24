@@ -58,6 +58,7 @@ type InvoicePage = { invoice: { id: number; number: string; status: string; stat
 export function InvoiceDetailScreen() {
   const { params } = useRoute<RouteProp<RootStackParamList, 'InvoiceDetail'>>();
   const { role } = useAuth();
+  const nav = useAppNavigation();
   const client = role === 'client';
   const { c, spacing } = useTheme();
   const base = client ? '/client' : '/workspace';
@@ -94,7 +95,7 @@ export function InvoiceDetailScreen() {
       </Card>
       <Txt variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>Issued {i.issue_date}{i.due_date ? ` · due ${i.due_date}` : ''}</Txt>
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg, flexWrap: 'wrap' }}>
-        <Button title="PDF" icon="file-text" variant="secondary" onPress={() => void openFile(`${base}/invoices/${i.id}/pdf`, `${i.number}.pdf`).catch((e) => setNotice({ tone: 'danger', text: errorMessage(e) }))} />
+        <Button title="PDF" icon="file-text" variant="secondary" onPress={() => nav.navigate('PdfViewer', { path: `${base}/invoices/${i.id}/pdf`, title: i.number })} />
         {can.issue && i.status === 'draft' ? <Button title="Issue" icon="send" onPress={() => void act(() => webPost(`/workspace/invoices/${i.id}/issue`))} /> : null}
         {can.pay && Number(i.balance) > 0 && i.status !== 'draft' && i.status !== 'void' ? <Button title="Record payment" icon="dollar-sign" onPress={() => { pay.setValues((v) => ({ ...v, amount: String(Number(i.balance)), idempotency_key: uuid() })); setPaying(true); }} /> : null}
         {can.void && i.status !== 'void' ? <Button title="Void" variant="ghost" onPress={() => setVoiding(true)} /> : null}
@@ -114,7 +115,7 @@ export function InvoiceDetailScreen() {
         <View style={{ marginTop: spacing.xl, gap: spacing.sm }}>
           <SectionHeader title="Payments" />
           {i.payments.map((p) => (
-            <Pressable key={p.id} onPress={() => void openFile(client ? `/client/receipts/${p.id}` : `/workspace/payments/${p.id}/receipt`, `${p.receipt_number}.pdf`).catch((e) => setNotice({ tone: 'danger', text: errorMessage(e) }))}>
+            <Pressable key={p.id} onPress={() => nav.navigate('PdfViewer', { path: client ? `/client/receipts/${p.id}` : `/workspace/payments/${p.id}/receipt`, title: p.receipt_number })}>
               <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <Feather name="check-circle" size={18} color={c.success} />
                 <View style={{ flex: 1 }}><Txt variant="label">{p.receipt_number} · {pkr(p.amount)}</Txt><Txt variant="caption" tone="muted">{p.paid_on} · {p.method_label ?? p.method}</Txt></View>

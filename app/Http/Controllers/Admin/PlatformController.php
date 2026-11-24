@@ -414,6 +414,8 @@ class PlatformController extends Controller
             'app_force_update' => ['required', Rule::in(['0', '1'])],
             'app_maintenance' => ['required', Rule::in(['0', '1'])],
             'app_maintenance_message' => ['nullable', 'string', 'max:255'],
+            'google_ios_client_id' => ['nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/'],
+            'google_android_client_id' => ['nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/'],
         ]);
 
         if (filled($validated['fcm_credentials_json'] ?? null)) {
@@ -423,7 +425,7 @@ class PlatformController extends Controller
             }
         }
 
-        foreach (['mobile_app_name' => 'app_name', 'fcm_project_id' => 'fcm_project_id', 'ios_app_version' => 'ios_app_version', 'ios_min_version' => 'ios_min_version', 'ios_app_url' => 'ios_app_url', 'android_app_version' => 'android_app_version', 'android_min_version' => 'android_min_version', 'android_app_url' => 'android_app_url', 'app_maintenance_message' => 'app_maintenance_message'] as $key => $field) {
+        foreach (['mobile_app_name' => 'app_name', 'fcm_project_id' => 'fcm_project_id', 'ios_app_version' => 'ios_app_version', 'ios_min_version' => 'ios_min_version', 'ios_app_url' => 'ios_app_url', 'android_app_version' => 'android_app_version', 'android_min_version' => 'android_min_version', 'android_app_url' => 'android_app_url', 'app_maintenance_message' => 'app_maintenance_message', 'google_ios_client_id' => 'google_ios_client_id', 'google_android_client_id' => 'google_android_client_id'] as $key => $field) {
             Setting::put($key, filled($validated[$field] ?? null) ? trim((string) $validated[$field]) : null);
         }
 

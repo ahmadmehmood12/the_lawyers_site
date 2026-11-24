@@ -14139,6 +14139,294 @@
                 }
             }
         },
+        "/api/v1/articles": {
+            "get": {
+                "tags": [
+                    "V1 Articles"
+                ],
+                "summary": "Articles Index",
+                "description": "Runs the web action ArticleController@index (web route articles.index) — identical validation, permissions and notifications.",
+                "operationId": "webArticlesIndexGet",
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/articles/{article}": {
+            "get": {
+                "tags": [
+                    "V1 Articles"
+                ],
+                "summary": "Articles Show",
+                "description": "Runs the web action ArticleController@show (web route articles.show) — identical validation, permissions and notifications.",
+                "operationId": "webArticlesShowGet",
+                "parameters": [
+                    {
+                        "name": "article",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/articles/{article}/comments": {
+            "post": {
+                "tags": [
+                    "V1 Articles"
+                ],
+                "summary": "Articles Comments Store",
+                "description": "Runs the web action ArticleController@comment (web route articles.comments.store) — identical validation, permissions and notifications.",
+                "operationId": "webArticlesCommentsStorePost",
+                "parameters": [
+                    {
+                        "name": "article",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/articles/{article}/like": {
+            "post": {
+                "tags": [
+                    "V1 Articles"
+                ],
+                "summary": "Articles Like",
+                "description": "Runs the web action ArticleController@like (web route articles.like) — identical validation, permissions and notifications.",
+                "operationId": "webArticlesLikePost",
+                "parameters": [
+                    {
+                        "name": "article",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success (page data, or the web's flash message + next route); files stream as application/pdf etc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (account type, organization permission or plan)"
+                    },
+                    "404": {
+                        "description": "Not found / belongs to another organization"
+                    },
+                    "422": {
+                        "description": "Validation error or the web's error message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Failed"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/workspace/dashboard": {
             "get": {
                 "tags": [
@@ -16584,6 +16872,10 @@
         {
             "name": "V1 Judgments",
             "description": "V1 Judgments"
+        },
+        {
+            "name": "V1 Articles",
+            "description": "V1 Articles"
         },
         {
             "name": "Workspace",

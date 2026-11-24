@@ -3,6 +3,7 @@
 namespace App\Services\Mobile;
 
 use App\Models\Setting;
+use App\Services\Auth\GoogleSignIn;
 use App\Support\PublicFile;
 
 /**
@@ -21,6 +22,7 @@ class MobileAppConfig
         'ios_app_version', 'ios_min_version', 'ios_app_url',
         'android_app_version', 'android_min_version', 'android_app_url',
         'app_force_update', 'app_maintenance', 'app_maintenance_message',
+        'google_ios_client_id', 'google_android_client_id',
     ];
 
     /** Push can be sent only when enabled AND the FCM credentials are present. */
@@ -78,7 +80,46 @@ class MobileAppConfig
                 'min_version' => Setting::get('android_min_version') ?: null,
                 'url' => Setting::get('android_app_url') ?: null,
             ],
+            // Branding, contact and social links from Admin > Settings — the same values the website shares.
+            'site' => [
+                'name' => Setting::get('site_name') ?: config('app.name'),
+                'tagline' => Setting::get('site_tagline') ?: null,
+                'logo_url' => PublicFile::url(Setting::get('site_logo_path')),
+                'favicon_url' => PublicFile::url(Setting::get('site_favicon_path')),
+                'theme' => Setting::get('site_theme', 'navy-gold'),
+                'url' => config('app.url'),
+            ],
+            'contact' => [
+                'email' => Setting::get('contact_email') ?: null,
+                'phone' => Setting::get('contact_phone') ?: null,
+                'address' => Setting::get('contact_address') ?: null,
+            ],
+            'social' => array_filter([
+                'facebook' => Setting::get('social_facebook') ?: null,
+                'instagram' => Setting::get('social_instagram') ?: null,
+                'youtube' => Setting::get('social_youtube') ?: null,
+                'linkedin' => Setting::get('social_linkedin') ?: null,
+                'x' => Setting::get('social_x') ?: null,
+                'whatsapp' => Setting::get('social_whatsapp') ?: null,
+            ]),
+            // "Continue with Google": the OAuth client ids the app needs (no secrets).
+            'google' => [
+                'enabled' => app(GoogleSignIn::class)->isEnabled(),
+                'web_client_id' => app(GoogleSignIn::class)->clientId(),
+                'ios_client_id' => Setting::get('google_ios_client_id') ?: null,
+                'android_client_id' => Setting::get('google_android_client_id') ?: null,
+            ],
         ];
+    }
+
+    /**
+     * OAuth client ids whose Google ID tokens the API accepts (web + the two mobile apps).
+     *
+     * @return list<string>
+     */
+    public function googleAudiences(): array
+    {
+        return array_values(array_filter([app(GoogleSignIn::class)->clientId(), Setting::get('google_ios_client_id'), Setting::get('google_android_client_id')]));
     }
 
     /**
@@ -105,6 +146,8 @@ class MobileAppConfig
             'force_update' => Setting::get('app_force_update', '0') === '1',
             'maintenance' => Setting::get('app_maintenance', '0') === '1',
             'maintenance_message' => (string) (Setting::get('app_maintenance_message') ?: ''),
+            'google_ios_client_id' => (string) (Setting::get('google_ios_client_id') ?: ''),
+            'google_android_client_id' => (string) (Setting::get('google_android_client_id') ?: ''),
         ];
     }
 }

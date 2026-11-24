@@ -51,18 +51,24 @@ export function Picker({ label, value, options, onChange, placeholder = 'Select'
       <Modal visible={open} animationType="slide" transparent onRequestClose={() => setOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: c.overlay }}>
           <Pressable style={{ flex: 1 }} onPress={() => setOpen(false)} />
-          <View style={{ maxHeight: '78%', backgroundColor: c.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, gap: spacing.md }}>
+          <View style={{ height: options.length > 6 ? '80%' : undefined, maxHeight: '80%', backgroundColor: c.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, gap: spacing.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Txt variant="heading">{label}</Txt>
               <Pressable onPress={() => setOpen(false)} hitSlop={10}><Txt variant="label" tone="accent">{multiple ? 'Done' : 'Close'}</Txt></Pressable>
             </View>
-            {options.length > 8 ? <Input icon="search" placeholder="Search" value={q} onChangeText={setQ} /> : null}
+            {options.length > 6 ? <Input icon="search" placeholder="Search" value={q} onChangeText={setQ} /> : null}
             {!required && !multiple ? (
               <Pressable onPress={() => { onChange(null); setOpen(false); }} style={{ paddingVertical: 12 }}><Txt tone="muted">— None —</Txt></Pressable>
             ) : null}
+            {/* flex:1 inside a fixed-height sheet so the whole list scrolls (not just the first batch). */}
             <FlatList
+              style={{ flex: 1 }}
               data={list}
               keyExtractor={(o) => String(o.value)}
+              initialNumToRender={40}
+              maxToRenderPerBatch={60}
+              windowSize={15}
+              ListHeaderComponent={<Txt variant="caption" tone="faint" style={{ paddingVertical: 4 }}>{list.length} option{list.length === 1 ? '' : 's'}</Txt>}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => {
                 const on = selected.includes(String(item.value));
