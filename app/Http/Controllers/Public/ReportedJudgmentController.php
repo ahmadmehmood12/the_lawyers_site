@@ -24,7 +24,7 @@ class ReportedJudgmentController extends Controller
     public function index(Request $request, ?string $embedded = null): Response
     {
         $court = array_key_exists((string) $request->query('court'), ReportedJudgment::COURTS) ? (string) $request->query('court') : null;
-        $filters = $request->only(['court', 'year', 'judge', 'citation', 'case', 'title', 'text', 'decided_from', 'decided_to', 'uploaded_from', 'uploaded_to']);
+        $filters = $request->only(['court', 'year', 'judge', 'bench', 'pair', 'citation', 'case', 'title', 'text', 'decided_from', 'decided_to', 'uploaded_from', 'uploaded_to']);
 
         // Full-text / keyword search over the extracted PDF text (judgment_pages + judgment_keywords).
         $textMatch = filled($filters['text'] ?? null) ? self::textMatch((string) $filters['text']) : null;
@@ -53,8 +53,10 @@ class ReportedJudgmentController extends Controller
         return Inertia::render('Public/Judgments/Index', [
             'judgments' => $judgments,
             'courts' => collect(ReportedJudgment::COURTS)->map(fn ($c, $key) => [...$c, 'key' => $key, 'count' => (int) ($counts[$key] ?? 0)])->values(),
-            'judges' => ReportedJudgment::query()->listed()->when($court, fn ($q) => $q->where('court', $court))
-                ->distinct()->orderBy('judges')->limit(300)->pluck('judges'),
+            // One entry per judge (division benches split into their judges), all courts or the selected one.
+            'judges' => ReportedJudgment::judgeOptions($court),
+            // Division-bench judge pairs: the distinct judges texts naming 2+ judges.
+            'pairs' => ReportedJudgment::benchOptions($court),
             'years' => ReportedJudgment::query()->listed()->selectRaw('DISTINCT YEAR(COALESCE(decision_date, uploaded_on)) as y')->orderByDesc('y')->pluck('y'),
             'filters' => $filters,
             'canonical' => route('judgments.index'),
@@ -146,7 +148,18 @@ class ReportedJudgmentController extends Controller
         return $query
             ->when(array_key_exists((string) ($f['court'] ?? ''), ReportedJudgment::COURTS), fn ($q) => $q->where('court', $f['court']))
             ->when(is_numeric($f['year'] ?? null), fn ($q) => $q->whereRaw('YEAR(COALESCE(decision_date, uploaded_on)) = ?', [(int) $f['year']]))
-            ->when(filled($f['judge'] ?? null), fn ($q) => $q->where('judges', 'like', $like($f['judge'])))
+            // A judge matches every judgment they sat on, alone or in a bench (whole-name match, so
+            // "Muhammad Asif" does not also match "Muhammad Asif Khan").
+            ->when(filled($f['judge'] ?? null), fn ($q) => self::whereJudge($q, (string) $f['judge']))
+            // bench = division | single (D.B. / S.B.).
+            ->when(in_array($f['bench'] ?? null, ['division', 'single'], true), fn ($q) => $q->where('bench', $f['bench'] === 'division'))
+            // pair = "Name A|Name B": only the judgments of that division bench (every judge of the pair on it).
+            ->when(str_contains((string) ($f['pair'] ?? ''), '|'), function ($q) use ($f): void {
+                $q->where('bench', true);
+                foreach (array_filter(array_map('trim', explode('|', (string) $f['pair']))) as $name) {
+                    self::whereJudge($q, $name);
+                }
+            })
             ->when(filled($f['citation'] ?? null), function ($q) use ($f, $like) {
                 // "2026 LHC 8777", "2026LHC8777" and "PLD 2026 Lahore 172" all match; case law cited inside a judgment counts too.
                 $compact = '%'.self::compactCitation((string) $f['citation']).'%';
@@ -164,6 +177,18 @@ class ReportedJudgmentController extends Controller
             ->when(filled($f['decided_to'] ?? null), fn ($q) => $q->whereDate('decision_date', '<=', $f['decided_to']))
             ->when(filled($f['uploaded_from'] ?? null), fn ($q) => $q->whereDate('uploaded_on', '>=', $f['uploaded_from']))
             ->when(filled($f['uploaded_to'] ?? null), fn ($q) => $q->whereDate('uploaded_on', '<=', $f['uploaded_to']));
+    }
+
+    /**
+     * Judgments this judge sat on (alone or in a bench), under any spelling of the name found in the PDFs.
+     * Whole-name match, so "Muhammad Asif" does not also match "Muhammad Asif Khan".
+     *
+     * @param  Builder<ReportedJudgment>  $query
+     */
+    private static function whereJudge(Builder $query, string $name): void
+    {
+        $variants = array_map(fn (string $v) => preg_quote(trim($v)), ReportedJudgment::judgeVariants($name));
+        $query->whereRaw('judges REGEXP ?', ['\\b('.implode('|', $variants).')\\b']);
     }
 
     /**

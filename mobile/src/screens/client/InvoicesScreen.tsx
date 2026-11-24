@@ -10,13 +10,14 @@ import { useTheme } from '@/theme';
 
 export function InvoicesScreen() {
   const { spacing } = useTheme();
+  const nav = useAppNavigation();
   const q = useQuery(() => clientApi.invoices());
   return (
     <Screen edges={[]} refreshing={q.refreshing} onRefresh={q.refresh}>
       {q.loading ? <SkeletonCard /> : q.error ? <ErrorState message={q.error} onRetry={q.reload} /> : !q.data?.invoices.length ? <EmptyState icon="file-text" title="No invoices" /> : (
         <View style={{ gap: spacing.md }}>
           {q.data.invoices.map((i) => (
-            <Card key={i.id}>
+            <Card key={i.id} onPress={() => nav.navigate('InvoiceDetail', { id: i.id })}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Txt variant="subtitle">{i.number}</Txt>
                 <Badge label={i.status_label} tone={statusTone(i.status)} />

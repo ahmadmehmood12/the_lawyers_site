@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApiWebBridge;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureAccountType;
 use App\Http\Middleware\EnsureApiAccountIsActive;
@@ -43,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'track-visits' => RecordPageVisit::class,
             'api.active' => EnsureApiAccountIsActive::class,
+            'api.web' => ApiWebBridge::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -51,7 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => ($request->is('api/*') && ! $request->is('api/documentation')) || $request->expectsJson(),
         );
 
         // Mobile API (api/v1): every error uses the {status, message, timestamp, errors} envelope.

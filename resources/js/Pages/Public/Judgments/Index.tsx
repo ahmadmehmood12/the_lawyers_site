@@ -11,12 +11,13 @@ import { useLocale, useT } from '@/lib/i18n';
 import type { Paginated } from '@/types';
 
 export type Judgment = { id: number; slug: string; court: string; court_name: string; court_short: string; case_type: string; case_number: string; title: string; judges: string; bench: boolean; bench_label: string | null; apex_court_case: string | null; apex_court_status: string | null; citation: string | null; other_citation: string | null; sc_citation: string | null; cited_citations: string[]; tag_line: string | null; remarks: string | null; decision_date: string | null; uploaded_on: string; pdf_url: string | null; pdf_is_link: boolean; pdf_stored?: boolean; download_url?: string | null; source_url: string | null; match_pages?: number[]; match_keywords?: string[]; match_snippets?: MatchSnippet[] };
+type JudgeOption = { value: string; label: string; courts: string[] };
 type MatchSnippet = { page: number; segments: { text: string; hit: boolean }[] };
 type Court = { key: string; name: string; short: string; province: string; count: number };
-type Filters = Partial<Record<'court' | 'year' | 'judge' | 'citation' | 'case' | 'title' | 'text' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
+type Filters = Partial<Record<'court' | 'year' | 'judge' | 'bench' | 'pair' | 'citation' | 'case' | 'title' | 'text' | 'decided_from' | 'decided_to' | 'uploaded_from' | 'uploaded_to', string>>;
 
 /** Judgments approved for reporting, High Court wise (Public\ReportedJudgmentController). */
-export default function JudgmentsIndex({ judgments, courts, judges, years, filters, canonical, embedded = null }: { judgments: Paginated<Judgment>; courts: Court[]; judges: string[]; years: number[]; filters: Filters; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
+export default function JudgmentsIndex({ judgments, courts, judges, pairs = [], years, filters, canonical, embedded = null }: { judgments: Paginated<Judgment>; courts: Court[]; judges: JudgeOption[]; pairs: JudgeOption[]; years: number[]; filters: Filters; canonical: string; embedded?: 'portal' | 'workspace' | null }) {
     const t = useT();
     const { locale } = useLocale();
     const [form, setForm] = useState<Filters>(filters);
@@ -97,7 +98,7 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
 
                     <nav className="mt-7 flex gap-2 overflow-x-auto pb-1" aria-label={t('Courts')}>
                         <CourtTab active={!filters.court} onClick={() => apply({ ...filters, court: '' })} label={t('All courts')} count={total} />
-                        {courts.map((c) => <CourtTab key={c.key} active={filters.court === c.key} onClick={() => apply({ ...filters, court: c.key, judge: '' })} label={c.name} sub={c.province} count={c.count} />)}
+                        {courts.map((c) => <CourtTab key={c.key} active={filters.court === c.key} onClick={() => apply({ ...filters, court: c.key, judge: '', pair: '' })} label={c.name} sub={c.province} count={c.count} />)}
                     </nav>
                 </div>
             </section>
@@ -113,13 +114,20 @@ export default function JudgmentsIndex({ judgments, courts, judges, years, filte
                     </FilterField>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <FilterField label={t('Court')} labelElement="div">
-                            <Select value={form.court ?? ''} onChange={(e) => setForm((f) => ({ ...f, court: e.target.value, judge: '' }))} aria-label={t('Court')} placeholder={t('All courts')} options={courts.map((c) => ({ value: c.key, label: c.name }))} />
+                            <Select value={form.court ?? ''} onChange={(e) => setForm((f) => ({ ...f, court: e.target.value, judge: '', pair: '' }))} aria-label={t('Court')} placeholder={t('All courts')} options={courts.map((c) => ({ value: c.key, label: c.name }))} />
                         </FilterField>
                         <FilterField label={t('Select year')} labelElement="div">
                             <Select value={form.year ?? ''} onChange={(e) => set('year', e.target.value)} aria-label={t('Select year')} placeholder={t('Any year')} options={years.map((y) => ({ value: y, label: String(y) }))} />
                         </FilterField>
                         <FilterField label={t('Hon’ble Judge')} labelElement="div">
-                            <Select value={form.judge ?? ''} onChange={(e) => set('judge', e.target.value)} aria-label={t('Hon’ble Judge')} placeholder={t('All judges')} options={judges.map((j) => ({ value: j, label: j }))} />
+                            <Select value={form.judge ?? ''} onChange={(e) => set('judge', e.target.value)} aria-label={t('Hon’ble Judge')} placeholder={t('All judges')} options={judges.map((j) => ({ value: j.value, label: form.court ? j.label : `${j.label} · ${j.courts.join(', ')}` }))} />
+                        </FilterField>
+                        <FilterField label={t('Bench')} labelElement="div">
+                            <Select value={form.bench ?? ''} onChange={(e) => set('bench', e.target.value)} aria-label={t('Bench')} placeholder={t('All benches')} options={[{ value: 'single', label: t('Single Bench (S.B.)') }, { value: 'division', label: t('Division Bench (D.B.)') }]} />
+                        </FilterField>
+                        {/* Each division-bench pair of judges: only that pair's judgments. */}
+                        <FilterField label={t('Division bench judges')} labelElement="div">
+                            <Select value={form.pair ?? ''} onChange={(e) => set('pair', e.target.value)} aria-label={t('Division bench judges')} placeholder={t('All pairs')} options={pairs.map((p) => ({ value: p.value, label: form.court ? p.label : `${p.label} · ${p.courts.join(', ')}` }))} />
                         </FilterField>
                         <FilterField label={t('Citation')}><input value={form.citation ?? ''} onChange={(e) => set('citation', e.target.value)} placeholder={t('e.g. 2026 PHC 7407, 2016 YLR 1229 or a keyword')} className={controlClasses(false)} /></FilterField>
                         <FilterField label={t('Case number')}><input value={form.case ?? ''} onChange={(e) => set('case', e.target.value)} placeholder={t('e.g. 21229/26 or Civil Revision')} className={controlClasses(false)} /></FilterField>

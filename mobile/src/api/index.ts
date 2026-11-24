@@ -5,3 +5,4 @@ export * from './types';
 export * from './services/appConfig';
 export * from './models';
 export * from './v1';
+export * from './web';

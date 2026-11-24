@@ -21,6 +21,23 @@ export type RootStackParamList = {
   EditProfile: undefined;
   ChangePassword: undefined;
   TwoFactorSetup: undefined;
+  Account: undefined;
+  Appointments: undefined;
+  MyCases: undefined;
+  CaseForm: { id?: number; clientId?: number } | undefined;
+  ClientForm: { id?: number } | undefined;
+  HearingForm: { caseId: number; hearingId?: number };
+  Tasks: { caseId?: number } | undefined;
+  Documents: { caseId?: number } | undefined;
+  Drafts: undefined;
+  DraftEditor: { id: number };
+  Thread: { id: number; title: string };
+  WorkspaceInvoices: undefined;
+  InvoiceDetail: { id: number };
+  InvoiceForm: undefined;
+  Ai: undefined;
+  Judgments: undefined;
+  JudgmentDetail: { slug: string };
 };
 
 export type BootstrapStackParamList = {
@@ -48,15 +65,15 @@ export type ClientTabsParamList = {
   ClientHome: undefined;
   FindLawyers: { specialization?: string } | undefined;
   ClientAppointments: undefined;
-  ClientCases: undefined;
-  ClientProfile: undefined;
+  ClientMessages: undefined;
+  ClientMore: undefined;
 };
 
 export type LawyerTabsParamList = {
   LawyerHome: undefined;
   LawyerCases: undefined;
   LawyerCalendar: undefined;
-  LawyerAppointments: undefined;
+  LawyerMessages: undefined;
   LawyerMore: undefined;
 };
 

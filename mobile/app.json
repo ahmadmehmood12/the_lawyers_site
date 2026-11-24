@@ -55,10 +55,11 @@
           "color": "#0f2c1e",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
-      "apiBaseUrl": "",
+      "apiBaseUrl": "https://thelawyer.duckdns.org/api",
       "eas": {
         "projectId": ""
       }

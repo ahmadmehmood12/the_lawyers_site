@@ -8,6 +8,18 @@ import { useAppConfig } from '@/hooks/useAppConfig';
 import { onPushTapped } from '@/lib/push';
 import { isOnboardingCompleted } from '@/lib/storage';
 import { AccountScreen } from '@/screens/account/AccountScreen';
+import { ThreadScreen } from '@/screens/account/MessagesScreens';
+import { ClientCasesScreen } from '@/screens/client/ClientCasesScreen';
+import { JudgmentDetailScreen, JudgmentsScreen } from '@/screens/shared/JudgmentScreens';
+import { AiScreen } from '@/screens/workspace/AiScreen';
+import { CaseFormScreen } from '@/screens/workspace/CaseFormScreen';
+import { ClientFormScreen } from '@/screens/workspace/ClientFormScreen';
+import { DocumentsScreen } from '@/screens/workspace/DocumentsScreen';
+import { DraftEditorScreen, DraftsScreen } from '@/screens/workspace/DraftsScreen';
+import { HearingFormScreen } from '@/screens/workspace/HearingFormScreen';
+import { InvoiceDetailScreen, InvoiceFormScreen, WorkspaceInvoicesScreen } from '@/screens/workspace/InvoiceScreens';
+import { TasksScreen } from '@/screens/workspace/TasksScreen';
+import { WorkspaceAppointmentsScreen } from '@/screens/workspace/WorkspaceAppointmentsScreen';
 import { NotificationPrefsScreen, NotificationsScreen } from '@/screens/account/NotificationsScreens';
 import { ChangePasswordScreen, EditProfileScreen } from '@/screens/account/ProfileForms';
 import { TwoFactorSetupScreen } from '@/screens/account/TwoFactorSetupScreen';
@@ -124,6 +136,23 @@ function AppStack({ role }: { role: Role }) {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change password' }} />
       <Stack.Screen name="TwoFactorSetup" component={TwoFactorSetupScreen} options={{ title: 'Two-factor authentication' }} />
+      <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account & settings' }} />
+      <Stack.Screen name="Appointments" component={WorkspaceAppointmentsScreen} options={{ title: '' }} />
+      <Stack.Screen name="MyCases" component={ClientCasesScreen} options={{ title: '' }} />
+      <Stack.Screen name="CaseForm" component={CaseFormScreen} options={({ route }) => ({ title: route.params?.id ? 'Edit case' : 'New case' })} />
+      <Stack.Screen name="ClientForm" component={ClientFormScreen} options={({ route }) => ({ title: route.params?.id ? 'Edit client' : 'New client' })} />
+      <Stack.Screen name="HearingForm" component={HearingFormScreen} options={({ route }) => ({ title: route.params.hearingId ? 'Hearing outcome' : 'Schedule hearing' })} />
+      <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: 'Tasks' }} />
+      <Stack.Screen name="Documents" component={DocumentsScreen} options={{ title: 'Documents' }} />
+      <Stack.Screen name="Drafts" component={DraftsScreen} options={{ title: 'Drafting' }} />
+      <Stack.Screen name="DraftEditor" component={DraftEditorScreen} options={{ title: 'Draft' }} />
+      <Stack.Screen name="Thread" component={ThreadScreen} options={({ route }) => ({ title: route.params.title })} />
+      <Stack.Screen name="WorkspaceInvoices" component={WorkspaceInvoicesScreen} options={{ title: 'Invoices' }} />
+      <Stack.Screen name="InvoiceDetail" component={InvoiceDetailScreen} options={{ title: 'Invoice' }} />
+      <Stack.Screen name="InvoiceForm" component={InvoiceFormScreen} options={{ title: 'New invoice' }} />
+      <Stack.Screen name="Ai" component={AiScreen} options={{ title: 'AI assistant' }} />
+      <Stack.Screen name="Judgments" component={JudgmentsScreen} options={{ title: 'Reported judgments' }} />
+      <Stack.Screen name="JudgmentDetail" component={JudgmentDetailScreen} options={{ title: 'Judgment' }} />
     </Stack.Navigator>
   );
 }

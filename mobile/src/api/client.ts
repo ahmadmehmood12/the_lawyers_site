@@ -26,6 +26,15 @@ export function setAuthToken(token: string | null): void {
 }
 
 /** Called once when an authenticated request returns 401 (token revoked/expired). */
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
+/** Absolute URL of an API path (for file downloads). */
+export function apiUrl(path: string, query?: RequestOptions['query']): string {
+  return buildUrl(path, query);
+}
+
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler;
 }
@@ -79,11 +88,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       method: options.method ?? 'GET',
       headers: {
         Accept: 'application/json',
-        ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(options.body === undefined || options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         ...options.headers,
       },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : options.body instanceof FormData ? options.body : JSON.stringify(options.body),
       signal: controller.signal,
     });
 

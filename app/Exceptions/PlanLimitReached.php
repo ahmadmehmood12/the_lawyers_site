@@ -21,6 +21,11 @@ class PlanLimitReached extends Exception
 
     public function render(Request $request): JsonResponse|RedirectResponse
     {
+        // Mobile API: same 402 + upgrade offer, in the API envelope.
+        if ($request->is('api/v1/*')) {
+            return response()->json(['status' => 'Failed', 'timestamp' => now()->format('Y-m-d H:i:s'), 'message' => $this->getMessage(), 'upgrade' => $this->offer], 402);
+        }
+
         if ($request->expectsJson() && ! $request->header('X-Inertia')) {
             return response()->json(['message' => $this->getMessage(), 'upgrade' => $this->offer], 402);
         }

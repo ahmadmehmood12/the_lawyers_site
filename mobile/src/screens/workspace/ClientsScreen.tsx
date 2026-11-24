@@ -18,7 +18,7 @@ export function ClientsScreen() {
   const page = q.data?.clients;
 
   return (
-    <Screen edges={[]} refreshing={q.refreshing} onRefresh={q.refresh}>
+    <Screen edges={[]} refreshing={q.refreshing} onRefresh={q.refresh} footer={<Button title="Add client" icon="user-plus" full onPress={() => nav.navigate('ClientForm')} />}>
       <Input icon="search" placeholder="Name, phone or CNIC" value={search} onChangeText={setSearch} />
       {q.data ? (
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
@@ -67,6 +67,10 @@ export function ClientDetailScreen({ id }: { id: number }) {
         {cl.user_id ? <Badge label="Has portal access" tone="success" /> : null}
       </View>
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg }}>
+        <Button title="Edit" icon="edit-2" variant="secondary" style={{ flex: 1 }} onPress={() => nav.navigate('ClientForm', { id: cl.id })} />
+        <Button title="New case" icon="briefcase" variant="secondary" style={{ flex: 1 }} onPress={() => nav.navigate('CaseForm', { clientId: cl.id })} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
         {cl.phone ? <Button title="Call" icon="phone" variant="secondary" style={{ flex: 1 }} onPress={() => void Linking.openURL(`tel:${cl.phone}`)} /> : null}
         {cl.whatsapp || cl.phone ? <Button title="WhatsApp" icon="message-circle" variant="secondary" style={{ flex: 1 }} onPress={() => void Linking.openURL(`https://wa.me/${(cl.whatsapp ?? cl.phone ?? '').replace(/\D/g, '')}`)} /> : null}
       </View>

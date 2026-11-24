@@ -64,6 +64,14 @@ export function WorkspaceHomeScreen({ onOpenTab }: { onOpenTab: (tab: 'cases' | 
 
       <View style={{ padding: spacing.xl, gap: spacing['2xl'] }}>
         {q.error ? <ErrorState message={q.error} onRetry={q.reload} /> : null}
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          {([['plus', 'New case', () => nav.navigate('CaseForm')], ['user-plus', 'New client', () => nav.navigate('ClientForm')], ['check-square', 'Tasks', () => nav.navigate('Tasks')], ['calendar', 'Appts', () => nav.navigate('Appointments')]] as const).map(([icon, label, go]) => (
+            <Pressable key={label} onPress={go} style={{ flex: 1, alignItems: 'center', gap: 6, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border }}>
+              <Feather name={icon} size={18} color={c.primary} />
+              <Txt variant="caption" weight="600">{label}</Txt>
+            </Pressable>
+          ))}
+        </View>
         {d?.profile && d.profile.verification_status !== 'approved' ? (
           <Alert tone="warning" title={`Profile: ${d.profile.verification_label}`} message="Complete verification on the website to appear in the public directory." />
         ) : null}

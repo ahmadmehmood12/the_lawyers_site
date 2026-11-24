@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@/hooks/useQuery';
 import { useTheme } from '@/theme';
 
-type Step = 'idle' | 'password' | 'scan' | 'codes' | 'disable';
+type Step = 'idle' | 'password' | 'scan' | 'codes' | 'disable' | 'regenerate';
 
 /** Turn two-factor on (password → key/QR in an authenticator app → confirm code → recovery codes) or off. */
 export function TwoFactorSetupScreen() {
@@ -55,15 +55,16 @@ export function TwoFactorSetupScreen() {
         {step === 'idle' && enabled ? (
           <>
             <Button title="Show recovery codes" icon="key" variant="secondary" full onPress={() => setStep('codes')} />
+            <Button title="New recovery codes" icon="refresh-cw" variant="secondary" full onPress={() => setStep('regenerate')} />
             <Button title="Turn off two-factor" icon="shield-off" variant="ghost" full onPress={() => setStep('disable')} />
           </>
         ) : null}
 
-        {step === 'password' || step === 'disable' || (step === 'codes' && !codes.length) ? (
+        {step === 'password' || step === 'disable' || step === 'regenerate' || (step === 'codes' && !codes.length) ? (
           <>
             <Input label="Confirm your password" icon="lock" password value={password} onChangeText={setPassword} />
             <Button
-              title={step === 'disable' ? 'Turn off' : step === 'codes' ? 'Show codes' : 'Continue'}
+              title={step === 'disable' ? 'Turn off' : step === 'codes' ? 'Show codes' : step === 'regenerate' ? 'Generate new codes' : 'Continue'}
               variant={step === 'disable' ? 'danger' : 'primary'}
               full
               loading={busy}
@@ -75,6 +76,9 @@ export function TwoFactorSetupScreen() {
                   setStep('scan');
                 } else if (step === 'codes') {
                   setCodes((await accountApi.recoveryCodes(password)).data.recovery_codes);
+                } else if (step === 'regenerate') {
+                  setCodes((await accountApi.regenerateRecoveryCodes(password)).data.recovery_codes);
+                  setStep('codes');
                 } else {
                   await accountApi.disableTwoFactor(password);
                   await refreshUser();

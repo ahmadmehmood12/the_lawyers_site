@@ -15,8 +15,20 @@ The app is wired to the real Laravel REST API (`/api/v1`, Sanctum). Mock data an
 
 Navigation: `RootNavigator` → splash/onboarding → auth stack → verify email → biometric lock → `ClientTabs` (Home, Find, Appointments, Cases, Profile) or `LawyerTabs` (Home, Cases, Diary — Team for firms, Appointments with request badge, More).
 
-## Not built yet (web only, no API)
-Creating/editing cases, clients, hearings, tasks; document upload/download; drafting; messaging; invoices/payments; AI assistant; judgment search.
+## Added 2026-11-24 (all through the web-bridge API = the web's own actions)
+| Area | Screens |
+|---|---|
+| Cases / clients | `workspace/CaseFormScreen` (new/edit), `ClientFormScreen` (new/edit), case file: Edit, hearings (schedule, reschedule, cancel, outcome via `HearingFormScreen`), tasks, documents |
+| Tasks | `workspace/TasksScreen` (+ `TaskSheet`, `TaskRow`) |
+| Documents | `workspace/DocumentsScreen` (lawyers: vault, filters, upload, open; clients: shared docs + upload) |
+| Drafting | `workspace/DraftsScreen` (list, new from template), `DraftEditorScreen` (WebView rich text, save, review/approve, PDF/Word export) |
+| Messages | `account/MessagesScreens` (inbox, new conversation, thread with attachments, 8 s refresh) — lawyers and clients |
+| Invoices | `workspace/InvoiceScreens` (list + totals, new invoice with items, detail: issue, void, record payment (idempotency key), PDF, receipts); clients: invoice detail + PDF + receipts |
+| AI | `workspace/AiScreen` |
+| Judgments | `shared/JudgmentScreens` (search with excerpts, court/judge/bench/pair/citation filters; detail, PDF view, plan-gated download) |
+| Navigation | bottom bar — lawyer/firm: Home · Cases · Diary · Messages · More; client: Home · Find · Appointments · Messages · More. `account/MoreScreen` = tile grid of every other module (permission-aware, badges) + Account |
+| Shared kit | `components/Form.tsx` (Picker, DateField, TimeField, SwitchRow, useForm, FormScreen), `api/web.ts` (webPage/webPost/webPut, formData uploads, openFile download+share, uuid) |
+New dependencies: expo-document-picker, expo-sharing, react-native-webview.
 
 ## Checks
-`npm run typecheck` clean; `npx expo export --platform android` bundles; `npx expo-doctor` 20/20 (2026-11-22). No automated test suite.
+`npm run typecheck` clean; `npx expo export --platform android` bundles (2026-11-24). No automated test suite.

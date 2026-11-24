@@ -74,10 +74,12 @@ return [
              * to restrict access, e.g.:
              *   'api' => ['auth:sanctum'],
              */
+            // The docs UI (/api/documentation) and its JSON (/docs) are for platform staff only:
+            // sign in to the admin panel first. Swagger "Try it out" calls still use a Sanctum bearer token.
             'middleware' => [
-                'api' => [],
+                'api' => ['web', 'auth', 'account:platform'],
                 'asset' => [],
-                'docs' => [],
+                'docs' => ['web', 'auth', 'account:platform'],
                 'oauth2_callback' => [],
             ],
 

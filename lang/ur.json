@@ -3006,6 +3006,8 @@
     "Bench type": "بینچ کی قسم",
     "Division Bench (D.B.)": "ڈویژن بینچ (D.B.)",
     "Single Bench (S.B.)": "سنگل بینچ (S.B.)",
+    "Bench": "بینچ",
+    "All benches": "تمام بینچ",
     "Apex court case": "عدالتِ عظمیٰ کا مقدمہ",
     "Apex court status": "عدالتِ عظمیٰ میں حیثیت",
     "Keywords": "کلیدی الفاظ",
@@ -3013,5 +3015,7 @@
     "Supreme Court appeal reference, if any (Sindh High Court).": "عدالتِ عظمیٰ میں اپیل کا حوالہ، اگر ہو (سندھ ہائی کورٹ)۔",
     "e.g. Pending, Dismissed": "مثلاً زیرِ التواء، خارج",
     "Division Bench (D.B.) — otherwise Single Bench": "ڈویژن بینچ (D.B.) — بصورتِ دیگر سنگل بینچ",
-    "Downloading judgment PDFs is available on paid plans. You can read the full judgment in the viewer.": "فیصلوں کی پی ڈی ایف ڈاؤن لوڈ کرنا ادا شدہ پلانز میں دستیاب ہے۔ آپ مکمل فیصلہ ویور میں پڑھ سکتے ہیں۔"
+    "Downloading judgment PDFs is available on paid plans. You can read the full judgment in the viewer.": "فیصلوں کی پی ڈی ایف ڈاؤن لوڈ کرنا ادا شدہ پلانز میں دستیاب ہے۔ آپ مکمل فیصلہ ویور میں پڑھ سکتے ہیں۔",
+    "Division bench judges": "ڈویژن بینچ کے جج صاحبان",
+    "All pairs": "تمام جوڑیاں"
 }

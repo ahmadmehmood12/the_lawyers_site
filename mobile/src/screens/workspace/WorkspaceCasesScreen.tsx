@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { workspaceApi } from '@/api';
-import { Badge, Card, Chip, EmptyState, ErrorState, Input, Screen, SkeletonCard, Txt } from '@/components';
+import { Badge, Button, Card, Chip, EmptyState, ErrorState, Input, Screen, SkeletonCard, Txt } from '@/components';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useQuery } from '@/hooks/useQuery';
 import { statusTone } from '@/lib/status';
@@ -21,7 +21,10 @@ export function WorkspaceCasesScreen() {
 
   return (
     <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
-      <Txt variant="title">Cases</Txt>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Txt variant="title">Cases</Txt>
+        <Button title="New case" icon="plus" size="sm" onPress={() => nav.navigate('CaseForm')} />
+      </View>
       <View style={{ gap: spacing.md, marginTop: spacing.lg, marginBottom: spacing.lg }}>
         <Input icon="search" placeholder="Title, number, FIR or client" value={search} onChangeText={setSearch} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>

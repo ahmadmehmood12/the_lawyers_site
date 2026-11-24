@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Organization;
+use App\Support\ApiBridge;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 /**
@@ -19,6 +20,20 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 abstract class Controller
 {
     use AuthorizesRequests;
+
+    /**
+     * Runs the action; on mobile API routes that reuse this web action (middleware `api.web`) the
+     * result is converted to JSON by ApiBridge — the web flow itself is unchanged.
+     *
+     * @param  string  $method
+     * @param  array<int|string, mixed>  $parameters
+     */
+    public function callAction($method, $parameters)
+    {
+        $result = $this->{$method}(...array_values($parameters));
+
+        return request()->attributes->get('api_bridge') ? ApiBridge::toJson($result, request()) : $result;
+    }
 
     /** Organization resolved by the `workspace` middleware for the current request. */
     protected function organization(): Organization
