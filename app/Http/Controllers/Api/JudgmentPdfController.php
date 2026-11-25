@@ -23,7 +23,7 @@ class JudgmentPdfController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'pdf_path' => ['required', 'url:http,https', 'max:500'],
+            'pdf_path' => ['required', 'url:http,https', 'max:1000'],
             // Identity fallback so backfilling works even if the court's PDF link changed since import.
             'court' => ['nullable', 'string', 'max:10'],
             'case_number' => ['nullable', 'string', 'max:60'],
