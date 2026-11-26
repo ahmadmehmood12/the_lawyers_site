@@ -26,6 +26,7 @@ class ProductionSeeder extends Seeder
         ReferenceDataSeeder::class,      // Provinces, court types, courts, specializations, bar councils
         PakistanGeographySeeder::class,  // Districts, cities and tehsils
         PunjabJudiciarySeeder::class,    // Punjab courts per station and judges
+        PunjabDistrictSessionsJudgesSeeder::class, // D&SJs in sessions, special courts and tribunals (LHC list 23-11-2026)
         CourtHolidaySeeder::class,       // Court calendar (gazetted holidays)
         PlatformContentSeeder::class,    // Plans, WhatsApp notification templates, website pages, team designations, settings
         PaymentMethodSeeder::class,      // Plan payment methods
