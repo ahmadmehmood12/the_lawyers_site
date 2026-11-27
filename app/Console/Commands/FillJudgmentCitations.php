@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 /**
  * Fills an empty citation from the court PDF link (2026LHC8777.pdf -> "2026 LHC 8777") for judgments
  * saved before citations were read. Case law cited inside the PDF comes from the scraper
- * (lhc-scraper/scraper.py), which reads the PDF text. Safe to re-run; never overwrites a citation.
+ * (judgements-scrapers/lhc-scraper/scraper.py), which reads the PDF text. Safe to re-run; never overwrites a citation.
  */
 #[Signature('judgments:fill-citations')]
 #[Description('Fill empty reported judgment citations from their court PDF file names')]

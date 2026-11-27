@@ -172,4 +172,53 @@ healthy || exit 1
 ok "https://$HOST/up → 200"
 rm -rf public/build.prev
 DONE=1
+
+# ── 7. Court scrapers (never fail the deploy; the site is already live) ───────────────────────────────
+# The scrapers moved from ./<court>-scraper to ./judgements-scrapers/<court>-scraper. git moved the tracked
+# files; this carries each one's server-only .venv, .env and storage/ (state, logs) across once, then leaves
+# a symlink at the old path so existing cron lines and the .venv's own script paths keep working.
+# A scraper that is running right now (its storage/scraper.lock is held) is left for the next deploy.
+move_scraper() {
+  local old="$1" new="judgements-scrapers/$1" item name
+  [ -d "$old" ] && [ ! -L "$old" ] && [ -d "$new" ] || return 0
+  if [ -f "$old/storage/scraper.lock" ] && ! flock -n "$old/storage/scraper.lock" true; then
+    warn "$old is running; it moves to $new on the next deploy"; return 0
+  fi
+  shopt -s dotglob nullglob
+  for item in "$old"/storage/*; do
+    name="$(basename "$item")"
+    if [ -e "$new/storage/$name" ] && [ "$name" = .gitkeep ]; then rm -f "$item"
+    elif [ -e "$new/storage/$name" ]; then warn "$new/storage/$name already exists; kept, $item left in place"
+    else mv "$item" "$new/storage/"; fi
+  done
+  rmdir "$old/storage" 2>/dev/null || true
+  rm -rf "$old/__pycache__"
+  for item in "$old"/*; do
+    name="$(basename "$item")"
+    if [ -e "$new/$name" ]; then warn "$new/$name already exists; $item left in place"; else mv "$item" "$new/"; fi
+  done
+  shopt -u dotglob nullglob
+  if rmdir "$old" 2>/dev/null; then
+    ln -s "$new" "$old" && chown -h "$OWNER:$OWNER" "$old"
+    ok "$old → $new (.venv, .env, storage moved; symlink left at the old path)"
+  else
+    warn "$old still holds files (see above); not replaced by a symlink"
+  fi
+}
+for court in lhc phc sc shc ihc bhc; do move_scraper "$court-scraper" || warn "moving $court-scraper failed"; done
+
+# Tesseract OCR reads scanned judgment PDFs (scrapers' text index, --reindex-scanned). Installed once.
+install_tesseract() {
+  local sudo=""; [ "$(id -u)" = 0 ] || sudo="sudo -n"
+  if command -v apt-get >/dev/null; then
+    $sudo env DEBIAN_FRONTEND=noninteractive timeout 600 apt-get install -y -q tesseract-ocr >/dev/null 2>&1 \
+      || { $sudo timeout 300 apt-get update -q >/dev/null 2>&1 && $sudo env DEBIAN_FRONTEND=noninteractive timeout 600 apt-get install -y -q tesseract-ocr >/dev/null 2>&1; }
+  elif command -v dnf >/dev/null; then $sudo timeout 600 dnf install -y -q tesseract >/dev/null 2>&1
+  elif command -v yum >/dev/null; then $sudo timeout 600 yum install -y -q tesseract >/dev/null 2>&1
+  else return 1; fi
+}
+if command -v tesseract >/dev/null; then ok "tesseract present ($(tesseract --version 2>&1 | head -1))"
+elif install_tesseract && command -v tesseract >/dev/null; then ok "tesseract installed ($(tesseract --version 2>&1 | head -1))"
+else warn "tesseract could not be installed automatically (apt install tesseract-ocr); scanned judgments wait for OCR"; fi
+
 log "Deployed ${SHA:0:7} to $SITE_URL"

@@ -54,7 +54,7 @@ Options: `--reindex-scanned`, `--dry-run`, `--output FILE`, `--limit N`, `--judg
 
 Daily cron (server timezone Asia/Karachi), e.g. 02:30:
 ```
-cd /www/wwwroot/law_site/ihc-scraper && .venv/bin/python scraper.py >> storage/cron.log 2>&1
+cd /www/wwwroot/law_site/judgements-scrapers/ihc-scraper && .venv/bin/python scraper.py >> storage/cron.log 2>&1
 ```
 A weekly `--resend --only sitting --skip-summary` run picks up citations published after the first import.
 Full guide: `docs/judgment-automation.md`.

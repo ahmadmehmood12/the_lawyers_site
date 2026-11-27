@@ -8,8 +8,10 @@ which exists to stop automated searching, so this scraper does not submit it or 
 Instead:
 
 1. Open https://scp.gov.pk/JudgmentsSearch in your browser, set **Reported = Yes**, Search.
-2. Save each results page (Cmd/Ctrl+S, "Web page, HTML only") into `sc-scraper/storage/saved/`
-   (any names, e.g. page-001.html … page-155.html).
+   Then set the page size next to the "Search Results" heading to **100 per page** (39 pages instead of ~155).
+2. Save each results page (Cmd/Ctrl+S, "Web page, HTML only") into `judgements-scrapers/sc-scraper/storage/saved/`
+   (any names, e.g. page-001.html … page-039.html).
+   After the import, `.venv/bin/python prune_saved.py --delete` deletes the pages whose judgments were all imported.
 3. `.venv/bin/python scraper.py --dry-run` (counts and preview), then `.venv/bin/python scraper.py`.
 
 Every judgment in those pages is saved as reported (`is_reported = 1`), with or without a citation.
@@ -41,7 +43,7 @@ judgments** — each is imported, its PDF stored, and its text + keywords extrac
 day does nothing. Schedule daily with the server timezone set to **Asia/Karachi**, e.g. 02:00:
 
 ```
-cd /www/wwwroot/law_site/sc-scraper && /www/wwwroot/law_site/sc-scraper/.venv/bin/python scraper.py >> storage/cron.log 2>&1
+cd /www/wwwroot/law_site/judgements-scrapers/sc-scraper && /www/wwwroot/law_site/judgements-scrapers/sc-scraper/.venv/bin/python scraper.py >> storage/cron.log 2>&1
 ```
 
 **What it extracts from each PDF.** Cited case law (`cited_citations`), the full page-by-page text, and

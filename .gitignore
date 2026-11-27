@@ -40,11 +40,13 @@ Thumbs.db
 /AGENTS.md
 /boost.json
 
-/lhc-scraper/venv
-/phc-scraper/venv
-/phc-scraper/.venv
-/sc-scraper/venv
-/sc-scraper/.venv/ihc-scraper/venv
-/ihc-scraper/.venv
-/bhc-scraper/venv
-/bhc-scraper/.venv
+# Court scrapers: each folder's own .gitignore keeps .venv, .env and storage/ out.
+/judgements-scrapers/*/venv
+/judgements-scrapers/*/.venv
+# Old scraper paths: on the server a deploy leaves a symlink here to the new folder (cron keeps working).
+/lhc-scraper
+/phc-scraper
+/sc-scraper
+/shc-scraper
+/ihc-scraper
+/bhc-scraper

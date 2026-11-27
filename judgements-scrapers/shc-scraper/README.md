@@ -54,7 +54,7 @@ judgments** — each is imported, its PDF stored, and its text + keywords extrac
 day does nothing. Schedule daily with the server timezone set to **Asia/Karachi**, e.g. 02:00:
 
 ```
-cd /www/wwwroot/law_site/shc-scraper && /www/wwwroot/law_site/shc-scraper/.venv/bin/python scraper.py >> storage/cron.log 2>&1
+cd /www/wwwroot/law_site/judgements-scrapers/shc-scraper && /www/wwwroot/law_site/judgements-scrapers/shc-scraper/.venv/bin/python scraper.py >> storage/cron.log 2>&1
 ```
 
 **What it extracts from each PDF.** Cited case law (`cited_citations`), the full page-by-page text, and

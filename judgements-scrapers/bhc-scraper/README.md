@@ -43,5 +43,5 @@ Options: `--dry-run`, `--output FILE`, `--limit N`, `--judge TEXT`, `--only sitt
 
 Daily cron (Asia/Karachi), e.g. 03:00:
 ```
-cd /www/wwwroot/law_site/bhc-scraper && .venv/bin/python scraper.py >> storage/cron.log 2>&1
+cd /www/wwwroot/law_site/judgements-scrapers/bhc-scraper && .venv/bin/python scraper.py >> storage/cron.log 2>&1
 ```
