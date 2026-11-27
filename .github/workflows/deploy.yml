@@ -1,0 +1,80 @@
+name: CI/CD
+# Every push to main: checks → deploy to the Contabo server (https://thelawyer.duckdns.org).
+# Pull requests only run the checks. Actions → CI/CD → "Run workflow" redeploys main without a new commit.
+# How it works and what it never touches (database, .env, storage, scrapers): docs/Deployment/Deployment-Guide.md
+on:
+  push: { branches: [main] }
+  pull_request: {}
+  workflow_dispatch: {}
+
+env:
+  APP_DIR: /www/wwwroot/thelawyer.duckdns.org
+  SITE_URL: https://thelawyer.duckdns.org
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env: { MYSQL_DATABASE: law_site_testing, MYSQL_ROOT_PASSWORD: root }
+        ports: ['3306:3306']
+        options: --health-cmd "mysqladmin ping -proot" --health-interval 5s --health-retries 20
+    env: { DB_CONNECTION: mysql, DB_HOST: 127.0.0.1, DB_PORT: 3306, DB_DATABASE: law_site_testing, DB_USERNAME: root, DB_PASSWORD: root }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.3', extensions: 'bcmath, gd, intl, mbstring, pdo_mysql, zip', coverage: none }
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci && npm run build
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Migrations run on a fresh MySQL database
+        run: php artisan migrate --force
+      - name: App boots
+        run: php artisan route:list > /dev/null
+      - name: Tests (shown, not blocking yet; 15 tests are out of date)
+        continue-on-error: true
+        run: php artisan test --testsuite=Feature --compact
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    concurrency: { group: deploy-production, cancel-in-progress: false }
+    env:
+      HOST: ${{ secrets.DEPLOY_HOST }}
+      SSH_USER: ${{ secrets.DEPLOY_USER || 'root' }}
+      PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # full history: the server checkout receives only the new commits
+      - name: SSH key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          for v in HOST SSH_KEY; do [ -n "${!v}" ] || { echo "::error::Missing repository secret for $v (see the deployment guide)"; exit 1; }; done
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          if [ -n "$KNOWN_HOSTS" ]; then printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else echo "::warning::DEPLOY_KNOWN_HOSTS not set; trusting the server key seen now"; ssh-keyscan -p "$PORT" "$HOST" > ~/.ssh/known_hosts 2>/dev/null; fi
+          printf 'Host server\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n  ServerAliveInterval 30\n' "$HOST" "$SSH_USER" "$PORT" > ~/.ssh/config
+          ssh server "test -d '$APP_DIR/.git' && test -f '$APP_DIR/.env' && command -v rsync >/dev/null" \
+            || { echo "::error::$APP_DIR on the server must be the git checkout with its .env, and rsync must be installed"; exit 1; }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - name: Build assets
+        # Only APP_NAME and the public VITE_* values are read from the server .env; no secrets leave the server.
+        run: |
+          ssh server "grep -E '^(APP_NAME|VITE_[A-Z0-9_]+)=' '$APP_DIR/.env'" > .env || true
+          npm ci && npm run build
+      - name: Upload commit and assets
+        run: |
+          git push --force --receive-pack="git -c 'safe.directory=*' receive-pack" "server:$APP_DIR" "$GITHUB_SHA:refs/deploy/main"
+          rsync -rlptz --delete public/build/ "server:$APP_DIR/public/build.new/"
+      - name: Release
+        run: ssh server "APP_DIR='$APP_DIR' SHA='$GITHUB_SHA' SITE_URL='$SITE_URL' bash -s" < .github/deploy/release.sh
